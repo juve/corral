@@ -2,10 +2,6 @@ package edu.usc.glidein.service.core;
 
 import java.io.File;
 
-import org.globus.cog.abstraction.interfaces.ExecutionService;
-import org.globus.cog.abstraction.interfaces.TaskHandler;
-
-import edu.usc.glidein.service.types.ExecutionServiceDescription;
 import edu.usc.glidein.service.types.SiteDescription;
 
 public class SiteFactory 
@@ -45,28 +41,6 @@ public class SiteFactory
 		site.setConfiguration(configuration);
 		
 		// TODO Get proxy credential
-		
-		// TODO Security context
-		
-		// Glidein execution service
-		// TODO Service contact
-		ExecutionServiceDescription glideinServiceDescription = 
-			description.getGlideinService();
-		ExecutionService glideinService = null; // TODO glideinService
-		site.setGlideinService(glideinService);
-		
-		// TODO Staging execution service
-		// TODO Service contact
-		ExecutionServiceDescription stagingServiceDescription =
-			description.getStagingService();
-		ExecutionService stagingService = null;
-		if(stagingServiceDescription == null){
-			stagingService = glideinService;
-		}
-		else {
-			stagingService = null; // TODO stagingService
-		}
-		site.setStagingService(stagingService);
 		
 		return site;
 	}
