@@ -32,6 +32,8 @@
 		<ant dir="${service.dir}" target="undeploy"/>
 	</target>
 	
-    <target name="all" depends="dist"/>
+    <target name="build" depends="dist"/>
+	
+	<target name="all" depends="build"/>
 	
 </project>
