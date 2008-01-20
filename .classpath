@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="service/src/stubs"/>
+	<classpathentry kind="src" path="service/src/impl"/>
+	<classpathentry kind="src" path="client/src"/>
+	<classpathentry kind="src" path="tools/src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Globus Library [4.0.5]"/>
+	<classpathentry kind="output" path="classes"/>
+</classpath>

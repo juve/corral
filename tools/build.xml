@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<project default="all" basedir=".">
+    <description>Glidein tools build script</description>
+	
+    <target name="clean">
+    	
+    </target>
+	
+	<target name="compile">
+		
+	</target>
+	
+    <target name="dist">
+    	
+    </target>
+	
+    <target name="all" depends="dist"/>
+	
+</project>

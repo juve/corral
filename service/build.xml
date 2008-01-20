@@ -1,0 +1,213 @@
+<?xml version="1.0"?>
+<project default="all" basedir=".">
+    <description>Glidein service build file</description>
+
+    <property environment="env"/>
+
+    <property file="build.properties"/>
+    <property file="${user.home}/build.properties"/>
+
+    <property name="env.GLOBUS_LOCATION" value=""/>
+    <property name="globus.location" location="${env.GLOBUS_LOCATION}"/>
+    
+	<property name="base.name" value="glidein"/>
+	
+	<property name="src.dir" location="src"/>
+	<property name="build.dir" location="build"/>
+	<property name="etc.dir" location="etc"/>
+	<property name="share.dir" location="share"/>
+		
+	<property name="lib.src" location="lib"/>
+	<property name="lib.dest" location="${build.dir}/lib"/>
+	
+	<property name="impl.src" location="${src.dir}/impl"/>
+	<property name="impl.dest" location="${build.dir}/classes/impl"/>
+	
+	<property name="stubs.src" location="${src.dir}/stubs"/>
+	<property name="stubs.dest" location="${build.dir}/classes/stubs"/>
+	
+	<property name="schema.dir" location="schema"/>
+	<property name="schema.src" location="${globus.location}/share/schema"/>
+    <property name="schema.dest" location="${build.dir}/schema"/>
+	
+    <property name="package.name" value="${base.name}_service"/>	
+	<property name="impl.jar.name" value="${package.name}.jar"/>
+	<property name="stubs.jar.name" value="${package.name}_stubs.jar"/>
+    <property name="gar.name" value="${package.name}.gar"/>
+    
+	<!-- Globus build scripts -->
+    <property name="build.stubs" location="${globus.location}/share/globus_wsrf_tools/build-stubs.xml"/>
+    <property name="build.packages" location="${globus.location}/share/globus_wsrf_common/build-packages.xml"/>
+
+	<!-- JARs to be included in the GAR file -->
+	<fileset dir="${lib.dest}" id="garjars" />
+	<property name="garjars.id" value="garjars" />
+
+	<!-- Schema files (WSDL, XSD, etc.) to be included in the GAR file -->
+	<fileset dir="${schema.dest}" id="garschema">
+		<include name="${base.name}/**/*.wsdl" />
+		<include name="${base.name}/**/*.xsd" />
+	</fileset>
+	<property name="garschema.id" value="garschema" />
+
+	<!-- Configuration files (security, etc.) to be included in the GAR file -->
+	<fileset dir="${etc.dir}" id="garetc">
+		<include name="**/*"/>
+		<exclude name="deploy-jndi-config.xml"/>
+		<exclude name="deploy-server.wsdd"/>
+		<exclude name="deploy-client.wsdd"/>
+		<exclude name="deploy-client-server.wsdd"/>
+	</fileset>
+	<property name="garetc.id" value="garetc" />
+	
+    <target name="clean">
+    	<delete dir="tmp"/>
+        <delete file="${gar.name}"/>
+        <delete dir="${build.dir}"/>
+    	<delete dir="${stubs.src}"/>
+    	<delete dir="${stubs.dest}"/>
+    </target>
+	
+    <target name="init">
+        <mkdir dir="${build.dir}"/>
+    	<mkdir dir="${lib.dest}"/>
+        <mkdir dir="${schema.dest}"/>
+   		<mkdir dir="${schema.dest}/${base.name}"/>
+    	<mkdir dir="${stubs.dest}"/>
+    	<mkdir dir="${impl.dest}"/>
+    </target>
+	
+	<target name="schema" depends="init" description="Copy schema files">
+		<copy toDir="${schema.dest}">
+			<fileset dir="${schema.src}" casesensitive="yes">
+				<include name="wsrf/**/*"/>
+				<include name="ws/**/*"/>
+			</fileset>
+		</copy>
+		<copy toDir="${schema.dest}/${base.name}">
+			<fileset dir="${schema.dir}" casesensitive="yes">
+				<include name="**/*"/>
+			</fileset>
+		</copy>
+	</target>
+		
+	<target name="flatten" depends="schema" description="Generate flattened WSDL">
+		<ant antfile="${build.stubs}" target="flatten">
+			<property name="source.flatten.dir" location="${schema.dest}" />
+			<property name="target.flatten.dir" location="${schema.dest}" />
+			<property name="wsdl.source" value="${base.name}/PoolFactoryService.wsdl" />
+			<property name="wsdl.target" value="${base.name}/PoolFactoryService_flattened.wsdl" />
+			<property name="wsdl.porttype" value="PoolFactoryPortType" />
+		</ant>
+		<ant antfile="${build.stubs}" target="flatten">
+			<property name="source.flatten.dir" location="${schema.dest}" />
+			<property name="target.flatten.dir" location="${schema.dest}" />
+			<property name="wsdl.source" value="${base.name}/PoolService.wsdl" />
+			<property name="wsdl.target" value="${base.name}/PoolService_flattened.wsdl" />
+			<property name="wsdl.porttype" value="PoolPortType" />
+		</ant>
+	</target>
+	
+    <target name="bindings" depends="flatten" description="Generate bindings">
+        <ant antfile="${build.stubs}" target="generateBinding">
+            <property name="source.binding.dir" value="${schema.dest}/${base.name}"/>
+            <property name="target.binding.dir" value="${schema.dest}/${base.name}"/>
+            <property name="porttype.wsdl" value="PoolFactoryService_flattened.wsdl"/>
+        	<property name="binding.root" value="PoolFactoryService"/>
+        </ant>
+        <ant antfile="${build.stubs}" target="generateBinding">
+            <property name="source.binding.dir" value="${schema.dest}/${base.name}"/>
+            <property name="target.binding.dir" value="${schema.dest}/${base.name}"/>
+            <property name="porttype.wsdl" value="PoolService_flattened.wsdl"/>
+        	<property name="binding.root" value="PoolService"/>
+		</ant>
+	</target>
+
+	<target name="stubs" depends="bindings" description="Generate stub classes">
+		<mkdir dir="${stubs.src}"/>
+		<ant antfile="${build.stubs}" target="mergePackageMapping">
+			<property name="mapping.src" value="${share.dir}/NStoPkg.properties"/>
+			<property name="mapping.dst" value="${build.dir}/NStoPkg.properties"/>
+		</ant>
+		<ant antfile="${build.stubs}" target="generateStubs">
+			<property name="mapping.file" value="${build.dir}/NStoPkg.properties"/>
+			<property name="source.stubs.dir" location="${schema.dest}/${base.name}"/>
+			<property name="target.stubs.dir" location="${stubs.src}"/>
+			<property name="wsdl.file" value="PoolFactoryService_service.wsdl"/>
+		</ant>
+		<ant antfile="${build.stubs}" target="generateStubs">
+			<property name="mapping.file" value="${build.dir}/NStoPkg.properties"/>
+			<property name="source.stubs.dir" location="${schema.dest}/${base.name}"/>
+			<property name="target.stubs.dir" location="${stubs.src}"/>
+			<property name="wsdl.file" value="PoolService_service.wsdl"/>
+		</ant>
+	</target>
+	
+	<target name="compile" depends="stubs">
+		<!-- Compile stubs -->
+		<javac srcdir="${stubs.src}" destdir="${stubs.dest}" debug="${java.debug}">
+			<include name="**/*.java" />
+			<classpath>
+				<fileset dir="${globus.location}/lib">
+					<include name="*.jar" />
+					<exclude name="${stubs.jar.name}" />
+					<exclude name="${jar.name}" />
+				</fileset>
+			</classpath>
+		</javac>
+		<!-- Compile service -->
+		<javac srcdir="${impl.src}" destdir="${impl.dest}" debug="${java.debug}">
+			<include name="**/*.java"/>
+			<classpath>
+				<pathelement location="${stubs.dest}" />
+				<fileset dir="${globus.location}/lib">
+					<include name="*.jar" />
+					<exclude name="${stubs.jar.name}" />
+					<exclude name="${jar.name}" />
+				</fileset>
+				<pathelement location="${lib.src}" />
+			</classpath>
+		</javac>
+	</target>
+	
+	<!-- Create a JAR file with the implementation classes -->
+	<target name="jar" depends="compile">
+		<jar destfile="${lib.dest}/${stubs.jar.name}" basedir="${stubs.dest}" />
+		<jar jarfile="${lib.dest}/${impl.jar.name}" basedir="${impl.dest}" />
+		<copy toDir="${lib.dest}">
+			<fileset dir="${lib.src}" casesensitive="yes">
+				<include name="**/*"/>
+			</fileset>
+		</copy>
+	</target>
+	
+	<!-- Creates the GAR file -->
+	<target name="gar" depends="jar">
+		<ant antfile="${build.packages}" target="makeGar">
+			<property name="garserverdeployment.file" value="${etc.dir}/deploy-server.wsdd" />
+			<property name="garclientdeployment.file" value="${etc.dir}/deploy-client.wsdd" />
+			<property name="garclientserverdeployment.file" value="${etc.dir}/deploy-client-server.wsdd" />
+			<property name="garjndiconfigdeployment.file" value="${etc.dir}/deploy-jndi-config.xml" />
+			<reference refid="${garjars.id}" />
+			<reference refid="${garschema.id}" />
+			<reference refid="${garetc.id}" />
+		</ant>
+	</target>
+	
+	<target name="dist" depends="gar"/>
+	
+	<target name="deploy" depends="dist">
+		<ant antfile="${build.packages}" target="deployGar">
+			<property name="gar.id" value="${package.name}"/>
+		</ant>
+	</target>
+
+	<target name="undeploy">
+		<ant antfile="${build.packages}" target="undeployGar">
+			<property name="gar.id" value="${package.name}"/>
+		</ant>
+	</target>
+
+    <target name="all" depends="deploy"/>
+	
+</project>

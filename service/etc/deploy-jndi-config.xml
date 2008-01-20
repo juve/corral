@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jndiConfig xmlns="http://wsrf.globus.org/jndi/config">
+
+	<!-- Instance service -->
+	<service name="glidein/PoolService">
+		<resource name="home" type="edu.usc.glidein.service.impl.PoolResourceHome">
+			<resourceParams>
+				<parameter>
+					<name>resourceClass</name>
+					<value>edu.usc.glidein.service.impl.PoolResource</value>
+				</parameter>
+				<parameter>
+					<name>resourceKeyType</name>
+					<value>java.lang.Integer</value>
+				</parameter>
+				<parameter>
+					<name>resourceKeyName</name>
+					<value>{http://www.usc.edu/glidein/PoolService}PoolServiceKey</value>
+				</parameter>
+				<parameter>
+					<name>factory</name>
+					<value>org.globus.wsrf.jndi.BeanFactory</value>
+				</parameter>
+			</resourceParams>
+		</resource>
+	</service>
+	
+	<!-- Factory service -->
+	<service name="glidein/PoolFactoryService">
+		<resourceLink name="home" target="java:comp/env/services/glidein/PoolService/home"/>
+	</service>
+
+</jndiConfig>

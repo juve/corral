@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="PoolFactoryService"
+	targetNamespace="http://www.usc.edu/glidein/PoolFactoryService"
+	xmlns="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:tns="http://www.usc.edu/glidein/PoolFactoryService"
+	xmlns:pool="http://www.usc.edu/glidein/PoolTypes"
+	xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+	<!--============================================================
+								TYPES
+	============================================================-->
+	<types>
+		<xsd:schema 
+			targetNamespace="http://www.usc.edu/glidein/PoolFactoryService"
+			xmlns:tns="http://www.usc.edu/glidein/PoolFactoryService"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+			
+			<xsd:import
+				namespace="http://schemas.xmlsoap.org/ws/2004/03/addressing"
+				schemaLocation="../ws/addressing/WS-Addressing.xsd" />
+			
+			<xsd:import
+				namespace="http://www.usc.edu/glidein/PoolTypes"
+				schemaLocation="PoolTypes.xsd" />
+			
+			<!-- Create request type -->
+			<xsd:element name="createPoolResourceRequest">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="poolDescription" type="pool:PoolDescription"/>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+			
+			<!-- Create response type -->
+			<xsd:element name="createPoolResourceResponse">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element ref="wsa:EndpointReference"/>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+			
+		</xsd:schema>
+	</types>
+	
+	<!--============================================================
+							MESSAGES
+	============================================================-->
+	
+	<message name="CreatePoolResourceRequest">
+		<part name="request" element="tns:createPoolResourceRequest"/>
+	</message>
+	<message name="CreatePoolResourceResponse">
+		<part name="response" element="tns:createPoolResourceResponse"/>
+	</message>
+	
+	<!--============================================================
+							PORT TYPE
+	============================================================-->
+
+	<portType name="PoolFactoryPortType">
+		<operation name="createPoolResource">
+			<input message="tns:CreatePoolResourceRequest"/>
+			<output message="tns:CreatePoolResourceResponse"/>
+		</operation>
+	</portType>
+	
+</definitions>
