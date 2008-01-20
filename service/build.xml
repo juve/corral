@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<project default="all" basedir=".">
+<project default="build" basedir=".">
     <description>Glidein service build file</description>
 
     <property environment="env"/>
@@ -208,6 +208,6 @@
 		</ant>
 	</target>
 
-    <target name="all" depends="deploy"/>
+    <target name="build" depends="dist"/>
 	
 </project>
