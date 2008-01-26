@@ -2,64 +2,112 @@ package edu.usc.glidein.service.exec;
 
 import java.io.File;
 
+import edu.usc.glidein.service.ServiceConfiguration;
+import edu.usc.glidein.service.ServiceException;
+
 public class Condor
 {
-	public static final int DEFAULT_COLLECTOR_PORT = 9618;
-	
+	private ServiceConfiguration serviceConfiguration;
 	private File condorHome;
 	private File condorBin;
 	private File condorConfiguration;
 	
-	public Condor(File condorHome, File condorConfiguration)
+	public Condor() throws ServiceException
 	{
-		setCondorHome(condorHome);
-		setCondorConfiguration(condorConfiguration);
+		serviceConfiguration = ServiceConfiguration.getInstance();
+		setCondorHome(new File(
+				serviceConfiguration.getProperty("condor.home")));
+		setCondorConfiguration(new File(
+				serviceConfiguration.getProperty("condor.config")));
+		setCondorBin(new File(
+				serviceConfiguration.getProperty("condor.bin")));
 	}
 	
 	public void submitJob(CondorJob job)
 	{
+		// Create job directory if it doesn't exist
+		
 		// Create submit script
+		
+		// Get working directory
 		
 		// Find condor_submit executable
 		
+		// Set environment
+		//CONDOR_HOME
+		//CONDOR_CONFIG
+		
 		// Run condor_submit
-		// condor_submit -pool juve.usc.edu:9618 -name juve@juve.usc.edu -verbose job.sub
+		// condor_submit -verbose SUBMIT_SCRIPT
+		
+		// Check exit code
+		
+		// Parse job ID from output
+		
+		// Attach event generator to log
 	}
 	
 	public void cancelJob(CondorJob job)
 	{
 		// Get ID
+		
+		// Run condor_rm
 	}
 
 	public File getCondorHome()
 	{
-		return condorHome;
+		return condorHome.getAbsoluteFile();
 	}
 
 	public void setCondorHome(File condorHome) 
-	throws NullPointerException, IllegalArgumentException
+	throws ServiceException
 	{
 		if(condorHome == null)
-			throw new NullPointerException("CONDOR_HOME cannot be null");
+			throw new ServiceException("null");
+		if(!condorHome.exists())
+			throw new ServiceException(
+				condorHome.getAbsolutePath()+" does not exist");
 		if(!condorHome.isDirectory())
-			throw new IllegalArgumentException("CONDOR_HOME must be a directory");
+			throw new ServiceException(
+				condorHome.getAbsolutePath()+" is not a directory");
 		this.condorHome = condorHome;
-		this.condorBin = new File(condorHome,"bin");
-		if(!this.condorBin.isDirectory())
-			throw new IllegalArgumentException("CONDOR_HOME/bin does not exist");
 	}
 	
 	public File getCondorConfiguration()
 	{
-		return this.condorConfiguration;
+		return condorConfiguration.getAbsoluteFile();
 	}
 
 	public void setCondorConfiguration(File condorConfiguration)
+	throws ServiceException
 	{
 		if(condorConfiguration == null)
-			throw new NullPointerException("CONDOR_CONFIG cannot be null");
+			throw new ServiceException("null");
+		if(!condorConfiguration.exists())
+			throw new ServiceException(
+				condorConfiguration.getAbsolutePath()+" does not exist");
 		if(!condorConfiguration.isFile())
-			throw new IllegalArgumentException("CONDOR_CONFIG must be a file");
+			throw new ServiceException(
+				condorConfiguration.getAbsolutePath()+" is not a file");
 		this.condorConfiguration = condorConfiguration;
+	}
+	
+	public File getCondorBin()
+	{
+		return condorBin.getAbsoluteFile();
+	}
+	
+	public void setCondorBin(File condorBin)
+	throws ServiceException
+	{
+		if(condorBin == null)
+			throw new ServiceException("null");
+		if(!condorBin.exists())
+			throw new ServiceException(
+				condorBin.getAbsolutePath()+" does not exist");
+		if(!condorBin.isDirectory())
+			throw new ServiceException(
+				condorBin.getAbsolutePath()+" is not a directory");
+		this.condorBin = condorBin;
 	}
 }

@@ -6,6 +6,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This class is used to describe all the parameters for a condor job.
+ *
+ * @author Gideon Juve <juve@usc.edu>
+ */
 public class CondorJobDescription
 {
 	/**
@@ -226,7 +231,7 @@ public class CondorJobDescription
 	}
 	
 	public String generateSubmitScript() {
-		// TODO
+		// TODO generate submit script for job
 		return null;
 	}
 }
