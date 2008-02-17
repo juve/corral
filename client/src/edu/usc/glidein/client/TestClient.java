@@ -3,6 +3,7 @@ package edu.usc.glidein.client;
 import org.apache.axis.message.addressing.Address;
 import org.apache.axis.message.addressing.EndpointReferenceType;
 
+import edu.usc.glidein.common.util.Base64;
 import edu.usc.glidein.service.stubs.*;
 import edu.usc.glidein.service.stubs.service.*;
 import edu.usc.glidein.service.types.*;
@@ -42,9 +43,19 @@ public class TestClient
 			siteDescription.setName(siteName);
 			siteDescription.setInstallPath("/install/path");
 			siteDescription.setLocalPath("/local/path");
-			siteDescription.setConfiguration("CONDOR_HOST=${GLIDEIN_CONDOR_HOST}");
-			siteDescription.setGlideinService(new ExecutionServiceDescription("PBS","juve.usc.edu",ServiceType.GT2));
-			siteDescription.setStagingService(new ExecutionServiceDescription("Fork","juve.usc.edu",ServiceType.GT2));
+			
+			ExecutionService glideinService = new ExecutionService();
+			glideinService.setProject("nqi");
+			glideinService.setQueue("normal");
+			glideinService.setServiceContact("grid-abe.ncsa.teragrid.org/jobmanager-pbs");
+			glideinService.setServiceType(ServiceType.GT2);
+			
+			ExecutionService stagingService = new ExecutionService();
+			stagingService.setServiceContact("grid-abe.ncsa.teragrid.org/jobmanager-fork");
+			stagingService.setServiceType(ServiceType.GT2);
+			
+			siteDescription.setGlideinService(glideinService);
+			siteDescription.setStagingService(stagingService);
 			createSite.setSiteDescription(siteDescription);
 			service.createSite(createSite);
 			System.out.println("Created site!");
@@ -55,6 +66,7 @@ public class TestClient
 			glideinDescription.setSiteName(siteName);
 			glideinDescription.setCount(1);
 			glideinDescription.setHostCount(1);
+			glideinDescription.setConfiguration(Base64.toBase64("CONDOR_HOST=${GLIDEIN_CONDOR_HOST}"));
 			createGlidein.setGlideinDescription(glideinDescription);
 			CreateGlideinResponse createdGlidein = service.createGlidein(createGlidein);
 			System.out.println("Created glidein!");
