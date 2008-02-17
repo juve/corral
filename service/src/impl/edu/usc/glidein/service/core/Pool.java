@@ -8,7 +8,6 @@ import edu.usc.glidein.service.types.PoolDescription;
 public class Pool
 {	
 	public static final int DEFAULT_CONDOR_PORT = 9816;
-	public static final String DEFAULT_CONDOR_VERSION = "6.8.5";
 	
 	/** Resource properties */
 	private int id;

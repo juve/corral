@@ -1,0 +1,96 @@
+# Condor Glide-in Configuration
+#
+# This file is used to configure the condor daemons on the remote site as 
+# glidein daemons.
+#
+# The following parameters will be set at runtime:
+#
+#  GLIDEIN_LOCAL_DIR
+#  GLIDEIN_SCHEDD_HOST
+#  GLIDEIN_COLLECTOR_HOST
+#  GLIDEIN_NUM_CPUS
+#  GLIDEIN_RUN_TIME
+#  GLIDEIN_STARTD_NOCLAIM_SHUTDOWN
+#  GLIDEIN_USER
+#  GLIDEIN_SBIN
+
+########################
+# Local paths
+########################
+LOCAL_DIR = $(GLIDEIN_LOCAL_DIR)
+LOG = $(LOCAL_DIR)/log
+EXECUTE  = $(LOCAL_DIR)/execute
+
+########################
+# Pool settings
+########################
+COLLECTOR_HOST = $(GLIDEIN_COLLECTOR_HOST)
+UID_DOMAIN = $(FULL_HOSTNAME)
+FILESYSTEM_DOMAIN = $(FULL_HOSTNAME)
+
+########################
+# Security settings
+########################
+HOSTALLOW_ADMINISTRATOR = $(FULL_HOSTNAME), $(GLIDEIN_HOST)
+
+########################
+# Glide-in settings
+########################
+STARTD_NOCLAIM_SHUTDOWN = $(GLIDEIN_STARTD_NOCLAIM_SHUTDOWN)
+DaemonStopTime = DaemonStartTime+($(GLIDEIN_RUN_TIME)*60)
+NUM_CPUS = $(GLIDEIN_NUM_CPUS)
+
+########################
+# Daemon settings
+########################
+DAEMON_LIST = MASTER, STARTD
+
+SBIN = $(GLIDEIN_SBIN)
+
+MASTER = $(SBIN)/condor_master
+MASTER_ADDRESS_FILE = $(LOG)/.master_address
+MASTER_LOG = $(LOG)/MasterLog
+
+STARTD = $(SBIN)/condor_startd
+STARTD_LOG = $(LOG)/StartdLog
+STARTD_DEBUG = D_COMMAND
+
+STARTER = $(SBIN)/condor_starter
+STARTER_LOG = $(LOG)/StarterLog
+STARTER_LIST = STARTER, STARTER_STD, STARTER_PVM
+STARTER_PVM = $(SBIN)/condor_starter.pvm
+STARTER_STD = $(SBIN)/condor_starter.std
+ALTERNATE_STARTER_1 = $(SBIN)/condor_starter.pvm
+PVMD = $(SBIN)/condor_pvmd
+
+# needed since Condor v6.9.2
+# does not hurt for older versions
+PROCD = $(SBIN)/condor_procd
+PROCD_ADDRESS = $(LOG)/.procd_address
+PROCD_LOG = $(LOG)/ProcLog
+PROCD_DEBUG = False
+PROCD_MAX_SNAPSHOT_INTERVAL = 60
+
+USE_NFS = False
+USE_CKPT_SERVER = False
+
+LOCK = $(LOG)
+
+########################
+# Classads
+########################
+SUSPEND = False
+CONTINUE = True
+PREEMPT = False
+WANT_VACATE = False
+WANT_SUSPEND = True
+SUSPEND_VANILLA = False
+WANT_SUSPEND_VANILLA = True
+KILL = False
+IS_GLIDEIN = True
+STARTD_EXPRS = IS_GLIDEIN, START, DaemonStopTime
+
+########################
+# Network settings
+########################
+UPDATE_COLLECTOR_WITH_TCP = True

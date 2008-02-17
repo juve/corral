@@ -2,6 +2,7 @@ package edu.usc.glidein.service.core;
 
 import java.net.InetAddress;
 
+import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.service.types.PoolDescription;
 
 /**
@@ -25,20 +26,21 @@ public class PoolFactory
 		return singleton;
 	}
 	
-	public Pool createPool(PoolDescription description) throws Exception
+	public Pool createPool(PoolDescription description) 
+	throws GlideinException
 	{
 		Pool pool = new Pool(GUID++);
 		
 		// Host
 		String host = description.getCondorHost();
 		if(host==null || "".equals(host)){
-			throw new Exception("Invalid Condor host: "+host);
+			throw new GlideinException("Invalid Condor host: "+host);
 		}
 		else {
 			try {
 				InetAddress.getByName(host);
 			} catch(Exception e){
-				throw new Exception("Invalid Condor host: "+host);
+				throw new GlideinException("Invalid Condor host: "+host);
 			}
 			pool.setCondorHost(host);
 		}
@@ -53,7 +55,7 @@ public class PoolFactory
 		// Version
 		String version = description.getCondorVersion();
 		if(version==null || "".equals(version)){
-			version = Pool.DEFAULT_CONDOR_VERSION;
+			throw new GlideinException("Invalid Condor version: "+version);
 		}
 		pool.setCondorVersion(version);
 		

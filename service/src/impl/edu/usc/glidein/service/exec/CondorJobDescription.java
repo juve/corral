@@ -1,5 +1,6 @@
 package edu.usc.glidein.service.exec;
 
+import java.io.CharArrayWriter;
 import java.io.File;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -43,14 +44,39 @@ public class CondorJobDescription
 	private String requirements;
 	
 	/**
-	 * Grid resource for grid universe jobs
+	 * The target grid type
 	 */
-	private String gridResource;
+	private CondorGridType gridType;
 	
 	/**
-	 * RSL attributes for gt2, gt4 grid universe jobs
+	 * Contact string for grid universe jobs
 	 */
-	private Map<String,String> globusAttributes;
+	private String gridContact;
+	
+	/**
+	 * Project for accounting
+	 */
+	private String project;
+	
+	/**
+	 * Target queue
+	 */
+	private String queue;
+	
+	/**
+	 * Number of hosts
+	 */
+	private int hostCount;
+	
+	/**
+	 * Number of processes per host
+	 */
+	private int processCount;
+	
+	/**
+	 * Max runtime (walltime or cputime) of the application in minutes.
+	 */
+	private int maxTime;
 	
 	/**
 	 * Files to transfer from the submit machine to the remote machine
@@ -63,29 +89,9 @@ public class CondorJobDescription
 	private List<File> outputFiles;
 	
 	/**
-	 * Globus proxy certificate file
+	 * Globus proxy credential (the actual credential, not the file)
 	 */
-	private File proxyCertificate;
-	
-	/**
-	 * File to store std err of job
-	 */
-	private File error;
-	
-	/**
-	 * File to store std out of job
-	 */
-	private File output;
-	
-	/**
-	 * Condor user log
-	 */
-	private File log;
-	
-	/**
-	 * initialdir
-	 */
-	private File localDirectory;
+	private String proxy;
 	
 	/**
 	 * remote_initialdir
@@ -96,142 +102,220 @@ public class CondorJobDescription
 	{
 		arguments = new LinkedList<String>();
 		environment = new HashMap<String,String>();
-		globusAttributes = new HashMap<String,String>();
 		inputFiles = new LinkedList<File>();
 		outputFiles = new LinkedList<File>();
-		localExecutable = true;
+		localExecutable = false;
+		hostCount = 1;
+		processCount = 1;
+		queue = null;
+		project = null;
+		maxTime = 1;
 	}
 
-	public File getExecutable() {
+	public File getExecutable()
+	{
 		return executable;
 	}
 
-	public void setExecutable(File executable) {
+	public void setExecutable(File executable)
+	{
 		this.executable = executable;
 	}
 
-	public List<String> getArguments() {
+	public List<String> getArguments()
+	{
 		return arguments;
 	}
 
-	public void addArgument(String arg){
+	public void addArgument(String arg)
+	{
 		arguments.add(arg);
 	}
 
-	public Map<String, String> getEnvironment() {
+	public Map<String, String> getEnvironment()
+	{
+		// TODO clone environment?
 		return environment;
 	}
 
-	public void addEnvironment(String variable, String value){
+	public void addEnvironment(String variable, String value)
+	{
 		environment.put(variable, value);
 	}
 
-	public CondorUniverse getUniverse() {
+	public CondorUniverse getUniverse()
+	{
 		return universe;
 	}
 
-	public void setUniverse(CondorUniverse universe) {
+	public void setUniverse(CondorUniverse universe)
+	{
 		this.universe = universe;
 	}
 
-	public String getRequirements() {
+	public String getRequirements()
+	{
 		return requirements;
 	}
 
-	public void setRequirements(String requirements) {
+	public void setRequirements(String requirements)
+	{
 		this.requirements = requirements;
 	}
-
-	public String getGridResource() {
-		return gridResource;
-	}
-
-	public void setGridResource(String gridResource) {
-		this.gridResource = gridResource;
-	}
-
-	public Map<String, String> getGlobusAttributes() {
-		return globusAttributes;
+	
+	public void setGridType(CondorGridType gridType)
+	{
+		this.gridType = gridType;
 	}
 	
-	public void setGlobusAttribute(String attribute, String value) {
-		this.globusAttributes.put(attribute, value);
+	public CondorGridType getGridType()
+	{
+		return this.gridType;
+	}
+
+	public String getGridContact()
+	{
+		return gridContact;
+	}
+
+	public void setGridContact(String gridContact)
+	{
+		this.gridContact = gridContact;
 	}
 	
-	public List<File> getInputFiles() {
+	public void setGridResource(CondorGridType gridType, String gridContact)
+	{
+		setGridType(gridType);
+		setGridContact(gridContact);
+	}
+	
+	public List<File> getInputFiles()
+	{
 		return inputFiles;
 	}
 	
-	public void addInputFile(File inputFile) {
+	public void addInputFile(File inputFile)
+	{
 		inputFiles.add(inputFile);
 	}
 
-	public List<File> getOutputFiles() {
+	public List<File> getOutputFiles()
+	{
 		return outputFiles;
 	}
 
-	public void addOutputFile(File outputFile) {
+	public void addOutputFile(File outputFile)
+	{
 		this.outputFiles.add(outputFile);
 	}
 
-	public File getProxyCertificate() {
-		return proxyCertificate;
+	public String getProxy()
+	{
+		return proxy;
 	}
 
-	public void setProxyCertificate(File proxyCertificate) {
-		this.proxyCertificate = proxyCertificate;
+	public void setProxy(String proxy)
+	{
+		this.proxy = proxy;
 	}
 
-	public File getError() {
-		return error;
-	}
-
-	public void setError(File error) {
-		this.error = error;
-	}
-
-	public File getOutput() {
-		return output;
-	}
-
-	public void setOutput(File output) {
-		this.output = output;
-	}
-
-	public File getLog() {
-		return log;
-	}
-
-	public void setLog(File log) {
-		this.log = log;
-	}
-
-	public File getLocalDirectory() {
-		return localDirectory;
-	}
-
-	public void setLocalDirectory(File localDirectory) {
-		this.localDirectory = localDirectory;
-	}
-
-	public File getRemoteDirectory() {
+	public File getRemoteDirectory()
+	{
 		return remoteDirectory;
 	}
 
-	public void setRemoteDirectory(File remoteDirectory) {
+	public void setRemoteDirectory(File remoteDirectory)
+	{
 		this.remoteDirectory = remoteDirectory;
 	}
 	
-	public boolean isLocalExecutable() {
+	public boolean isLocalExecutable()
+	{
 		return localExecutable;
 	}
 
-	public void setLocalExecutable(boolean localExecutable) {
+	public void setLocalExecutable(boolean localExecutable)
+	{
 		this.localExecutable = localExecutable;
 	}
 	
-	public String generateSubmitScript() {
-		// TODO generate submit script for job
-		return null;
+	public String getProject()
+	{
+		return project;
+	}
+
+	public void setProject(String project)
+	{
+		this.project = project;
+	}
+
+	public String getQueue()
+	{
+		return queue;
+	}
+
+	public void setQueue(String queue)
+	{
+		this.queue = queue;
+	}
+
+	public int getHostCount()
+	{
+		return hostCount;
+	}
+
+	public void setHostCount(int hostCount)
+	{
+		this.hostCount = hostCount;
+	}
+
+	public int getProcessCount()
+	{
+		return processCount;
+	}
+
+	public void setProcessCount(int processCount)
+	{
+		this.processCount = processCount;
+	}
+	
+	public void setMaxTime(int maxTime)
+	{
+		this.maxTime = maxTime;
+	}
+	
+	public int getMaxTime()
+	{
+		return this.maxTime;
+	}
+	
+	public static void main(String[] args)
+	{	
+		CondorJobDescription jd = new CondorJobDescription();
+		jd.setUniverse(CondorUniverse.GRID);
+		jd.setGridType(CondorGridType.GT2);
+		jd.setGridContact("tg-login.sdsc.teragrid.org/jobmanager-pbs");
+		jd.setExecutable(new File("/bin/ls"));
+		jd.setHostCount(1);
+		jd.setProcessCount(1);
+		jd.setMaxTime(300);
+		jd.setProject(null);
+		jd.setQueue(null);
+		jd.setRequirements(null);
+		jd.setRemoteDirectory(null);
+		jd.setLocalExecutable(false);
+		
+		try 
+		{
+			CondorJob job = new CondorJob(new File("/tmp"),jd);
+			CharArrayWriter out = new CharArrayWriter();
+			new Condor().writeSubmitScript(job,out);
+			System.out.println(out.toString());
+		}
+		catch(Exception ioe)
+		{
+			ioe.printStackTrace();
+			System.exit(1);
+		}
 	}
 }

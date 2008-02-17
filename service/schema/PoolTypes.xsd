@@ -3,7 +3,7 @@
 	xmlns:pool="http://www.usc.edu/glidein/PoolTypes"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 	elementFormDefault="qualified" blockDefault="#all">
-	
+				
 	<xsd:complexType name="PoolDescription">
 		<xsd:sequence>
 			<xsd:element name="id" type="xsd:int" nillable="true"/>
@@ -20,11 +20,13 @@
 		</xsd:restriction>
 	</xsd:simpleType>
 				
-	<xsd:complexType name="ExecutionServiceDescription">
+	<xsd:complexType name="ExecutionService">
 		<xsd:sequence>
 			<xsd:element name="serviceContact" type="xsd:string"/>
-			<xsd:element name="jobmanager" type="xsd:string"/>
 			<xsd:element name="serviceType" type="pool:ServiceType"/>
+			<xsd:element name="project" type="xsd:string" nillable="true"/>
+			<xsd:element name="queue" type="xsd:string" nillable="true"/>
+			<xsd:element name="proxy" type="xsd:string"/>
 		</xsd:sequence>
 	</xsd:complexType>
 	
@@ -33,10 +35,9 @@
 			<xsd:element name="id" type="xsd:int" nillable="true"/>
 			<xsd:element name="name" type="xsd:string"/>
 			<xsd:element name="installPath" type="xsd:string"/>
-			<xsd:element name="configuration" type="xsd:string" nillable="true"/>
-			<xsd:element name="localPath" type="xsd:string" nillable="true"/>
-			<xsd:element name="stagingService" type="pool:ExecutionServiceDescription" nillable="true"/>
-			<xsd:element name="glideinService" type="pool:ExecutionServiceDescription" nillable="true"/>
+			<xsd:element name="localPath" type="xsd:string"/>
+			<xsd:element name="stagingService" type="pool:ExecutionService"/>
+			<xsd:element name="glideinService" type="pool:ExecutionService"/>
 		</xsd:sequence>
 	</xsd:complexType>
 	
@@ -46,6 +47,8 @@
 			<xsd:element name="siteName" type="xsd:string"/>
 			<xsd:element name="count" type="xsd:int"/>
 			<xsd:element name="hostCount" type="xsd:int"/>
+			<xsd:element name="wallTime" type="xsd:int"/>
+			<xsd:element name="configuration" type="xsd:string" nillable="true"/>
 		</xsd:sequence>
 	</xsd:complexType>
 	

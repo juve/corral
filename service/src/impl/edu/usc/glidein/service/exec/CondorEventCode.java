@@ -33,7 +33,14 @@ public enum CondorEventCode
 	JOB_AD_INFORMATION		(28, "Report job ad information"),
 	EXCEPTION				(999, "Log parser threw an exception");
 
+	/**
+	 * The integer id for this event code
+	 */
 	private int eventCode;
+	
+	/**
+	 * A short description of the event code
+	 */
 	private String description;
 	
 	private CondorEventCode(int eventCode, String description)
@@ -53,8 +60,10 @@ public enum CondorEventCode
 	}
 	
 	public static CondorEventCode fromEventCode(int eventCode)
+	throws CondorException
 	{
-		switch(eventCode){
+		switch(eventCode)
+		{
 			case 0: return CondorEventCode.SUBMIT;
 			case 1: return CondorEventCode.EXECUTE;
 			case 2: return CondorEventCode.EXECUTABLE_ERROR;
@@ -84,7 +93,7 @@ public enum CondorEventCode
 			case 26: return CondorEventCode.GRID_RESOURCE_DOWN;
 			case 27: return CondorEventCode.GRID_SUBMIT;
 			case 28: return CondorEventCode.JOB_AD_INFORMATION;
-			default: throw new IllegalArgumentException(
+			default: throw new CondorException(
 					"Unrecognized event code: "+eventCode);
 		}
 	}

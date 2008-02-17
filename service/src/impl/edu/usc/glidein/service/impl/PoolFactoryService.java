@@ -5,8 +5,7 @@ import java.rmi.RemoteException;
 
 import org.apache.axis.MessageContext;
 import org.apache.axis.message.addressing.EndpointReferenceType;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceContext;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.container.ServiceHost;
@@ -17,7 +16,7 @@ import edu.usc.glidein.service.stubs.CreatePoolResourceResponse;
 
 public class PoolFactoryService 
 {
-	private Log logger = LogFactory.getLog(getClass());
+	private Logger logger = Logger.getLogger(PoolFactoryService.class);
 	
 	public CreatePoolResourceResponse createPoolResource(CreatePoolResourceRequest request)
 	throws RemoteException 

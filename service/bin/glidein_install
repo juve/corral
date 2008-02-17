@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Define my_exit function
+# We need to create a file that contains the return code of
+# this process because Condor-G can't retrieve the exit code of a
+# job submitted to GT2. So instead we write the exit code to a file
+# and transfer the file back to the submit machine where it can be
+# read to determine the true return code of the job. This is a
+# lightweight replacement for kickstart.
+O_WORK_DIR=`pwd` # Original work directory where rc file will be created
+my_exit ()
+{
+	RC=$1
+	MESSAGE=$2
+	echo "$RC $MESSAGE" > $O_WORK_DIR/rc
+	exit $RC
+}
+
+if [ $# -lt 3 ]; then
+	EXE=`basename $0`
+	MSG="Usage: $EXE INSTALL_PATH CONDOR_VERSION SERVER_URL..."
+	echo $MSG
+	my_exit 1 "$MSG"
+fi
+
+INSTALL_PATH=$1
+CONDOR_VERSION=$2
+shift ; shift
+SERVER_URLS=$@
+
+# Print arguments
+echo "Install Path: $INSTALL_PATH"
+echo "Server URLs: $SERVER_URLS"
+echo "Condor Version: $CONDOR_VERSION"
+
+# Determine OS
+
+# Determine Arch
+
+# Determine package
+
+# Make install directory if it doesn't exist 
+
+# Download daemon package
+
+# Install daemon package
+
+# Exit successfully
+my_exit 0

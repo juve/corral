@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import edu.usc.glidein.service.core.Glidein;
+import edu.usc.glidein.service.types.ExecutionService;
 import edu.usc.glidein.service.types.SiteDescription;
 
 public class Site
@@ -33,80 +34,140 @@ public class Site
 	/** A map of glidein jobs */
 	private Map<Integer,Glidein> glideins;
 	
+	/** Handler for the site */
+	private SiteHandler handler = null;
+	
+	/** Service for staging executables */
+	private ExecutionService stagingService;
+	
+	/** Service for running glideins */
+	private ExecutionService glideinService;
+	
 	public Site(int id, String name)
 	{
 		this.id = id;
 		this.name = name;
-		status = SiteStatus.NEW;
+		status = new SiteStatus(SiteStatusCode.NEW,"New");
 		glideins = new HashMap<Integer,Glidein>();
 	}
 
-	public int getId() {
+	public int getId()
+	{
 		return id;
 	}
 
-	public String getName() {
+	public String getName()
+	{
 		return name;
 	}
 	
-	public synchronized void addGlidein(Glidein glidein) {
+	public synchronized void addGlidein(Glidein glidein)
+	{
 		this.glideins.put(glidein.getId(), glidein);
 	}
 	
-	public synchronized Glidein getGlidein(int id) {
+	public synchronized Glidein getGlidein(int id)
+	{
 		return this.glideins.get(id);
 	}
 	
-	public synchronized Glidein removeGlidein(int id) {
+	public synchronized Glidein removeGlidein(int id)
+	{
 		return this.glideins.remove(id);
 	}
 	
-	public synchronized int createGlideinId() {
+	public synchronized int createGlideinId()
+	{
 		int newId = nextGlideinId;
 		nextGlideinId++;
 		return newId;
 	}
 	
-	public SiteDescription createDescription() {
+	public SiteDescription createDescription()
+	{
 		SiteDescription description = new SiteDescription();
 		description.setId(getId());
 		description.setName(getName());
+		description.setInstallPath(getInstallPath());
+		description.setLocalPath(getLocalPath());
+		description.setGlideinService(getGlideinService());
+		description.setStagingService(getStagingService());
+		// TODO get status
 		return description;
 	}
 
-	public Glidein[] getGlideins() {
+	public Glidein[] getGlideins()
+	{
 		return (Glidein[])glideins.values().toArray(new Glidein[0]);
 	}
 
-	public SiteStatus getStatus() {
+	public SiteStatus getStatus()
+	{
 		return status;
 	}
 
-	public void setStatus(SiteStatus status) {
+	public void setStatus(SiteStatus status) 
+	{
 		this.status = status;
 	}
 
-	public File getConfiguration() {
+	public File getConfiguration()
+	{
 		return configuration;
 	}
 
-	public void setConfiguration(File configuration) {
+	public void setConfiguration(File configuration)
+	{
 		this.configuration = configuration;
 	}
 
-	public String getInstallPath() {
+	public String getInstallPath()
+	{
 		return installPath;
 	}
 
-	public void setInstallPath(String installPath) {
+	public void setInstallPath(String installPath)
+	{
 		this.installPath = installPath;
 	}
 
-	public String getLocalPath() {
+	public String getLocalPath()
+	{
 		return localPath;
 	}
 
-	public void setLocalPath(String localPath) {
+	public void setLocalPath(String localPath)
+	{
 		this.localPath = localPath;
+	}
+	
+	public SiteHandler getHandler()
+	{
+		return handler;
+	}
+	
+	public void setHandler(SiteHandler handler)
+	{
+		this.handler = handler;
+	}
+	
+	public void setGlideinService(ExecutionService glideinService)
+	{
+		this.glideinService = glideinService;
+	}
+	
+	public ExecutionService getGlideinService()
+	{
+		return glideinService;
+	}
+	
+	public void setStagingService(ExecutionService stagingService)
+	{
+		this.stagingService = stagingService;
+	}
+	
+	public ExecutionService getStagingService()
+	{
+		return stagingService;
 	}
 }

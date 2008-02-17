@@ -18,7 +18,7 @@ import java.util.LinkedList;
 public class CondorEventGenerator extends Thread
 {
 	/** The interval (in milliseconds) to poll the log file for new data */
-	private int pollInterval = 5000;
+	private int pollInterval = 10000; // Default: 10 sec
 	
 	/** The job to generate events for */
 	private CondorJob job;
@@ -76,17 +76,12 @@ public class CondorEventGenerator extends Thread
 			String[] tokens = id.split("[.]");
 			if(tokens.length != 3)
 				throw new CondorException("Error parsing job id: "+fields[1]);
-			int clusterId = Integer.parseInt(tokens[0]);
-			int jobId = Integer.parseInt(tokens[1]);
-			if(job.getClusterId() != clusterId)
+			String condorId = 
+				Integer.parseInt(tokens[0])+"."+Integer.parseInt(tokens[1]);
+			if(!condorId.equals(job.getCondorId()))
 			{
-				throw new CondorException("Cluster ID mismatch: got "+
-						clusterId + " expected " + job.getClusterId());
-			}
-			if(job.getJobId() != jobId)
-			{
-				throw new CondorException("Job ID mismatch: got "+
-						jobId + " expected " + job.getJobId());
+				throw new CondorException("Condor ID mismatch: got "+
+						condorId + " expected " + job.getCondorId());
 			}
 		}
 		catch(CondorException ce)
@@ -160,13 +155,13 @@ public class CondorEventGenerator extends Thread
 	/**
 	 * Set the polling interval
 	 * @param pollInterval The new poll interval
-	 * @throws IllegalArgumentException If the new poll interval <= 0
+	 * @throws CondorException If the new poll interval <= 0
 	 */
 	public void setPollInterval(int pollInterval)
-	throws IllegalArgumentException
+	throws CondorException
 	{
 		if(pollInterval<=0)
-			throw new IllegalArgumentException(
+			throw new CondorException(
 					"The poll interval must be greater than 0");
 		this.pollInterval = pollInterval;
 	}
@@ -178,7 +173,7 @@ public class CondorEventGenerator extends Thread
 	private void tailJobLog() throws CondorException
 	{
 		long filePointer = 0;
-	    File log = job.getDescription().getLog();
+	    File log = job.getLog();
 	    LinkedList<String> currentEvent = new LinkedList<String>();
 	    StringBuffer buffer = new StringBuffer();
 	    
@@ -248,7 +243,8 @@ public class CondorEventGenerator extends Thread
 		
 	}
 	
-	public void run(){
+	public void run()
+	{
 		try
 		{
 			running = true;
@@ -270,11 +266,11 @@ public class CondorEventGenerator extends Thread
 	
 	public static void main(String[] args)
 	{
-		CondorJob job = new CondorJob(new CondorJobDescription());
-		job.setClusterId(8);
-		job.setJobId(0);
-		job.setDescription(new CondorJobDescription());
-		job.getDescription().setLog(new File("/Users/juve/Workspace/Condor/terminated.log"));
+		CondorJob job = new CondorJob(
+				new File("/Users/juve/Workspace/Condor"),
+				new CondorJobDescription());
+		job.setCondorId("8.0");
+		job.setLog(new File("/Users/juve/Workspace/Condor/terminated.log"));
 		
 		CondorEventGenerator gen = new CondorEventGenerator(job);
 		

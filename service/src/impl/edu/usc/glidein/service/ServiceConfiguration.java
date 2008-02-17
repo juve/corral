@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.io.FileInputStream;
 import java.io.File;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import edu.usc.glidein.GlideinException;
 
 /**
  * This class provides access to the glidein service's configuration. It 
@@ -38,10 +42,10 @@ public class ServiceConfiguration
 	/**
 	 * Load the service configuration from a file
 	 * @param configFile The configuration file
-	 * @throws ServiceException If unable to read the configuration file
+	 * @throws GlideinException If unable to read the configuration file
 	 */
 	private ServiceConfiguration(File configFile)
-	throws ServiceException
+	throws GlideinException
 	{
 		this.configFile = configFile;
 		this.properties = new Properties();
@@ -55,7 +59,7 @@ public class ServiceConfiguration
 		}
 		catch(IOException ioe)
 		{
-			throw new ServiceException(
+			throw new GlideinException(
 					"Unable to read configuration from "+
 					configFile.getAbsolutePath(), ioe);
 		}
@@ -70,14 +74,14 @@ public class ServiceConfiguration
 	 * Get a property by name
 	 * @param key The name of the property
 	 * @return The value of the property
-	 * @throws ServiceException If the property does not exist
+	 * @throws GlideinException If the property does not exist
 	 */
 	public String getProperty(String key)
-	throws ServiceException
+	throws GlideinException
 	{
-		String prop = properties.getProperty(key);
+		String prop = getTransliterated(key);
 		if(prop==null) 
-			throw new ServiceException(
+			throw new GlideinException(
 				"Property "+key+" not found in configuration file "+
 				configFile.getAbsolutePath());
 		return prop;
@@ -88,12 +92,83 @@ public class ServiceConfiguration
 	 * @param key The name of the property
 	 * @param def The default value if the property does not exist
 	 * @return The value of the property or default
+	 * @throws GlideinException If there's a problem getting the property
 	 */
 	public String getProperty(String key, String def)
+	throws GlideinException
 	{
-		String prop = properties.getProperty(key);
+		String prop = getTransliterated(key);
 		if(prop==null) prop = def;
 		return prop;
+	}
+	
+	/**
+	 * Get the value of a property by recursively transliterating all 
+	 * expressions into their terminal values.
+	 * @param key The name of the property
+	 * @return The value or null if the property does not exist
+	 * @throws GlideinException If there's a problem getting the property
+	 */
+	private String getTransliterated(String key)
+	throws GlideinException
+	{
+		// Get the value
+		String value = properties.getProperty(key);
+		
+		// If it doesn't exist, then don't continue
+		if(value == null) return null;
+		
+		// Look for expressions like ${NAMESPACE:KEY} within the value
+		Pattern p = Pattern.compile("\\$\\{(([a-z]+):)?([._a-zA-Z]+)\\}");
+		StringBuffer buf = new StringBuffer(value);
+		Matcher m = p.matcher(buf);
+		while(m.find())
+		{
+			int start = m.start();
+			int end = m.end();
+			
+			// The namespace is the first part before the colon
+			String ns = m.group(2);
+			
+			// The next key is the part after the colon
+			String nk = m.group(3);
+			
+			// If there was no namespace, then key is a regular property
+			if(ns==null)
+			{
+				String next = getTransliterated(nk);
+				if(next == null) next = "";
+				buf = buf.replace(start, end, next);
+			}
+			
+			// If the namespace is env, then key is an environment variable
+			else if("env".equals(ns))
+			{
+				String env = System.getenv(nk);
+				if(env==null) env = "";
+				buf = buf.replace(start, end, env);
+			}
+			
+			// If the namespace is sys, then key is a system property
+			else if("sys".equals(ns))
+			{
+				String sys = System.getProperty(nk);
+				if(sys==null) sys = "";
+				buf = buf.replace(start, end, sys);
+			}
+			
+			// If the namespace is something else, then that's an error
+			else
+			{
+				throw new GlideinException(
+						"Unrecognized namespace: "+ns);
+			}
+			
+			// Look for more expressions
+			m = p.matcher(buf);
+		}
+		
+		return buf.toString();
 	}
 	
 	/**
@@ -108,10 +183,10 @@ public class ServiceConfiguration
 	/**
 	 * Get an instance of the service configuration
 	 * @return The instance
-	 * @throws ServiceException if unable to load the configuration
+	 * @throws GlideinException if unable to load the configuration
 	 */
 	public static synchronized ServiceConfiguration getInstance()
-	throws ServiceException
+	throws GlideinException
 	{
 		if(instance==null)
 		{
@@ -144,8 +219,8 @@ public class ServiceConfiguration
 			if(home!=null && home.length()>0)
 			{
 				File homeConfig = new File(
-						home + File.pathSeparator +
-						".glidein" + File.pathSeparator +
+						home + File.separator +
+						".glidein" + File.separator +
 						"glidein.config");
 				if(homeConfig.exists())
 				{
@@ -158,9 +233,9 @@ public class ServiceConfiguration
 			String globus = System.getenv("GLOBUS_LOCATION");
 			if(globus!=null && globus.length()>0){
 				File globusFile = new File(
-						globus + File.pathSeparator +
-						"etc" + File.pathSeparator +
-						"glidein_service" + File.pathSeparator +
+						globus + File.separator +
+						"etc" + File.separator +
+						"glidein_service" + File.separator +
 						"glidein.conf");
 				if(globusFile.exists())
 				{
@@ -170,9 +245,24 @@ public class ServiceConfiguration
 			}
 			
 			// 5. If none of the files above are found, then fail
-			throw new ServiceException("Unable to load service configuration");
+			throw new GlideinException("Unable to load service configuration");
 		}
 		
 		return instance;
+	}
+	
+	public static void main(String[] args)
+	{
+		try 
+		{
+			ServiceConfiguration config = ServiceConfiguration.getInstance();
+			System.out.println(config.getProperty("condor.home"));
+			System.out.println(config.getProperty("condor.bin"));
+			System.out.println(config.getProperty("condor.config"));
+		}
+		catch(GlideinException e)
+		{
+			e.printStackTrace();
+		}
 	}
 }

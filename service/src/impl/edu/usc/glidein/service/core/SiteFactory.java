@@ -1,7 +1,7 @@
 package edu.usc.glidein.service.core;
 
-import java.io.File;
-
+import edu.usc.glidein.GlideinException;
+import edu.usc.glidein.service.types.ExecutionService;
 import edu.usc.glidein.service.types.SiteDescription;
 
 public class SiteFactory 
@@ -19,14 +19,14 @@ public class SiteFactory
 	}
 	
 	public Site createSite(int id, SiteDescription description) 
-	throws Exception
+	throws GlideinException
 	{
 		Site site = new Site(id,description.getName());
 		
 		// Install path
 		String installPath = description.getInstallPath();
 		if(installPath == null || "".equals(installPath)) 
-			throw new Exception("Invalid install path: "+installPath);
+			throw new GlideinException("Invalid install path: "+installPath);
 		site.setInstallPath(description.getInstallPath());
 		
 		// Local path
@@ -35,12 +35,18 @@ public class SiteFactory
 			localPath = description.getInstallPath();
 		site.setLocalPath(localPath);
 		
-		// TODO Save configuration to a file
-		String config = description.getConfiguration();
-		File configuration = null;
-		site.setConfiguration(configuration);
+		// Execution services
+		ExecutionService stagingService = description.getStagingService();
+		if(stagingService == null){
+			throw new GlideinException("staging service was null");
+		}
+		site.setStagingService(stagingService);
 		
-		// TODO Get proxy credential
+		ExecutionService glideinService = description.getGlideinService();
+		if(glideinService == null){
+			throw new GlideinException("glidein service was null");
+		}
+		site.setGlideinService(glideinService);
 		
 		return site;
 	}

@@ -1,5 +1,8 @@
 package edu.usc.glidein.service.core;
 
+import java.io.File;
+
+import edu.usc.glidein.common.util.Base64;
 import edu.usc.glidein.service.types.GlideinDescription;
 
 public class GlideinFactory 
@@ -28,6 +31,11 @@ public class GlideinFactory
 		// HostCount
 		int hostCount = description.getHostCount();
 		glidein.setHostCount(hostCount);
+		
+		// TODO Save configuration to a file
+		String config = Base64.fromBase64(description.getConfiguration());
+		File configuration = null;
+		glidein.setConfiguration(configuration);
 		
 		return glidein;
 	}

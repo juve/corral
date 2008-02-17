@@ -3,8 +3,7 @@ package edu.usc.glidein.service.impl;
 import java.rmi.RemoteException;
 import java.util.LinkedList;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceContext;
 
 import edu.usc.glidein.service.core.Glidein;
@@ -38,7 +37,7 @@ import edu.usc.glidein.service.types.SiteDescription;
  */
 public class PoolService 
 {
-	private Log logger = LogFactory.getLog(getClass());
+	private Logger logger = Logger.getLogger(PoolService.class);
 	
 	/**
 	 * Look up the resource associated with the user's request.

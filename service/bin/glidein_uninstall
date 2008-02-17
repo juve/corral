@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if [ $# -ne 1 ]; then
+	echo "Invalid argument"
+	echo "Usage: `basename $0` INSTALL_PATH"
+	exit 1
+fi
+
+INSTALL_PATH=$1
+
+# Remove installation directory
+rm -rf $INSTALL_PATH
+
+exit $?
