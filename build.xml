@@ -5,20 +5,24 @@
 	<property name="service.dir" location="service"/>
 	<property name="client.dir" location="client"/>
 	<property name="tools.dir" location="tools"/>
+	<property name="common.dir" location="common"/>
 	
     <target name="clean">
+    	<ant dir="${common.dir}" target="clean"/>
     	<ant dir="${service.dir}" target="clean"/>
     	<ant dir="${client.dir}" target="clean"/>
     	<ant dir="${tools.dir}" target="clean"/>
     </target>
 	
 	<target name="compile">
+		<ant dir="${common.dir}" target="compile"/>
 	    <ant dir="${service.dir}" target="compile"/>
 	    <ant dir="${client.dir}" target="compile"/>
-	    <ant dir="${tools.dir}" target="compile"/>
+		<ant dir="${tools.dir}" target="compile"/>
 	</target>
 	
     <target name="dist">
+    	<ant dir="${common.dir}" target="dist"/>
     	<ant dir="${service.dir}" target="dist"/>
     	<ant dir="${client.dir}" target="dist"/>
 		<ant dir="${tools.dir}" target="dist"/>
