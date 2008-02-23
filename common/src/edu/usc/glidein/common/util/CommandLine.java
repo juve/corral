@@ -26,7 +26,7 @@ public class CommandLine
 	/**
 	 * A map of the environment variables for the command
 	 */
-	private Map environment;
+	private Map<String,String> environment;
 	
 	/**
 	 * Path to the command's executable
