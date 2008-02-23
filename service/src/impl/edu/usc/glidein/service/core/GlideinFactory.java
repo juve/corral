@@ -1,7 +1,5 @@
 package edu.usc.glidein.service.core;
 
-import java.io.File;
-
 import edu.usc.glidein.common.util.Base64;
 import edu.usc.glidein.service.types.GlideinDescription;
 
@@ -32,10 +30,13 @@ public class GlideinFactory
 		int hostCount = description.getHostCount();
 		glidein.setHostCount(hostCount);
 		
-		// TODO Save configuration to a file
+		// Set configuration
 		String config = Base64.fromBase64(description.getConfiguration());
-		File configuration = null;
-		glidein.setConfiguration(configuration);
+		glidein.setConfiguration(config);
+		
+		// Set wall time
+		int wallTime = description.getWallTime();
+		glidein.setWallTime(wallTime);
 		
 		return glidein;
 	}

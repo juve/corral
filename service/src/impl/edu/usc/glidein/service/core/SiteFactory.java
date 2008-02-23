@@ -1,7 +1,11 @@
 package edu.usc.glidein.service.core;
 
+import java.io.File;
+
 import edu.usc.glidein.GlideinException;
+import edu.usc.glidein.GlideinConfiguration;
 import edu.usc.glidein.service.types.ExecutionService;
+import edu.usc.glidein.service.types.Pair;
 import edu.usc.glidein.service.types.SiteDescription;
 
 public class SiteFactory 
@@ -22,6 +26,12 @@ public class SiteFactory
 	throws GlideinException
 	{
 		Site site = new Site(id,description.getName());
+		
+		// Set working directory
+		GlideinConfiguration config = GlideinConfiguration.getInstance();
+		File varDirectory = new File(config.getProperty("glidein.var"));
+		File siteDirectory = new File(varDirectory,description.getName());
+		site.setWorkingDirectory(siteDirectory);
 		
 		// Install path
 		String installPath = description.getInstallPath();
@@ -47,6 +57,17 @@ public class SiteFactory
 			throw new GlideinException("glidein service was null");
 		}
 		site.setGlideinService(glideinService);
+		
+		// Package
+		site.setCondorPackage(description.getCondorPackage());
+		
+		// Environment
+		Pair[] env = description.getEnvironment();
+		if(env!=null)
+		{
+			for(Pair pair : env)
+				site.addEnvironment(pair.getKey(), pair.getValue());
+		}
 		
 		return site;
 	}

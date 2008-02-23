@@ -1,22 +1,21 @@
 package edu.usc.glidein.service.core;
 
 import java.io.File;
+import java.util.Map;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 
 import edu.usc.glidein.GlideinException;
+import edu.usc.glidein.GlideinConfiguration;
 import edu.usc.glidein.common.util.IOUtil;
 import edu.usc.glidein.common.util.ProxyUtil;
-import edu.usc.glidein.service.ServiceConfiguration;
 import edu.usc.glidein.service.exec.Condor;
 import edu.usc.glidein.service.exec.CondorEvent;
 import edu.usc.glidein.service.exec.CondorEventListener;
 import edu.usc.glidein.service.exec.CondorException;
 import edu.usc.glidein.service.exec.CondorGridType;
 import edu.usc.glidein.service.exec.CondorJob;
-import edu.usc.glidein.service.exec.CondorJobDescription;
-import edu.usc.glidein.service.exec.CondorJobFactory;
 import edu.usc.glidein.service.exec.CondorUniverse;
 import edu.usc.glidein.service.types.ExecutionService;
 import edu.usc.glidein.service.types.PoolDescription;
@@ -58,43 +57,59 @@ public class SiteHandler implements Runnable, CondorEventListener
 	
 	private void submitStagingJob() throws GlideinException
 	{
+		GlideinConfiguration config = GlideinConfiguration.getInstance();
+		
+		// Create working directory
+		File siteDirectory = site.getWorkingDirectory();
+		File jobDirectory = new File(siteDirectory,"stage");
+		
 		// Create a job description
-		CondorJobDescription jd = new CondorJobDescription();
-		jd.setUniverse(CondorUniverse.GRID);
+		CondorJob job = new CondorJob(jobDirectory);
+		job.setUniverse(CondorUniverse.GRID);
 		
 		// Set jobmanager info
 		ExecutionService stagingService = site.getStagingService();
 		if(ServiceType.GT2.equals(stagingService.getServiceType()))
-			jd.setGridType(CondorGridType.GT2);
+			job.setGridType(CondorGridType.GT2);
 		else
-			jd.setGridType(CondorGridType.GT4);
-		jd.setGridContact(stagingService.getServiceContact());
-		jd.setProject(stagingService.getProject());
-		jd.setQueue(stagingService.getQueue());
-		jd.setProxy(stagingService.getProxy());
+			job.setGridType(CondorGridType.GT4);
+		job.setGridContact(stagingService.getServiceContact());
+		job.setProject(stagingService.getProject());
+		job.setQueue(stagingService.getQueue());
+		job.setProxy(stagingService.getProxy());
 		
 		// Set glidein_install executable
-		// TODO Fix executable path
-		jd.setExecutable(new File("/Users/juve/Workspace/GlideinService/service/bin/glidein_install"));
-		jd.setLocalExecutable(true);
-		jd.setMaxTime(300); // Not longer than 5 mins
+		String install = config.getProperty("glidein.install");
+		job.setExecutable(install);
+		job.setLocalExecutable(true);
+		job.setMaxTime(300); // Not longer than 5 mins
+		
+		// Add environment
+		Map<String, String> env = site.getEnvironment();
+		for (String key : env.keySet())
+			job.addEnvironment(key, env.get(key));
 		
 		// Add arguments
-		jd.addArgument(site.getInstallPath());
-		jd.addArgument(pool.getCondorVersion());
-		ServiceConfiguration config = ServiceConfiguration.getInstance();
-		jd.addArgument(config.getProperty("glidein.servers"));
+		job.addArgument("-installPath "+site.getInstallPath());
+		if (site.getCondorPackage()==null)
+			job.addArgument("-version "+pool.getCondorVersion());
+		else
+			job.addArgument("-package "+site.getCondorPackage());
+		String urlstr = config.getProperty("glidein.staging.urls");
+		String[] urls = urlstr.split("[ ,;\t]+");
+		for(String url : urls) job.addArgument("-url "+url);
 		
 		// Get return code file
-		jd.addOutputFile(new File("rc"));
+		job.addOutputFile("rc");
+		
+		// Add a listener
+		job.addListener(this);
 		
 		// Submit job
 		try
 		{
 			Condor condor = new Condor();
-			CondorJob stagingJob = new CondorJobFactory().createJob(jd);
-			stagingJob.addListener(this);
-			condor.submitJob(stagingJob);
+			condor.submitJob(job);
 		}
 		catch(CondorException ce)
 		{
@@ -141,15 +156,11 @@ public class SiteHandler implements Runnable, CondorEventListener
 				if(tmp.length!=2) 
 					stagingFailed("Unable to parse staging job return code");
 				int rc = Integer.parseInt(tmp[0]);
-				if(rc==0)
-				{
-					stagingSuccess();
-				} 
-				else
-				{
-					stagingFailed("Staging job exited with " +
-							"non-zero return code: "+result);
-				}
+				if(rc==0) 
+					stagingSuccess(job);
+				else 
+					stagingFailed("Staging job exited with non-zero " +
+							"return code: "+result);
 			}
 			catch(Exception ioe)
 			{
@@ -162,7 +173,7 @@ public class SiteHandler implements Runnable, CondorEventListener
 		}
 	}
 	
-	private void stagingSuccess()
+	private void stagingSuccess(CondorJob job)
 	{
 		// Log message
 		logger.debug("Staging successful for site '"+site.getName()+"'");
@@ -171,6 +182,9 @@ public class SiteHandler implements Runnable, CondorEventListener
 		SiteStatus status = 
 			new SiteStatus(SiteStatusCode.READY,"Staging job successful");
 		site.setStatus(status);
+		
+		// Cleanup
+		cleanupStagingJob(job);
 	}
 	
 	public void handleEvent(CondorEvent event) 
@@ -181,13 +195,11 @@ public class SiteHandler implements Runnable, CondorEventListener
 				// If job terminated normally, check the return code
 				event.getGenerator().terminate();
 				checkStagingSuccess(event.getJob());
-				cleanupStagingJob(event.getJob());
 				break;
 			case EXCEPTION:
 				// If there is an exception then fail
 				stagingFailed("Error parsing staging job log", 
 						event.getException());
-				cleanupStagingJob(event.getJob());
 				break;
 			case JOB_HELD:
 				// Kill job if it is held, job will become
@@ -203,12 +215,9 @@ public class SiteHandler implements Runnable, CondorEventListener
 				// Fail all aborted jobs
 				event.getGenerator().terminate();
 				stagingFailed("Staging job aborted");
-				cleanupStagingJob(event.getJob());
 				break;
 		}
 	}
-	
-	
 	
 	public static void main(String[] args)
 	{
@@ -228,22 +237,25 @@ public class SiteHandler implements Runnable, CondorEventListener
 			
 			ExecutionService stagingService = new ExecutionService();
 			stagingService.setServiceType(ServiceType.GT2);
-			stagingService.setServiceContact("grid-abe.ncsa.teragrid.org:2119/jobmanager-fork");
+			stagingService.setServiceContact("dynamic.usc.edu:2119/jobmanager-fork");
 			stagingService.setProxy(proxy);
 			
 			ExecutionService glideinService = new ExecutionService();
 			glideinService.setServiceType(ServiceType.GT2);
-			glideinService.setServiceContact("grid-abe.ncsa.teragrid.org:2119/jobmanager-pbs");
+			glideinService.setServiceContact("dynamic.usc.edu:2119/jobmanager-pbs");
 			glideinService.setProxy(proxy);
 			glideinService.setQueue("normal");
 			glideinService.setProject("nqi");
 			
 			SiteDescription sd = new SiteDescription();
-			sd.setName("abe");
-			sd.setInstallPath("/u/ac/juve/glidein");
-			sd.setLocalPath("/cfs/scratch/users/juve/glidein");
+			sd.setName("dynamic");
+			//sd.setInstallPath("/u/ac/juve/glidein");
+			sd.setInstallPath("/home/geovault-00/juve/glidein");
+			//sd.setLocalPath("/cfs/scratch/users/juve/glidein");
+			sd.setLocalPath("/home/geovault-00/juve/glidein/local");
 			sd.setStagingService(stagingService);
 			sd.setGlideinService(glideinService);
+			//sd.setCondorPackage("7.0.0-i686-pc-Linux-2.4.tar.gz");
 			Site s = SiteFactory.getInstance().createSite(p.createSiteId(), sd);
 			
 			SiteHandler h = new SiteHandler(p,s);

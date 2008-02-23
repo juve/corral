@@ -1,7 +1,5 @@
 package edu.usc.glidein.service.core;
 
-import java.io.File;
-
 import edu.usc.glidein.service.types.GlideinDescription;
 
 public class Glidein 
@@ -9,7 +7,8 @@ public class Glidein
 	private int id;
 	private int count;
 	private int hostCount;
-	private File configuration;
+	private int wallTime;
+	private String configuration;
 	
 	public Glidein(int id)
 	{
@@ -55,13 +54,23 @@ public class Glidein
 		return description;
 	}
 	
-	public File getConfiguration()
+	public String getConfiguration()
 	{
 		return configuration;
 	}
 	
-	public void setConfiguration(File configuration)
+	public void setConfiguration(String configuration)
 	{
 		this.configuration = configuration;
+	}
+	
+	public int getWallTime() 
+	{
+		return wallTime;
+	}
+	
+	public void setWallTime(int wallTime)
+	{
+		this.wallTime = wallTime;
 	}
 }

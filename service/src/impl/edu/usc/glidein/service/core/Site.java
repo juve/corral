@@ -43,12 +43,22 @@ public class Site
 	/** Service for running glideins */
 	private ExecutionService glideinService;
 	
+	/** Condor package name: eg. 7.0.0-x86-MacOSX-10.4.tar.gz */
+	private String condorPackage;
+	
+	/** Environment */
+	private Map<String,String> environment;
+	
+	/** Site working directory */
+	private File workingDirectory;
+	
 	public Site(int id, String name)
 	{
 		this.id = id;
 		this.name = name;
-		status = new SiteStatus(SiteStatusCode.NEW,"New");
-		glideins = new HashMap<Integer,Glidein>();
+		this.status = new SiteStatus(SiteStatusCode.NEW,"New");
+		this.glideins = new HashMap<Integer,Glidein>();
+		this.environment = new HashMap<String,String>();
 	}
 
 	public int getId()
@@ -169,5 +179,35 @@ public class Site
 	public ExecutionService getStagingService()
 	{
 		return stagingService;
+	}
+
+	public String getCondorPackage()
+	{
+		return condorPackage;
+	}
+
+	public void setCondorPackage(String condorPackage)
+	{
+		this.condorPackage = condorPackage;
+	}
+	
+	public Map<String,String> getEnvironment()
+	{
+		return this.environment;
+	}
+	
+	public void addEnvironment(String key, String value)
+	{
+		this.environment.put(key, value);
+	}
+	
+	public File getWorkingDirectory()
+	{
+		return workingDirectory;
+	}
+	
+	public void setWorkingDirectory(File workingDirectory)
+	{
+		this.workingDirectory = workingDirectory;
 	}
 }

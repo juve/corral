@@ -10,9 +10,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import edu.usc.glidein.GlideinException;
+import edu.usc.glidein.GlideinConfiguration;
 import edu.usc.glidein.common.util.CommandLine;
 import edu.usc.glidein.common.util.ProxyUtil;
-import edu.usc.glidein.service.ServiceConfiguration;
 
 /**
  * This class is an interface for managing condor jobs.
@@ -44,7 +44,7 @@ public class Condor
 	{
 		try 
 		{
-			ServiceConfiguration config = ServiceConfiguration.getInstance();
+			GlideinConfiguration config = GlideinConfiguration.getInstance();
 			setCondorHome(new File(config.getProperty(HOME_KEY)));
 			setCondorConfiguration(new File(config.getProperty(CONFIG_KEY)));
 			setCondorBin(new File(config.getProperty(BIN_KEY)));
@@ -121,6 +121,22 @@ public class Condor
 	public void submitJob(CondorJob job)
 	throws CondorException
 	{
+		// Create job directory if it doesn't exist
+		File jobDirectory = job.getJobDirectory();
+		if(jobDirectory.exists())
+		{
+			throw new CondorException("Job directory "+
+					jobDirectory.getAbsolutePath()+" already exists");
+		}
+		else 
+		{
+			if(!jobDirectory.mkdirs())
+			{
+				throw new CondorException(
+						"Unable to create job directory: "+jobDirectory);
+			}
+		}
+		
 		// Generate submit script
 		generateSubmitScript(job);
 		
@@ -263,51 +279,49 @@ public class Condor
 	 */
 	public void writeSubmitScript(CondorJob job, Writer out)
 	throws IOException, CondorException
-	{
-		CondorJobDescription desc = job.getDescription();
-		
+	{	
 		// UNIVERSE
-		out.write("universe = "+desc.getUniverse().getTypeString()+"\n");
+		out.write("universe = "+job.getUniverse().getTypeString()+"\n");
 		
 		// Grid stuff
-		if(desc.getUniverse() == CondorUniverse.GRID)
+		if(job.getUniverse() == CondorUniverse.GRID)
 		{
 			// Set the grid resource string
 			out.write("grid_resource = ");
-			out.write(desc.getGridType().getTypeString());
+			out.write(job.getGridType().getTypeString());
 			out.write(" ");
-			out.write(desc.getGridContact());
+			out.write(job.getGridContact());
 			out.write("\n");
 			
-			if(desc.getGridType() == CondorGridType.GT2)
+			if(job.getGridType() == CondorGridType.GT2)
 			{
 				// Set globus_rsl
 				out.write("globus_rsl = ");
-				if(desc.getProject() != null)
-					out.write("(project="+desc.getProject()+")");
-				if(desc.getQueue() != null)
-					out.write("(queue="+desc.getQueue()+")");
-				out.write("(hostCount="+desc.getHostCount()+")");
-				out.write("(count="+(desc.getHostCount()*desc.getProcessCount())+")");
+				if(job.getProject() != null)
+					out.write("(project="+job.getProject()+")");
+				if(job.getQueue() != null)
+					out.write("(queue="+job.getQueue()+")");
+				out.write("(hostCount="+job.getHostCount()+")");
+				out.write("(count="+(job.getHostCount()*job.getProcessCount())+")");
 				out.write("(jobType=multiple)");
-				out.write("(maxTime="+desc.getMaxTime()+")");
+				out.write("(maxTime="+job.getMaxTime()+")");
 				out.write("\n");
 			}
-			else if(desc.getGridType() == CondorGridType.GT4)
+			else if(job.getGridType() == CondorGridType.GT4)
 			{
 				// Set globus_xml
 				out.write("globus_xml = ");
-				if(desc.getProject() != null)
-					out.write("<project>"+desc.getProject()+"</project>");
-				if(desc.getQueue() != null)
-					out.write("<queue>"+desc.getQueue()+"</queue>");
-				out.write("<maxTime>"+desc.getMaxTime()+"</maxTime>");
+				if(job.getProject() != null)
+					out.write("<project>"+job.getProject()+"</project>");
+				if(job.getQueue() != null)
+					out.write("<queue>"+job.getQueue()+"</queue>");
+				out.write("<maxTime>"+job.getMaxTime()+"</maxTime>");
 				out.write("<jobType>multiple</jobType>");
 				out.write("<extensions>");
 				out.write("<resourceAllocationGroup>");
-				out.write("<hostCount>"+desc.getHostCount()+"</hostCount>");
+				out.write("<hostCount>"+job.getHostCount()+"</hostCount>");
 				out.write("<cpusPerHost>1</cpusPerHost>");
-				out.write("<processCount>"+desc.getProcessCount()+"</processCount>");
+				out.write("<processCount>"+job.getProcessCount()+"</processCount>");
 				out.write("</resourceAllocationGroup>");
 				out.write("</extensions>");
 				out.write("\n");
@@ -317,16 +331,13 @@ public class Condor
 			}
 			
 			// X509 User Proxy
-			String proxy = desc.getProxy();
+			String proxy = job.getProxy();
 			if(proxy!=null)
 			{
 				File proxyFile = new File(job.getJobDirectory(),"proxy");
-				try 
-				{
+				try {
 					ProxyUtil.writeProxy(proxy, proxyFile);
-				}
-				catch(GlideinException ge)
-				{
+				} catch(GlideinException ge) {
 					throw new CondorException("Unable to write proxy file",ge);
 				}
 				out.write("x509userproxy = ");
@@ -338,12 +349,12 @@ public class Condor
 		
 		
 		// EXECUTABLE
-		out.write("executable = "+desc.getExecutable()+"\n");
-		if(!desc.isLocalExecutable())
+		out.write("executable = "+job.getExecutable()+"\n");
+		if(!job.isLocalExecutable())
 			out.write("transfer_executable = false\n");
 		
 		// Arguments
-		List<String> args = desc.getArguments();
+		List<String> args = job.getArguments();
 		if(args.size()>0)
 		{
 			out.write("arguments = \"");
@@ -357,7 +368,7 @@ public class Condor
 		
 		
 		// Environment
-		Map<String,String> env = desc.getEnvironment();
+		Map<String,String> env = job.getEnvironment();
 		if(env.size()>0)
 		{
 			out.write("environment =");
@@ -380,43 +391,43 @@ public class Condor
 		out.write("notification = Never\n");
 		
 		// Requirements
-		if(desc.getRequirements() != null)
-			out.write("requirements = "+desc.getRequirements()+"\n");
+		if(job.getRequirements() != null)
+			out.write("requirements = "+job.getRequirements()+"\n");
 		
 		// Directories
-		if(desc.getRemoteDirectory()!=null)
+		if(job.getRemoteDirectory()!=null)
 			out.write("remote_initialdir = "+
-					desc.getRemoteDirectory().getAbsolutePath()+"\n");
+					job.getRemoteDirectory()+"\n");
 		
 		out.write("initialdir = "+
 				job.getJobDirectory().getAbsolutePath()+"\n");
 		
 		
 		// Input files
-		List<File> infiles = desc.getInputFiles();
+		List<String> infiles = job.getInputFiles();
 		if(infiles.size() > 0)
 		{
 			out.write("transfer_input_files = ");
 			int i = 0;
-			for(File infile : infiles)
+			for(String infile : infiles)
 			{
 				if(i++ > 0) out.write(",");
-				out.write(infile.getAbsolutePath());
+				out.write(infile);
 			}
 			out.write("\n");
 		}
 		
 		
 		// Output files
-		List<File> outfiles = desc.getOutputFiles();
+		List<String> outfiles = job.getOutputFiles();
 		if(outfiles.size() > 0)
 		{
 			out.write("transfer_output_files = ");
 			int i = 0;
-			for(File outfile : outfiles)
+			for(String outfile : outfiles)
 			{
 				if(i++ > 0) out.write(",");
-				out.write(outfile.getPath());
+				out.write(outfile);
 			}
 			out.write("\n");
 		}
@@ -435,50 +446,49 @@ public class Condor
 	
 	public static void main(String[] args)
 	{
-		CondorJobDescription jd = new CondorJobDescription();
-		jd.setUniverse(CondorUniverse.GRID);
-		//jd.setGridType(CondorGridType.GT2);
-		//jd.setGridContact("tg-login.sdsc.teragrid.org/jobmanager-fork");
-		jd.setGridType(CondorGridType.GT4);
-		jd.setGridContact("https://grid-hg.ncsa.teragrid.org:8443/wsrf/services/ManagedJobFactoryService Fork");
-		jd.setExecutable(new File("/bin/hostname"));
-		//jd.setLocalExecutable(true);
-		//jd.addArgument("-al");
-		//jd.setHostCount(2);
-		//jd.setProcessCount(2);
-		//jd.setMaxTime(300);
-		//jd.setProject(null);
-		//jd.setQueue(null);
-		//jd.setRequirements(null);
-		//jd.setRemoteDirectory(new File("/etc"));
-		//jd.addInputFile(new File("/tmp/glidein_service/hello"));
-		//jd.addOutputFile(new File("hello"));
+		CondorJob job = new CondorJob(new File("/tmp/glidein_service/job-123"));
+		job.setUniverse(CondorUniverse.GRID);
+		job.setGridType(CondorGridType.GT2);
+		job.setGridContact("dynamic.usc.edu/jobmanager-fork");
+		//job.setGridType(CondorGridType.GT4);
+		//job.setGridContact("https://grid-hg.ncsa.teragrid.org:8443/wsrf/services/ManagedJobFactoryService Fork");
+		job.setExecutable("/bin/hostname");
+		//job.setLocalExecutable(true);
+		//job.addArgument("-al");
+		//job.setHostCount(2);
+		//job.setProcessCount(2);
+		//job.setMaxTime(300);
+		//job.setProject(null);
+		//job.setQueue(null);
+		//job.setRequirements(null);
+		//job.setRemoteDirectory(new File("/etc"));
+		//job.addInputFile(new File("/tmp/glidein_service/hello"));
+		//job.addOutputFile(new File("hello"));
+
+		// Create new job
+		job.addListener(new CondorEventListener()
+		{
+			public void handleEvent(CondorEvent event) 
+			{
+				CondorJob job = event.getJob();
+				System.out.println(job.getCondorId()+": "+event.getMessage());
+				switch(event.getEventCode())
+				{
+					case JOB_TERMINATED:
+						event.getGenerator().terminate();
+						break;
+					case EXCEPTION:
+						event.getException().printStackTrace();
+						break;
+					case JOB_ABORTED:
+						event.getGenerator().terminate();
+						break;
+				}
+			}
+		});
 		
 		try 
 		{
-			// Create new job
-			CondorJob job = new CondorJobFactory().createJob(jd);
-			job.addListener(new CondorEventListener()
-			{
-				public void handleEvent(CondorEvent event) 
-				{
-					CondorJob job = event.getJob();
-					System.out.println(job.getCondorId()+": "+event.getMessage());
-					switch(event.getEventCode())
-					{
-						case JOB_TERMINATED:
-							event.getGenerator().terminate();
-							break;
-						case EXCEPTION:
-							event.getException().printStackTrace();
-							break;
-						case JOB_ABORTED:
-							event.getGenerator().terminate();
-							break;
-					}
-				}
-			});
-			
 			// Submit job
 			Condor condor = new Condor();
 			condor.submitJob(job);
