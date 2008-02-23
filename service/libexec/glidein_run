@@ -1,0 +1,40 @@
+#!/bin/sh
+
+if [ $# -ne 3 ]; then
+	echo "Invalid argument"
+	echo "Usage: `basename $0` INSTALL_PATH GLIDEIN_ID RUNTIME"
+	exit 1
+fi
+
+INSTALL_PATH=$1
+GLIDEIN_ID=$2
+RUNTIME=$3
+
+# Check config file
+CONFIG=`pwd`/config
+if [ -n $CONFIG ]; then
+	echo "Missing glidein configuration file"
+	exit 2
+fi
+
+# Create working directory
+WORK_DIR=$INSTALL_PATH/$GLIDEIN_ID
+if [ -e $WORK_DIR ]; then
+	echo "Glide-in work directory $WORK_DIR already exists!"
+	exit 3
+fi
+mkdir -p $WORK_DIR
+
+# TODO Copy config file
+
+
+export CONDOR_CONFIG=$INSTALL_PATH/$GLIDEIN_ID/config
+
+# Move to working directory
+cd $WORK_DIR
+
+# Run condor_master
+${INSTALL_PATH}/condor_master -f -t -r $RUNTIME
+
+# TODO Cat all the log files into the output
+
