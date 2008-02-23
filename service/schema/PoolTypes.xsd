@@ -3,7 +3,14 @@
 	xmlns:pool="http://www.usc.edu/glidein/PoolTypes"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 	elementFormDefault="qualified" blockDefault="#all">
-				
+	
+	<xsd:complexType name="Pair">
+		<xsd:sequence>
+			<xsd:element name="key" type="xsd:string"/>
+			<xsd:element name="value" type="xsd:string"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	
 	<xsd:complexType name="PoolDescription">
 		<xsd:sequence>
 			<xsd:element name="id" type="xsd:int" nillable="true"/>
@@ -38,6 +45,8 @@
 			<xsd:element name="localPath" type="xsd:string"/>
 			<xsd:element name="stagingService" type="pool:ExecutionService"/>
 			<xsd:element name="glideinService" type="pool:ExecutionService"/>
+			<xsd:element name="condorPackage" type="xsd:string" nillable="true"/>
+			<xsd:element name="environment" type="pool:Pair" minOccurs="0" maxOccurs="0" nillable="true"/>
 		</xsd:sequence>
 	</xsd:complexType>
 	
@@ -49,6 +58,7 @@
 			<xsd:element name="hostCount" type="xsd:int"/>
 			<xsd:element name="wallTime" type="xsd:int"/>
 			<xsd:element name="configuration" type="xsd:string" nillable="true"/>
+			<xsd:element name="environment" type="pool:Pair" minOccurs="0" maxOccurs="0" nillable="true"/>
 		</xsd:sequence>
 	</xsd:complexType>
 	
