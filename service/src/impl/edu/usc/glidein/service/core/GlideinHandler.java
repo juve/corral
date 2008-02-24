@@ -44,7 +44,7 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		try 
 		{
 			if(logger.isDebugEnabled())
-				logger.debug("Submitting staging job for site '"+
+				logger.debug("Submitting glidein job for site '"+
 							 site.getName()+"'");
 			
 			submitGlideinJob();
@@ -61,31 +61,27 @@ public class GlideinHandler implements Runnable, CondorEventListener
 	
 	private void checkGlideinSuccess(CondorJob job)
 	{
-		File dir = job.getJobDirectory();
-		File rcFile = new File(dir,"rc");
-		if(rcFile.exists())
+		// A job finished successfully if it didn't produce any
+		// output on stderr. Its ugly, but GT2 is broken.
+		File error = job.getError();
+		if(error.exists())
 		{
 			try
 			{
-				String result = IOUtil.read(rcFile);
-				String[] tmp = result.split("[ ]", 2);
-				if(tmp.length!=2) 
-					glideinFailed("Unable to parse glidein job return code");
-				int rc = Integer.parseInt(tmp[0]);
-				if(rc==0) 
+				String stderr = IOUtil.read(error);
+				if(stderr.length()>0)
+					glideinFailed("Glidein failed:\n"+stderr);
+				else
 					glideinSuccess(job);
-				else 
-					glideinFailed("Glidein job exited with non-zero " +
-							"return code: "+result);
 			}
-			catch(Exception ioe)
+			catch(IOException ioe)
 			{
-				glideinFailed("Unable to read rc file");
+				glideinFailed("Unable to read error file",ioe);
 			}
 		}
 		else
 		{
-			glideinFailed("Staging job produced no rc file");
+			glideinFailed("Glidein job produced no error file");
 		}
 	}
 	
@@ -129,7 +125,7 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		
 		// Create working directory
 		File siteDirectory = site.getWorkingDirectory();
-		File jobDirectory = new File(siteDirectory,"stage");
+		File jobDirectory = new File(siteDirectory,"glidein-"+glidein.getId());
 		
 		// Create a job description
 		CondorJob job = new CondorJob(jobDirectory);
@@ -151,7 +147,9 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		job.setExecutable(run);
 		job.setLocalExecutable(true);
 		
-		// Set maximum runtime
+		// Set number of processes
+		job.setHostCount(glidein.getHostCount());
+		job.setCount(glidein.getCount());
 		job.setMaxTime(glidein.getWallTime());
 		
 		// Add environment
@@ -162,11 +160,20 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		// Add arguments
 		job.addArgument("-installPath "+site.getInstallPath());
 		job.addArgument("-localPath "+site.getLocalPath());
-		job.addArgument("-centralManager "+pool.getCondorHost()+":"+pool.getCondorPort());
+		job.addArgument("-condorHost "+pool.getCondorHost());
 		job.addArgument("-wallTime "+glidein.getWallTime());
-		
-		// Get return code file
-		job.addOutputFile("rc");
+		if(glidein.getGcbBroker()!=null)
+			job.addArgument("-gcbBroker "+glidein.getGcbBroker());
+		if(glidein.getIdleTime()>0)
+			job.addArgument("-idleTime "+glidein.getIdleTime());
+		if(glidein.getDebug()!=null)
+		{
+			String[] debug = glidein.getDebug().split("[ ,]+");
+			for(String level : debug)
+				job.addArgument("-debug "+level);
+		}
+		if(glidein.getNumCpus()>0)
+			job.addArgument("-numCpus "+glidein.getNumCpus());
 		
 		// If there is a special config file, use it
 		String configFile = null;
@@ -223,10 +230,13 @@ public class GlideinHandler implements Runnable, CondorEventListener
 			case JOB_HELD:
 				// Kill job if it is held, job will become
 				// aborted
-				try {
+				try
+				{
 					Condor condor = new Condor();
 					condor.cancelJob(event.getJob());
-				} catch(CondorException ce) {
+				} 
+				catch(CondorException ce)
+				{
 					glideinFailed("Unable to cancel held glidein job", ce);
 				}
 				break;
@@ -247,8 +257,7 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		try 
 		{
 			PoolDescription pd = new PoolDescription();
-			pd.setCondorHost("juve.usc.edu");
-			pd.setCondorPort(Pool.DEFAULT_CONDOR_PORT);
+			pd.setCondorHost("array.usc.edu");
 			pd.setCondorVersion("7.0.0");
 			Pool p = PoolFactory.getInstance().createPool(pd);
 			
@@ -263,13 +272,13 @@ public class GlideinHandler implements Runnable, CondorEventListener
 			glideinService.setServiceType(ServiceType.GT2);
 			glideinService.setServiceContact("dynamic.usc.edu:2119/jobmanager-pbs");
 			glideinService.setProxy(proxy);
-			glideinService.setQueue("normal");
-			glideinService.setProject("nqi");
+			//glideinService.setQueue("normal");
+			//glideinService.setProject("nqi");
 			
 			SiteDescription sd = new SiteDescription();
 			sd.setName("dynamic");
 			//sd.setInstallPath("/u/ac/juve/glidein");
-			sd.setInstallPath("/home/geovault-00/juve/Condor_glidein/default");
+			sd.setInstallPath("/home/geovault-00/juve/glidein");
 			//sd.setLocalPath("/cfs/scratch/users/juve/glidein");
 			sd.setLocalPath("/home/geovault-00/juve/glidein/local");
 			sd.setStagingService(stagingService);
@@ -278,9 +287,12 @@ public class GlideinHandler implements Runnable, CondorEventListener
 			Site s = SiteFactory.getInstance().createSite(p.createSiteId(), sd);
 			
 			GlideinDescription gd = new GlideinDescription();
-			gd.setWallTime(300); // 5 mins for test
-			gd.setHostCount(1);
-			gd.setCount(1);
+			gd.setWallTime(2); // 2 mins for test
+			gd.setHostCount(8);
+			gd.setNumCpus(4);
+			gd.setGcbBroker("128.125.25.48"); // array.usc.edu
+			//gd.setIdleTime(1); // 1 min for test
+			//gd.setDebug("D_FULLDEBUG,D_DAEMONCORE");
 			
 			Glidein g = GlideinFactory.getInstance().createGlidein(
 					s.createGlideinId(), gd);

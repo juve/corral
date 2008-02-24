@@ -5,10 +5,47 @@ import edu.usc.glidein.service.types.GlideinDescription;
 public class Glidein 
 {
 	private int id;
+	
+	/**
+	 * Total number of processes. Defaults to one per host.
+	 */
 	private int count;
+	
+	/**
+	 * Number of hosts to request
+	 */
 	private int hostCount;
+	
+	/**
+	 * Number of CPUs to use for glidein
+	 */
+	private int numCpus;
+	
+	/**
+	 * Requested runtime in minutes
+	 */
 	private int wallTime;
+	
+	/**
+	 * Maximum glidein idle time in minutes
+	 */
+	private int idleTime;
+	
+	/**
+	 * Glidein condor_config
+	 */
 	private String configuration;
+	
+	/**
+	 * IP address of GCB broker
+	 */
+	private String gcbBroker;
+	
+	/**
+	 * Comma-separated list of debug settings (e.g. D_FULLDEBUG,D_PID)
+	 */
+	private String debug;
+	
 	
 	public Glidein(int id)
 	{
@@ -27,7 +64,9 @@ public class Glidein
 
 	public int getCount()
 	{
-		return count;
+		// The default is 1 process per host
+		if (count==0) return hostCount;
+		else return count;
 	}
 
 	public void setCount(int count)
@@ -72,5 +111,45 @@ public class Glidein
 	public void setWallTime(int wallTime)
 	{
 		this.wallTime = wallTime;
+	}
+	
+	public int getIdleTime()
+	{
+		return idleTime;
+	}
+	
+	public void setIdleTime(int idleTime)
+	{
+		this.idleTime = idleTime;
+	}
+	
+	public String getGcbBroker()
+	{
+		return gcbBroker;
+	}
+	
+	public void setGcbBroker(String gcbBroker)
+	{
+		this.gcbBroker = gcbBroker;
+	}
+	
+	public String getDebug()
+	{
+		return debug;
+	}
+	
+	public void setDebug(String debug)
+	{
+		this.debug = debug;
+	}
+	
+	public int getNumCpus()
+	{
+		return numCpus;
+	}
+	
+	public void setNumCpus(int numCpus)
+	{
+		this.numCpus = numCpus;
 	}
 }

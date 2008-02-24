@@ -5,7 +5,7 @@ import java.io.File;
 import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.GlideinConfiguration;
 import edu.usc.glidein.service.types.ExecutionService;
-import edu.usc.glidein.service.types.Pair;
+import edu.usc.glidein.service.types.EnvironmentVariable;
 import edu.usc.glidein.service.types.SiteDescription;
 
 public class SiteFactory 
@@ -62,11 +62,11 @@ public class SiteFactory
 		site.setCondorPackage(description.getCondorPackage());
 		
 		// Environment
-		Pair[] env = description.getEnvironment();
+		EnvironmentVariable[] env = description.getEnvironment();
 		if(env!=null)
 		{
-			for(Pair pair : env)
-				site.addEnvironment(pair.getKey(), pair.getValue());
+			for(EnvironmentVariable var : env)
+				site.addEnvironment(var.getVariable(), var.getValue());
 		}
 		
 		return site;

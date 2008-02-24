@@ -302,7 +302,7 @@ public class Condor
 				if(job.getQueue() != null)
 					out.write("(queue="+job.getQueue()+")");
 				out.write("(hostCount="+job.getHostCount()+")");
-				out.write("(count="+(job.getHostCount()*job.getProcessCount())+")");
+				out.write("(count="+job.getCount()+")");
 				out.write("(jobType=multiple)");
 				out.write("(maxTime="+job.getMaxTime()+")");
 				out.write("\n");
@@ -311,19 +311,14 @@ public class Condor
 			{
 				// Set globus_xml
 				out.write("globus_xml = ");
+				out.write("<count>"+job.getCount()+"</count>");
+				out.write("<hostCount>"+job.getHostCount()+"</hostCount>");
 				if(job.getProject() != null)
 					out.write("<project>"+job.getProject()+"</project>");
 				if(job.getQueue() != null)
 					out.write("<queue>"+job.getQueue()+"</queue>");
 				out.write("<maxTime>"+job.getMaxTime()+"</maxTime>");
 				out.write("<jobType>multiple</jobType>");
-				out.write("<extensions>");
-				out.write("<resourceAllocationGroup>");
-				out.write("<hostCount>"+job.getHostCount()+"</hostCount>");
-				out.write("<cpusPerHost>1</cpusPerHost>");
-				out.write("<processCount>"+job.getProcessCount()+"</processCount>");
-				out.write("</resourceAllocationGroup>");
-				out.write("</extensions>");
 				out.write("\n");
 				
 				out.write("stream_input = false");

@@ -1,40 +1,209 @@
 #!/bin/sh
 
-if [ $# -ne 3 ]; then
-	echo "Invalid argument"
-	echo "Usage: `basename $0` INSTALL_PATH GLIDEIN_ID RUNTIME"
+# Usage
+CMD=`basename $0`
+usage ()
+{
+	echo """Usage: $CMD -installPath <path> -localPath <path> 
+	                    -condorHost <host:port> -wallTime <minutes> OPTIONS
+
+REQUIRED
+
+  -installPath <path>
+      The path to install the Condor executables.
+   -localPath <path>
+      The path where log files should be written.
+   -condorHost <host:port>
+      The condor central manager host.
+   -wallTime <minutes>
+      The glidein runtime in minutes.
+      
+OPTIONS
+
+   -idleTime <minutes>
+      The maximum idle time for this glidein.
+   -debug <level> [-debug <level> ...]
+      Turn on extra debugging messages and leave local directory in place.
+   -gcbBroker
+      The IP of the GCB broker for this glidein.
+   -numCpus
+      The number of CPUs to allocate for this glidein.
+""" >&2
+}
+
+INSTALL_PATH=""
+LOCAL_PATH=""
+CONDOR_HOST=""
+WALL_TIME=""
+IDLE_TIME="0"
+DEBUG=""
+GCB_BROKER=""
+NUM_CPUS=""
+
+while [ $# -ge 1 ]; do
+	case $1 in 
+		-installPath) INSTALL_PATH=$2 ;;
+		-localPath) LOCAL_PATH=$2 ;;
+		-condorHost) CONDOR_HOST=$2 ;;
+		-wallTime) WALL_TIME=$2 ;;
+		-idleTime) IDLE_TIME=$2 ;;
+		-gcbBroker) GCB_BROKER=$2 ;;
+		-numCpus) NUM_CPUS=$2 ;;
+		-debug) DEBUG="${DEBUG}$2 " ;;
+		*) echo "Invalid argument: $1" >2 ; usage ;;
+	esac
+	shift
+	shift
+done
+
+# Check arguments
+if [ -z "${INSTALL_PATH}" ]; then
+	echo "Must specify -installPath" >&2
+	usage
+	exit 1
+fi
+if [ -z "${LOCAL_PATH}" ]; then
+	echo "Must specify -localPath" >&2
+	usage
+	exit 1
+fi
+if [ -z "${CONDOR_HOST}" ]; then
+	echo "Must specify -condorHost" >&2
+	usage
+	exit 1
+fi
+if [ -z "${WALL_TIME}" ]; then
+	echo "Must specify -wallTime" >&2
+	usage
 	exit 1
 fi
 
-INSTALL_PATH=$1
-GLIDEIN_ID=$2
-RUNTIME=$3
-
-# Check config file
-CONFIG=`pwd`/config
-if [ -n $CONFIG ]; then
-	echo "Missing glidein configuration file"
-	exit 2
+# Set default debug level
+if [ -z "$DEBUG" ]; then
+	DEBUG="D_ALWAYS"
 fi
 
-# Create working directory
-WORK_DIR=$INSTALL_PATH/$GLIDEIN_ID
-if [ -e $WORK_DIR ]; then
-	echo "Glide-in work directory $WORK_DIR already exists!"
-	exit 3
+# Calculate wall time in seconds
+WALL_TIME_SECONDS=`expr ${WALL_TIME} \* 60`
+
+# Calculate idle time in seconds
+IDLE_TIME_SECONDS="0"
+if [ ! -z "${IDLE_TIME}" ]; then
+	IDLE_TIME_SECONDS=`expr ${IDLE_TIME} \* 60`
 fi
-mkdir -p $WORK_DIR
 
-# TODO Copy config file
+# Check install path
+if [ ! -d "${INSTALL_PATH}" ]; then
+	echo "Install path does not exist: ${INSTALL_PATH}" >&2
+	exit 1
+fi
 
+# Create local path if it doesn't exist
+if [ ! -d "${LOCAL_PATH}" ]; then
+	if ! mkdir -p ${LOCAL_PATH}; then
+		echo "Unable to create local dir: ${LOCAL_PATH}" >&2
+		exit 1
+	fi
+fi
 
-export CONDOR_CONFIG=$INSTALL_PATH/$GLIDEIN_ID/config
+# Set condor config file
+GLIDEIN_CONDOR_CONFIG=`pwd`/glidein_condor_config
+if [ ! -f "${GLIDEIN_CONDOR_CONFIG}" ]; then
+	echo "Configuration file 'glidein_condor_config' missing" >&2
+	exit 1
+fi
 
-# Move to working directory
-cd $WORK_DIR
+# Determine host name as well as possible
+if [ ! -z "`which globus-hostname`" ]; then
+	HOSTNAME=`globus-hostname`
+else
+	case `uname` in
+		Linux) HOSTNAME=`hostname -f` ;;
+		SunOS) HOSTNAME=`uname -n` ;;
+		AIX) HOSTNAME=`uname -n` ;;
+		*) HOSTNAME=`hostname` ;;
+	esac
+fi
+
+# Set local directory
+LOCAL_DIR="${LOCAL_PATH}/${HOSTNAME}-$$"
+if ! mkdir -p ${LOCAL_DIR}; then
+	echo "Unable to create glidein local dir: ${LOCAL_DIR}" >&2
+	exit 1
+fi
+
+# Copy config file
+if ! cp ${GLIDEIN_CONDOR_CONFIG} ${LOCAL_DIR}; then
+	echo "Unable to copy glidein_condor_config to ${LOCAL_DIR}" >&2
+	exit 1
+fi
+
+# Create log and execute dirs
+if ! mkdir -p ${LOCAL_DIR}/log; then
+	echo "Unable to create log dir: ${LOCAL_DIR}/log" >&2
+	exit 1
+fi
+if ! mkdir -p ${LOCAL_DIR}/execute; then
+	echo "Unable to create execute dir: ${LOCAL_DIR}/execute" >&2
+	exit 1
+fi
+
+# GCB Broker stuff
+if [ -z "${GCB_BROKER}" ]; then
+	GCB_ENABLE="False"
+else
+	GCB_ENABLE="True"
+fi
+
+# Set environment
+export CONDOR_CONFIG=${LOCAL_DIR}/glidein_condor_config
+# We set LOG and EXECUTE here so they can't be changed.
+export _condor_LOG=${LOCAL_DIR}/log
+export _condor_EXECUTE=${LOCAL_DIR}/execute
+# NUM_CPUS is special because they don't allow you to use an expression to
+# define it. So I can't say NUM_CPUS = $(GLIDEIN_NUM_CPUS) in the config
+# file.
+if [ ! -z "${NUM_CPUS}" ]; then
+	export _condor_NUM_CPUS=${NUM_CPUS}
+fi
+
+# Add condor config entries
+printf "\n\n" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_CONDOR_CONFIG = ${CONDOR_CONFIG}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_LOCAL_DIR = ${LOCAL_DIR}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_CONDOR_HOST = ${CONDOR_HOST}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_WALL_TIME = ${WALL_TIME}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_WALL_TIME_SECONDS = ${WALL_TIME_SECONDS}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_SBIN = ${INSTALL_PATH}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_IDLE_TIME = ${IDLE_TIME}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_IDLE_TIME_SECONDS = ${IDLE_TIME_SECONDS}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_GCB_ENABLE = ${GCB_ENABLE}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_GCB_BROKER = ${GCB_BROKER}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_DEBUG = ${DEBUG}" >> ${CONDOR_CONFIG}
+
+# If we got a signal, then Condor got it too, so just let Condor exit normally.
+# But record the fact that we got a signal so that we can leave the logs
+# in place for debugging.
+GOT_SIGNAL=0
+handle_signal ()
+{
+	GOT_SIGNAL=1
+}
+trap handle_signal SIGTERM
+trap handle_signal SIGQUIT
 
 # Run condor_master
-${INSTALL_PATH}/condor_master -f -t -r $RUNTIME
+echo "Starting condor_master on host ${HOSTNAME}"
+${INSTALL_PATH}/condor_master -f -r ${WALL_TIME};
+RC=$?
+if [ $RC -ne 0 ]; then
+	echo "condor_master exited with code $?" >&2
+	exit 1
+fi
 
-# TODO Cat all the log files into the output
+# If not debugging and no signal then remove the local dir
+if [ ${GOT_SIGNAL} -eq 0 ] && [ "$DEBUG" = "D_ALWAYS" ]; then
+	rm -rf ${LOCAL_DIR}
+fi
 
+exit 0

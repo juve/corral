@@ -6,13 +6,10 @@ import java.util.Map;
 import edu.usc.glidein.service.types.PoolDescription;
 
 public class Pool
-{	
-	public static final int DEFAULT_CONDOR_PORT = 9816;
-	
+{
 	/** Resource properties */
 	private int id;
 	private String condorHost;
-	private int condorPort;
 	private String condorVersion;
 
 	private int nextSiteId = 0;
@@ -38,14 +35,6 @@ public class Pool
 	
 	public void setCondorHost(String condorHost) {
 		this.condorHost = condorHost;
-	}
-
-	public int getCondorPort() {
-		return condorPort;
-	}
-
-	public void setCondorPort(int condorPort) {
-		this.condorPort = condorPort;
 	}
 
 	public String getCondorVersion() {
@@ -83,7 +72,6 @@ public class Pool
 	{
 		PoolDescription description = new PoolDescription();
 		description.setCondorHost(getCondorHost());
-		description.setCondorPort(getCondorPort());
 		description.setCondorVersion(getCondorVersion());
 		return description;
 	}

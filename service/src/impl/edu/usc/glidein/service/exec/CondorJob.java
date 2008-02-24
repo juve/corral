@@ -106,9 +106,9 @@ public class CondorJob
 	private int hostCount;
 	
 	/**
-	 * Number of processes per host
+	 * Total number of processes
 	 */
-	private int processCount;
+	private int count;
 	
 	/**
 	 * Max runtime (walltime or cputime) of the application in minutes.
@@ -154,7 +154,7 @@ public class CondorJob
 		this.outputFiles = new LinkedList<String>();
 		this.localExecutable = false;
 		this.hostCount = 1;
-		this.processCount = 1;
+		this.count = 1;
 		this.queue = null;
 		this.project = null;
 		this.maxTime = 1;
@@ -388,14 +388,14 @@ public class CondorJob
 		this.hostCount = hostCount;
 	}
 
-	public int getProcessCount()
+	public int getCount()
 	{
-		return processCount;
+		return count;
 	}
 
-	public void setProcessCount(int processCount)
+	public void setCount(int count)
 	{
-		this.processCount = processCount;
+		this.count = count;
 	}
 	
 	public void setMaxTime(int maxTime)
@@ -418,7 +418,7 @@ public class CondorJob
 			job.setGridContact("tg-login.sdsc.teragrid.org/jobmanager-pbs");
 			job.setExecutable("/bin/ls");
 			job.setHostCount(1);
-			job.setProcessCount(1);
+			job.setCount(1);
 			job.setMaxTime(300);
 			job.setProject(null);
 			job.setQueue(null);

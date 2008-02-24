@@ -21,22 +21,15 @@ public class GlideinFactory
 	throws Exception
 	{
 		Glidein glidein = new Glidein(id);
-		
-		// Count
-		int count = description.getCount();
-		glidein.setCount(count);
-		
-		// HostCount
-		int hostCount = description.getHostCount();
-		glidein.setHostCount(hostCount);
-		
-		// Set configuration
-		String config = Base64.fromBase64(description.getConfiguration());
-		glidein.setConfiguration(config);
-		
-		// Set wall time
-		int wallTime = description.getWallTime();
-		glidein.setWallTime(wallTime);
+		glidein.setCount(description.getCount());
+		glidein.setHostCount(description.getHostCount());
+		glidein.setNumCpus(description.getNumCpus());
+		glidein.setWallTime(description.getWallTime());
+		glidein.setIdleTime(description.getIdleTime());
+		glidein.setGcbBroker(description.getGcbBroker());
+		glidein.setConfiguration(
+				Base64.fromBase64(description.getConfigBase64()));
+		glidein.setDebug(description.getDebug());
 		
 		return glidein;
 	}

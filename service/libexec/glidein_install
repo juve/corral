@@ -8,6 +8,7 @@
 # read to determine the true return code of the job. This is a
 # lightweight replacement for kickstart.
 O_WORK_DIR=`pwd` # Original work directory where rc file will be created
+echo "99 Unknown failure" > ${O_WORK_DIR}/rc
 my_exit ()
 {
 	rc=$1
@@ -15,7 +16,7 @@ my_exit ()
 	echo $msg
 	# Exit code 1 is a parameter error
 	if [ "$rc" = "1" ]; then usage; fi
-	echo "$rc $msg" > $O_WORK_DIR/rc
+	echo "$rc $msg" > ${O_WORK_DIR}/rc
 	exit $rc
 }
 
@@ -182,28 +183,28 @@ GUC=${GLOBUS_LOCATION}/bin/globus-url-copy
 if [ ! -x $GUC ]; then
 	my_exit 2 "Unable to locate globus-url-copy"
 fi
-for URL in $SERVER_URLS; do
+for URL in ${SERVER_URLS}; do
 	
 	PACKAGE_URL=$URL/$PACKAGE
 	
 	# Try globus-url-copy first
-	$GUC $PACKAGE_URL file:$PACKAGE_PATH
+	$GUC ${PACKAGE_URL} file:${PACKAGE_PATH}
 	rc=$?;
 	
 	# If globus-url-copy fails and the url is http or ftp, then try wget
-	if [ $rc != 0 ] || [ ! -f $PACKAGE_PATH ] && 
+	if [ $rc != 0 ] || [ ! -f ${PACKAGE_PATH} ] && 
 	echo $URL | grep -q -E '(^http)|(^ftp)'; then
-		wget -q -O $PACKAGE_PATH $PACKAGE_URL
+		wget -q -O ${PACKAGE_PATH} ${PACKAGE_URL}
 		rc=$?;
 	fi
 
 	# Stop if we were successful
-	if [ $rc = 0 ] && [ -f $PACKAGE_PATH ]; then 
+	if [ $rc = 0 ] && [ -f ${PACKAGE_PATH} ]; then 
 		# Break out of loop
 		break
 	else
 		# Remove any zero-length files that may have been created
-		rm -f $PACKAGE_PATH
+		rm -f ${PACKAGE_PATH}
 	fi
 done
 

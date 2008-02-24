@@ -20,6 +20,7 @@ public class Base64
 	 */
 	public static String toBase64(String string)
 	{
+		if(string==null) return null;
 		byte[] buff = string.getBytes();
 		return new BASE64Encoder().encode(buff);
 	}
@@ -31,6 +32,8 @@ public class Base64
 	 */
 	public static String fromBase64(String base64)
 	{
+		if(base64==null) return null;
+		
 		try {
 			byte[] output = new BASE64Decoder().decodeBuffer(base64);
 			return new String(output);

@@ -27,7 +27,6 @@ public class TestClient
 			CreatePoolResourceRequest request = new CreatePoolResourceRequest();
 			PoolDescription poolDescription = new PoolDescription();
 			poolDescription.setCondorHost("juve.usc.edu");
-			poolDescription.setCondorPort(9816);
 			poolDescription.setCondorVersion("6.8.5");
 			request.setPoolDescription(poolDescription);
 			CreatePoolResourceResponse createResponse = factory.createPoolResource(request);
@@ -66,7 +65,7 @@ public class TestClient
 			glideinDescription.setSiteName(siteName);
 			glideinDescription.setCount(1);
 			glideinDescription.setHostCount(1);
-			glideinDescription.setConfiguration(Base64.toBase64("CONDOR_HOST=${GLIDEIN_CONDOR_HOST}"));
+			glideinDescription.setConfigBase64(Base64.toBase64("CONDOR_HOST=${GLIDEIN_CONDOR_HOST}"));
 			createGlidein.setGlideinDescription(glideinDescription);
 			CreateGlideinResponse createdGlidein = service.createGlidein(createGlidein);
 			System.out.println("Created glidein!");
@@ -75,7 +74,6 @@ public class TestClient
 			poolDescription = queryPoolResponse.getPool();
 			System.out.println("Got pool: "+
 								poolDescription.getCondorHost()+" "+
-								poolDescription.getCondorPort()+" "+
 								poolDescription.getCondorVersion());
 			
 			QuerySiteResponse querySiteResponse = service.querySite(new QuerySiteRequest());

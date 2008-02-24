@@ -229,7 +229,6 @@ public class SiteHandler implements Runnable, CondorEventListener
 		{
 			PoolDescription pd = new PoolDescription();
 			pd.setCondorHost("juve.usc.edu");
-			pd.setCondorPort(Pool.DEFAULT_CONDOR_PORT);
 			pd.setCondorVersion("7.0.0");
 			Pool p = PoolFactory.getInstance().createPool(pd);
 			
@@ -255,7 +254,7 @@ public class SiteHandler implements Runnable, CondorEventListener
 			sd.setLocalPath("/home/geovault-00/juve/glidein/local");
 			sd.setStagingService(stagingService);
 			sd.setGlideinService(glideinService);
-			//sd.setCondorPackage("7.0.0-i686-pc-Linux-2.4.tar.gz");
+			sd.setCondorPackage("7.0.0-x86-Linux-2.6-glibc2.3.tar.gz");
 			Site s = SiteFactory.getInstance().createSite(p.createSiteId(), sd);
 			
 			SiteHandler h = new SiteHandler(p,s);
