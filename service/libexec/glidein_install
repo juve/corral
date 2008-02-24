@@ -1,44 +1,32 @@
 #!/bin/sh
 
-# Define my_exit function
-# We need to create a file that contains the return code of
-# this process because Condor-G can't retrieve the exit code of a
-# job submitted to GT2. So instead we write the exit code to a file
-# and transfer the file back to the submit machine where it can be
-# read to determine the true return code of the job. This is a
-# lightweight replacement for kickstart.
-O_WORK_DIR=`pwd` # Original work directory where rc file will be created
-echo "99 Unknown failure" > ${O_WORK_DIR}/rc
-my_exit ()
-{
-	rc=$1
-	msg=$2
-	echo $msg
-	# Exit code 1 is a parameter error
-	if [ "$rc" = "1" ]; then usage; fi
-	echo "$rc $msg" > ${O_WORK_DIR}/rc
-	exit $rc
-}
-
 # Usage
 CMD=`basename $0`
 usage ()
 {
-	echo """Usage: $CMD -installPath <path> [-version <version> | -package <tar.gz>] -url <url> [-url <url> ...]
+	echo """Usage: $CMD OPTIONS REQUIRED
 
+REQUIRED
+
+  -i | -installPath <path>
+      The path to install the Condor executables.
+  -v | -condorVersion <version>
+      The version of Condor to use. Ex: 7.0.0. Specify either -condorVersion
+      or -condorPackage, but not both.
+  -p | -condorPackage <tar.gz>
+      The tar.gz archive to download. Default is gathered from system info.
+      Ex: 7.0.0-x86-Linux-2.4-glibc2.3.tar.gz. Specify either -condorVersion
+      or -condorPackage, but not both.
+  -u | -url <url> ...
+      The server URL where the glidein jobs are hosted. Protocols supported
+      include: http, https, ftp, and gsiftp. Multiple -url arguments are
+      allowed.
+      
 OPTIONS
 
-  -installPath <path>
-      The path to install the Condor executables.
-  -version <version>
-      The version of Condor to use. Ex: 7.0.0
-  -package <tar.gz>
-      The tar.gz archive to download. Default is gathered from system info.
-      Ex: 7.0.0-x86-Linux-2.4-glibc2.3.tar.gz
-  -url <url>
-      The server URL where the glidein jobs are hosted. Protocols supported
-      include: http, https, ftp, and gsiftp.
-"""
+  -h | -help
+      Display this usage message
+""" >&2
 }
 
 SERVER_URLS=""
@@ -48,11 +36,12 @@ PACKAGE=""
 
 while [ $# -ge 1 ]; do
 	case $1 in
-		-installPath) INSTALL_PATH=$2 ;;
-		-version) VERSION=$2 ;;
-		-package) PACKAGE=$2 ;;
-		-url) SERVER_URLS="${SERVER_URLS} $2" ;;
-		*) my_exit 1 "Unknown argument: $1" ;;
+		-i | -installPath) INSTALL_PATH=$2 ;;
+		-v | -condorVersion) VERSION=$2 ;;
+		-p | -condorPackage) PACKAGE=$2 ;;
+		-u | -url) SERVER_URLS="${SERVER_URLS}$2 " ;;
+		-h | -help) usage ; exit 1 ;;
+		*) echo "Unknown argument: $1" >&2 ; exit 1 ;;
 	esac
 	shift
 	shift
@@ -60,38 +49,46 @@ done
 
 # Must specify path
 if [ -z "${INSTALL_PATH}" ]; then
-	my_exit 1 "Must specify -path"
+	echo "Must specify -installPath" >&2
+	exit 1
 fi
 if ! echo ${INSTALL_PATH} | grep -q -E "^/"; then
-	my_exit 1 "Invalid path ${INSTALL_PATH}"
+	echo "Install path must be absolute: ${INSTALL_PATH}" >&2
+	exit 1
 fi
 
 # Need at least one server url
 if [ -z "${SERVER_URLS}" ]; then
-	my_exit 1 "Must specify at least one -url"
+	echo "Must specify at least one -url" >&2
+	exit 1
 fi
 for URL in ${SERVER_URLS}; do
 	if ! echo $URL | grep -q -E "(^gsiftp)|(^http)|(^ftp)"; then
-		my_exit 1 "Invalid URL: $URL"
+		echo "Invalid URL: $URL" >&2
+		exit 1
 	fi
 done
 
 # Must specify either package or version
 if [ -z "$PACKAGE" ] && [ -z "$VERSION" ]; then
-	my_exit 1 "Must specify -package or -version"
+	echo "Must specify -condorPackage or -condorVersion" >&2
+	exit 1
 fi
 if [ ! -z "$PACKAGE" ] && [ ! -z "$VERSION" ]; then
-	my_exit 1 "Must specify either -package or -version"
+	echo "Must specify either -condorPackage or -condorVersion" >&2
+	exit 1
 fi
 if [ ! -z "$VERSION" ]; then
 	if ! echo $VERSION | grep -q -E "^[0-9]+[.][0-9]+[.][0-9]+$"; then
-		my_exit 1 "Invalid Condor version: $VERSION"
+		echo "Invalid Condor version: $VERSION" >&2
+		exit 1
 	fi
 fi
 
 # Check environment
 if [ -z "${GLOBUS_LOCATION}" ]; then
-	my_exit 2 "GLOBUS_LOCATION environment variable not set"
+	echo "GLOBUS_LOCATION environment variable not set" >&2
+	exit 1
 fi
 
 # If user specified version only, then determine package
@@ -181,7 +178,8 @@ fi
 PACKAGE_PATH=`pwd`/package.tar.gz
 GUC=${GLOBUS_LOCATION}/bin/globus-url-copy
 if [ ! -x $GUC ]; then
-	my_exit 2 "Unable to locate globus-url-copy"
+	echo "Unable to locate globus-url-copy" >&2
+	exit 1
 fi
 for URL in ${SERVER_URLS}; do
 	
@@ -210,22 +208,24 @@ done
 
 # If package could not be downloaded from any server
 if [ ! -f ${PACKAGE_PATH} ]; then
-	my_exit 3 "Failed to retrieve $PACKAGE"
+	echo "Failed to retrieve $PACKAGE" >&2
+	exit 1
 fi
 
 # Make install directory if it doesn't exist
 if [ ! -d ${INSTALL_PATH} ]; then
 	mkdir -p ${INSTALL_PATH}
 	if [ ! -d ${INSTALL_PATH} ]; then
-		my_exit 4 "Unable to create remote install directory: ${INSTALL_PATH}"
+		echo "Unable to create remote install directory: ${INSTALL_PATH}" >&2
+		exit 1
 	fi
 fi
 
 # Install package
 cd ${INSTALL_PATH}
 if ! tar -xzf ${PACKAGE_PATH}; then
-	my_exit 5 "Failed to install Condor glidein package"
+	echo "Failed to install Condor glidein package" >&2
+	exit 1
 fi
 
-# Exit successfully
-my_exit 0
+exit 0

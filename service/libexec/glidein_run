@@ -4,30 +4,31 @@
 CMD=`basename $0`
 usage ()
 {
-	echo """Usage: $CMD -installPath <path> -localPath <path> 
-	                    -condorHost <host:port> -wallTime <minutes> OPTIONS
+	echo """Usage: $CMD OPTIONS REQUIRED
 
 REQUIRED
 
-  -installPath <path>
+   -i | -installPath <path>
       The path to install the Condor executables.
-   -localPath <path>
+   -l | -localPath <path>
       The path where log files should be written.
-   -condorHost <host:port>
+   -c | -condorHost <host:port>
       The condor central manager host.
-   -wallTime <minutes>
+   -t | -wallTime <minutes>
       The glidein runtime in minutes.
       
 OPTIONS
 
-   -idleTime <minutes>
+   -it | -idleTime <minutes>
       The maximum idle time for this glidein.
-   -debug <level> [-debug <level> ...]
+   -d | -debug <level> [-debug <level> ...]
       Turn on extra debugging messages and leave local directory in place.
-   -gcbBroker
+   -b | -gcbBroker
       The IP of the GCB broker for this glidein.
-   -numCpus
+   -n | -numCpus
       The number of CPUs to allocate for this glidein.
+   -h | -help
+      Display this usage message.
 """ >&2
 }
 
@@ -42,15 +43,16 @@ NUM_CPUS=""
 
 while [ $# -ge 1 ]; do
 	case $1 in 
-		-installPath) INSTALL_PATH=$2 ;;
-		-localPath) LOCAL_PATH=$2 ;;
-		-condorHost) CONDOR_HOST=$2 ;;
-		-wallTime) WALL_TIME=$2 ;;
-		-idleTime) IDLE_TIME=$2 ;;
-		-gcbBroker) GCB_BROKER=$2 ;;
-		-numCpus) NUM_CPUS=$2 ;;
-		-debug) DEBUG="${DEBUG}$2 " ;;
-		*) echo "Invalid argument: $1" >2 ; usage ;;
+		-i | -installPath) INSTALL_PATH=$2 ;;
+		-l | -localPath) LOCAL_PATH=$2 ;;
+		-c | -condorHost) CONDOR_HOST=$2 ;;
+		-t | -wallTime) WALL_TIME=$2 ;;
+		-it | -idleTime) IDLE_TIME=$2 ;;
+		-b | -gcbBroker) GCB_BROKER=$2 ;;
+		-n | -numCpus) NUM_CPUS=$2 ;;
+		-d | -debug) DEBUG="${DEBUG}$2 " ;;
+		-h | -help) usage ; exit 1 ;;
+		*) echo "Invalid argument: $1" >&2 ; exit 1 ;;
 	esac
 	shift
 	shift
@@ -59,22 +61,18 @@ done
 # Check arguments
 if [ -z "${INSTALL_PATH}" ]; then
 	echo "Must specify -installPath" >&2
-	usage
 	exit 1
 fi
 if [ -z "${LOCAL_PATH}" ]; then
 	echo "Must specify -localPath" >&2
-	usage
 	exit 1
 fi
 if [ -z "${CONDOR_HOST}" ]; then
 	echo "Must specify -condorHost" >&2
-	usage
 	exit 1
 fi
 if [ -z "${WALL_TIME}" ]; then
 	echo "Must specify -wallTime" >&2
-	usage
 	exit 1
 fi
 

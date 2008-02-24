@@ -293,6 +293,16 @@ public class Condor
 			out.write(job.getGridContact());
 			out.write("\n");
 			
+			// Don't stream in/out/err (default is True)
+			out.write("stream_input = False\n");
+			out.write("stream_output = False\n");
+			out.write("stream_error = False\n");
+			
+			// Transfer all in/out/err (default is True)
+			out.write("transfer_input = True\n");
+			out.write("transfer_output = True\n");
+			out.write("transfer_error = True\n");
+			
 			if(job.getGridType() == CondorGridType.GT2)
 			{
 				// Set globus_rsl
@@ -320,9 +330,6 @@ public class Condor
 				out.write("<maxTime>"+job.getMaxTime()+"</maxTime>");
 				out.write("<jobType>multiple</jobType>");
 				out.write("\n");
-				
-				out.write("stream_input = false");
-				out.write("stream_output = false");
 			}
 			
 			// X509 User Proxy
@@ -443,13 +450,13 @@ public class Condor
 	{
 		CondorJob job = new CondorJob(new File("/tmp/glidein_service/job-123"));
 		job.setUniverse(CondorUniverse.GRID);
-		job.setGridType(CondorGridType.GT2);
-		job.setGridContact("dynamic.usc.edu/jobmanager-fork");
-		//job.setGridType(CondorGridType.GT4);
-		//job.setGridContact("https://grid-hg.ncsa.teragrid.org:8443/wsrf/services/ManagedJobFactoryService Fork");
-		job.setExecutable("/bin/hostname");
+		//job.setGridType(CondorGridType.GT2);
+		//job.setGridContact("dynamic.usc.edu/jobmanager-fork");
+		job.setGridType(CondorGridType.GT4);
+		job.setGridContact("https://grid-hg.ncsa.teragrid.org:8443/wsrf/services/ManagedJobFactoryService Fork");
+		job.setExecutable("/bin/uname");
 		//job.setLocalExecutable(true);
-		//job.addArgument("-al");
+		job.addArgument("-f");
 		//job.setHostCount(2);
 		//job.setProcessCount(2);
 		//job.setMaxTime(300);

@@ -1,6 +1,7 @@
 package edu.usc.glidein.service.core;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 import org.apache.log4j.BasicConfigurator;
@@ -92,15 +93,12 @@ public class SiteHandler implements Runnable, CondorEventListener
 		// Add arguments
 		job.addArgument("-installPath "+site.getInstallPath());
 		if (site.getCondorPackage()==null)
-			job.addArgument("-version "+pool.getCondorVersion());
+			job.addArgument("-condorVersion "+pool.getCondorVersion());
 		else
-			job.addArgument("-package "+site.getCondorPackage());
+			job.addArgument("-condorPackage "+site.getCondorPackage());
 		String urlstr = config.getProperty("glidein.staging.urls");
 		String[] urls = urlstr.split("[ ,;\t]+");
 		for(String url : urls) job.addArgument("-url "+url);
-		
-		// Get return code file
-		job.addOutputFile("rc");
 		
 		// Add a listener
 		job.addListener(this);
@@ -145,31 +143,27 @@ public class SiteHandler implements Runnable, CondorEventListener
 	
 	private void checkStagingSuccess(CondorJob job)
 	{
-		File dir = job.getJobDirectory();
-		File rcFile = new File(dir,"rc");
-		if(rcFile.exists())
+		// A job finished successfully if it didn't produce any
+		// output on stderr. Its ugly, but GT2 is broken.
+		File error = job.getError();
+		if(error.exists())
 		{
 			try
 			{
-				String result = IOUtil.read(rcFile);
-				String[] tmp = result.split("[ ]", 2);
-				if(tmp.length!=2) 
-					stagingFailed("Unable to parse staging job return code");
-				int rc = Integer.parseInt(tmp[0]);
-				if(rc==0) 
+				String stderr = IOUtil.read(error);
+				if(stderr.length()>0)
+					stagingFailed("Staging job failed:\n"+stderr);
+				else
 					stagingSuccess(job);
-				else 
-					stagingFailed("Staging job exited with non-zero " +
-							"return code: "+result);
 			}
-			catch(Exception ioe)
+			catch(IOException ioe)
 			{
-				stagingFailed("Unable to read rc file");
+				stagingFailed("Unable to read error file",ioe);
 			}
 		}
 		else
 		{
-			stagingFailed("Staging job produced no rc file");
+			stagingFailed("Staging job produced no error file");
 		}
 	}
 	
@@ -225,10 +219,37 @@ public class SiteHandler implements Runnable, CondorEventListener
 		System.setProperty("log4j.defaultInitOverride", "true");
 		BasicConfigurator.configure();
 		
+//		String name = "dynamic";
+//		String installPath = "/home/geovault-00/juve/glidein";
+//		String localPath = "/home/geovault-00/juve/glidein/local";
+//		String fork = "dynamic.usc.edu:2119/jobmanager-fork";
+//		String pbs = "dynamic.usc.edu:2119/jobmanager-pbs";
+//		String queue = null;
+//		String project = null;
+//		String condorPackage = "7.0.0-x86-Linux-2.6-glibc2.3.tar.gz";
+		
+		String name = "sdsc";
+		String installPath = "/users/gideon/glidein";
+		String localPath = "/gpfs/gideon/glidein/local";
+		String fork = "tg-login.sdsc.teragrid.org/jobmanager-fork";
+		String pbs = "tg-login.sdsc.teragrid.org/jobmanager-pbs";
+		String queue = "dque";
+		String project = "CSB246";
+		String condorPackage = null;
+		
+//		String name = "mercury";
+//		String installPath = "/users/gideon/glidein";
+//		String localPath = "/gpfs/gideon/glidein/local";
+//		String fork = "grid-hg.ncsa.teragrid.org/jobmanager-fork";
+//		String pbs = "grid-hg.ncsa.teragrid.org/jobmanager-pbs";
+//		String queue = "normal";
+//		String project = "nqi";
+//		String condorPackage = null;
+		
 		try 
 		{
 			PoolDescription pd = new PoolDescription();
-			pd.setCondorHost("juve.usc.edu");
+			pd.setCondorHost("array.usc.edu");
 			pd.setCondorVersion("7.0.0");
 			Pool p = PoolFactory.getInstance().createPool(pd);
 			
@@ -236,25 +257,24 @@ public class SiteHandler implements Runnable, CondorEventListener
 			
 			ExecutionService stagingService = new ExecutionService();
 			stagingService.setServiceType(ServiceType.GT2);
-			stagingService.setServiceContact("dynamic.usc.edu:2119/jobmanager-fork");
+			stagingService.setServiceContact(fork);
 			stagingService.setProxy(proxy);
 			
 			ExecutionService glideinService = new ExecutionService();
 			glideinService.setServiceType(ServiceType.GT2);
-			glideinService.setServiceContact("dynamic.usc.edu:2119/jobmanager-pbs");
+			glideinService.setServiceContact(pbs);
 			glideinService.setProxy(proxy);
-			glideinService.setQueue("normal");
-			glideinService.setProject("nqi");
+			glideinService.setQueue(queue);
+			glideinService.setProject(project);
 			
 			SiteDescription sd = new SiteDescription();
-			sd.setName("dynamic");
-			//sd.setInstallPath("/u/ac/juve/glidein");
-			sd.setInstallPath("/home/geovault-00/juve/glidein");
-			//sd.setLocalPath("/cfs/scratch/users/juve/glidein");
-			sd.setLocalPath("/home/geovault-00/juve/glidein/local");
+			sd.setName(name);
+			sd.setInstallPath(installPath);
+			sd.setLocalPath(localPath);
 			sd.setStagingService(stagingService);
 			sd.setGlideinService(glideinService);
-			sd.setCondorPackage("7.0.0-x86-Linux-2.6-glibc2.3.tar.gz");
+			sd.setCondorPackage(condorPackage);
+			
 			Site s = SiteFactory.getInstance().createSite(p.createSiteId(), sd);
 			
 			SiteHandler h = new SiteHandler(p,s);

@@ -254,6 +254,33 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		System.setProperty("log4j.defaultInitOverride", "true");
 		BasicConfigurator.configure();
 		
+//		String name = "dynamic";
+//		String installPath = "/home/geovault-00/juve/glidein";
+//		String localPath = "/home/geovault-00/juve/glidein/local";
+//		String fork = "dynamic.usc.edu:2119/jobmanager-fork";
+//		String pbs = "dynamic.usc.edu:2119/jobmanager-pbs";
+//		String queue = null;
+//		String project = null;
+//		String broker = "128.125.25.48";
+		
+		String name = "sdsc";
+		String installPath = "/users/gideon/glidein";
+		String localPath = "/gpfs/gideon/glidein/local";
+		String fork = "tg-login.sdsc.teragrid.org/jobmanager-fork";
+		String pbs = "tg-login.sdsc.teragrid.org/jobmanager-pbs";
+		String queue = "dque";
+		String project = "CSB246";
+		String broker = null;
+		
+//		String name = "mercury";
+//		String installPath = "/users/gideon/glidein";
+//		String localPath = "/gpfs/gideon/glidein/local";
+//		String fork = "grid-hg.ncsa.teragrid.org/jobmanager-fork";
+//		String pbs = "grid-hg.ncsa.teragrid.org/jobmanager-pbs";
+//		String queue = "normal";
+//		String project = "nqi";
+//		String broker = null;
+		
 		try 
 		{
 			PoolDescription pd = new PoolDescription();
@@ -265,32 +292,30 @@ public class GlideinHandler implements Runnable, CondorEventListener
 			
 			ExecutionService stagingService = new ExecutionService();
 			stagingService.setServiceType(ServiceType.GT2);
-			stagingService.setServiceContact("dynamic.usc.edu:2119/jobmanager-fork");
+			stagingService.setServiceContact(fork);
 			stagingService.setProxy(proxy);
 			
 			ExecutionService glideinService = new ExecutionService();
 			glideinService.setServiceType(ServiceType.GT2);
-			glideinService.setServiceContact("dynamic.usc.edu:2119/jobmanager-pbs");
+			glideinService.setServiceContact(pbs);
 			glideinService.setProxy(proxy);
-			//glideinService.setQueue("normal");
-			//glideinService.setProject("nqi");
+			glideinService.setQueue(queue);
+			glideinService.setProject(project);
 			
 			SiteDescription sd = new SiteDescription();
-			sd.setName("dynamic");
-			//sd.setInstallPath("/u/ac/juve/glidein");
-			sd.setInstallPath("/home/geovault-00/juve/glidein");
-			//sd.setLocalPath("/cfs/scratch/users/juve/glidein");
-			sd.setLocalPath("/home/geovault-00/juve/glidein/local");
+			sd.setName(name);
+			sd.setInstallPath(installPath);
+			sd.setLocalPath(localPath);
 			sd.setStagingService(stagingService);
 			sd.setGlideinService(glideinService);
-			//sd.setCondorPackage("7.0.0-i686-pc-Linux-2.4.tar.gz");
+
 			Site s = SiteFactory.getInstance().createSite(p.createSiteId(), sd);
 			
 			GlideinDescription gd = new GlideinDescription();
-			gd.setWallTime(2); // 2 mins for test
-			gd.setHostCount(8);
-			gd.setNumCpus(4);
-			gd.setGcbBroker("128.125.25.48"); // array.usc.edu
+			gd.setWallTime(10); // 10 mins for test
+			gd.setHostCount(1);
+			gd.setNumCpus(2);
+			gd.setGcbBroker(broker);
 			//gd.setIdleTime(1); // 1 min for test
 			//gd.setDebug("D_FULLDEBUG,D_DAEMONCORE");
 			
