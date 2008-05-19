@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="SiteFactoryService"
+	targetNamespace="http://www.usc.edu/glidein/SiteFactoryService"
+	xmlns="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:tns="http://www.usc.edu/glidein/SiteFactoryService"
+	xmlns:glidein="http://www.usc.edu/glidein/GlideinTypes"
+	xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+	<!--============================================================
+								TYPES
+	============================================================-->
+	<types>
+		<xsd:schema 
+			targetNamespace="http://www.usc.edu/glidein/SiteFactoryService"
+			xmlns:tns="http://www.usc.edu/glidein/SiteFactoryService"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+			
+			<xsd:import
+				namespace="http://schemas.xmlsoap.org/ws/2004/03/addressing"
+				schemaLocation="../ws/addressing/WS-Addressing.xsd" />
+			
+			<xsd:import
+				namespace="http://www.usc.edu/glidein/GlideinTypes"
+				schemaLocation="GlideinTypes.xsd" />
+			
+		</xsd:schema>
+	</types>
+	
+	<!--============================================================
+							MESSAGES
+	============================================================-->
+	
+	<message name="createSiteRequestMessage">
+		<part name="site" type="glidein:Site"/>
+	</message>
+	<message name="createSiteResponseMessage">
+		<part name="endpoint" type="wsa:EndpointReferenceType"/>
+	</message>
+	
+	<!--============================================================
+							PORT TYPE
+	============================================================-->
+
+	<portType name="SiteFactoryPortType">
+		<operation name="createSite">
+			<input message="tns:createSiteRequestMessage"/>
+			<output message="tns:createSiteResponseMessage"/>
+		</operation>
+	</portType>
+	
+</definitions>

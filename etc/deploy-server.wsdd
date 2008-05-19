@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deployment name="defaultServerConfig"
+	xmlns="http://xml.apache.org/axis/wsdd/"
+	xmlns:java="http://xml.apache.org/axis/wsdd/providers/java"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+	<!-- GlideinService -->
+	<service name="glidein/GlideinService" provider="Handler" use="literal" style="document">
+		<parameter name="className" value="edu.usc.glidein.service.impl.GlideinService"/>
+		<wsdlFile>share/schema/glidein/GlideinService_service.wsdl</wsdlFile>
+		<parameter name="allowedMethods" value="*"/>
+		<parameter name="handlerClass" value="org.globus.axis.providers.RPCProvider"/>
+		<parameter name="scope" value="Application"/>
+		<parameter name="providers" value="GetRPProvider"/>
+	</service>
+
+	<!-- GlideinFactoryService -->
+	<service name="glidein/GlideinFactoryService" provider="Handler" use="literal" style="document">
+		<parameter name="className" value="edu.usc.glidein.service.impl.GlideinFactoryService"/>
+		<wsdlFile>share/schema/glidein/GlideinFactoryService_service.wsdl</wsdlFile>
+		<parameter name="allowedMethods" value="*"/>
+		<parameter name="handlerClass" value="org.globus.axis.providers.RPCProvider"/>
+		<parameter name="scope" value="Application"/>
+		<parameter name="instance" value="glidein/GlideinService"/>
+	</service>
+
+	<!-- SiteService -->
+	<service name="glidein/SiteService" provider="Handler" use="literal" style="document">
+		<parameter name="className" value="edu.usc.glidein.service.impl.SiteService"/>
+		<wsdlFile>share/schema/glidein/SiteService_service.wsdl</wsdlFile>
+		<parameter name="allowedMethods" value="*"/>
+		<parameter name="handlerClass" value="org.globus.axis.providers.RPCProvider"/>
+		<parameter name="scope" value="Application"/>
+		<parameter name="providers" value="GetRPProvider"/>
+	</service>
+
+	<!-- SiteFactoryService -->
+	<service name="glidein/SiteFactoryService" provider="Handler" use="literal" style="document">
+		<parameter name="className" value="edu.usc.glidein.service.impl.SiteFactoryService"/>
+		<wsdlFile>share/schema/glidein/SiteFactoryService_service.wsdl</wsdlFile>
+		<parameter name="allowedMethods" value="*"/>
+		<parameter name="handlerClass" value="org.globus.axis.providers.RPCProvider"/>
+		<parameter name="scope" value="Application"/>
+		<parameter name="instance" value="glidein/SiteService"/>
+	</service>
+
+</deployment>

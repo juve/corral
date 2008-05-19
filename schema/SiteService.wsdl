@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="SiteService"
+	targetNamespace="http://www.usc.edu/glidein/SiteService"
+	xmlns="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:tns="http://www.usc.edu/glidein/SiteService"
+	xmlns:glidein="http://www.usc.edu/glidein/GlideinTypes"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:wsrp="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
+	xmlns:wsrpw="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
+	xmlns:wsdlpp="http://www.globus.org/namespaces/2004/10/WSDLPreprocessor"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	
+	<wsdl:import namespace="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
+		location="../wsrf/properties/WS-ResourceProperties.wsdl" />
+		
+	<!--============================================================
+								TYPES
+	=============================================================-->
+	<types>
+		<xsd:schema targetNamespace="http://www.usc.edu/glidein/SiteService"
+			xmlns:tns="http://www.usc.edu/glidein/SiteService"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+			
+			<xsd:import
+				namespace="http://www.usc.edu/glidein/GlideinTypes"
+				schemaLocation="GlideinTypes.xsd" />
+			
+			<xsd:element name="deleteRequest" type="glidein:EmptyObject"/>
+			<xsd:element name="deleteResponse" type="glidein:EmptyObject"/>
+			
+			<xsd:element name="getStatusRequest" type="glidein:EmptyObject"/>
+			<xsd:element name="getStatusResponse" type="glidein:SiteStatus"/>
+			
+			<xsd:element name="getSiteRequest" type="glidein:EmptyObject"/>
+			<xsd:element name="getSiteResponse" type="glidein:Site"/>
+			
+		</xsd:schema>
+	</types>
+	
+	<!--============================================================
+							MESSAGES
+	============================================================-->
+	
+	<message name="getStatusInputMessage">
+		<part name="request" element="tns:getStatusRequest"/>
+	</message>
+	
+	<message name="getStatusOutputMessage">
+		<part name="response" element="tns:getStatusResponse"/>
+	</message>
+	
+	<message name="getSiteInputMessage">
+		<part name="request" element="tns:getSiteRequest"/>
+	</message>
+	
+	<message name="getSiteOutputMessage">
+		<part name="response" element="tns:getSiteResponse"/>
+	</message>
+	
+	<message name="deleteInputMessage">
+		<part name="request" element="tns:deleteRequest"/>
+	</message>
+	
+	<message name="deleteOutputMessage">
+		<part name="response" element="tns:deleteResponse"/>
+	</message>
+	 
+	<!--============================================================
+							PORT TYPE
+	============================================================-->
+	<portType name="SitePortType"
+		wsdlpp:extends="wsrpw:GetResourceProperty"
+		wsrp:ResourceProperties="tns:SiteResourceProperties">
+		
+		<operation name="getStatus">
+			<input message="tns:getStatusInputMessage"/>
+			<output message="tns:getStatusOutputMessage"/>
+		</operation>
+		 
+		<operation name="getSite">
+			<input message="tns:getSiteInputMessage"/>
+			<output message="tns:getSiteOutputMessage"/>
+		</operation>
+		
+		<operation name="delete">
+			<input message="tns:deleteInputMessage"/>
+			<output message="tns:deleteOutputMessage"/>
+		</operation>
+	</portType>
+
+</definitions>

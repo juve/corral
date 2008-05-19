@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jndiConfig xmlns="http://wsrf.globus.org/jndi/config">
+
+	<!-- GlideinService -->
+	<service name="glidein/GlideinService">
+		<resource name="home" type="edu.usc.glidein.service.impl.GlideinResourceHome">
+			<resourceParams>
+				<parameter>
+					<name>sweeperDelay</name>
+					<value>60000</value>
+				</parameter>
+				<parameter>
+					<name>resourceClass</name>
+					<value>edu.usc.glidein.service.impl.GlideinResource</value>
+				</parameter>
+				<parameter>
+					<name>resourceKeyType</name>
+					<value>java.lang.Integer</value>
+				</parameter>
+				<parameter>
+					<name>resourceKeyName</name>
+					<value>{http://www.usc.edu/glidein/GlideinService}GlideinServiceKey</value>
+				</parameter>
+				<parameter>
+					<name>factory</name>
+					<value>org.globus.wsrf.jndi.BeanFactory</value>
+				</parameter>
+			</resourceParams>
+		</resource>
+	</service>
+	
+	<!-- GlideinFactoryService -->
+	<service name="glidein/GlideinFactoryService">
+		<resourceLink name="home" target="java:comp/env/services/glidein/GlideinService/home"/>
+	</service>
+	
+	<!-- SiteService -->
+	<service name="glidein/SiteService">
+		<resource name="home" type="edu.usc.glidein.service.impl.SiteResourceHome">
+			<resourceParams>
+				<parameter>
+					<name>sweeperDelay</name>
+					<value>60000</value>
+				</parameter>
+				<parameter>
+					<name>resourceClass</name>
+					<value>edu.usc.glidein.service.impl.SiteResource</value>
+				</parameter>
+				<parameter>
+					<name>resourceKeyType</name>
+					<value>java.lang.Integer</value>
+				</parameter>
+				<parameter>
+					<name>resourceKeyName</name>
+					<value>{http://www.usc.edu/glidein/SiteService}SiteServiceKey</value>
+				</parameter>
+				<parameter>
+					<name>factory</name>
+					<value>org.globus.wsrf.jndi.BeanFactory</value>
+				</parameter>
+			</resourceParams>
+		</resource>
+	</service>
+	
+	<!-- SiteFactoryService -->
+	<service name="glidein/SiteFactoryService">
+		<resourceLink name="home" target="java:comp/env/services/glidein/SiteService/home"/>
+	</service>
+
+</jndiConfig>

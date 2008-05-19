@@ -1,0 +1,231 @@
+#!/bin/sh
+
+# Usage
+CMD=`basename $0`
+usage ()
+{
+	echo """Usage: $CMD OPTIONS REQUIRED
+
+REQUIRED
+
+  -i | -installPath <path>
+      The path to install the Condor executables.
+  -v | -condorVersion <version>
+      The version of Condor to use. Ex: 7.0.0. Specify either -condorVersion
+      or -condorPackage, but not both.
+  -p | -condorPackage <tar.gz>
+      The tar.gz archive to download. Default is gathered from system info.
+      Ex: 7.0.0-x86-Linux-2.4-glibc2.3.tar.gz. Specify either -condorVersion
+      or -condorPackage, but not both.
+  -u | -url <url> ...
+      The server URL where the glidein jobs are hosted. Protocols supported
+      include: http, https, ftp, and gsiftp. Multiple -url arguments are
+      allowed.
+      
+OPTIONS
+
+  -h | -help
+      Display this usage message
+""" >&2
+}
+
+SERVER_URLS=""
+INSTALL_PATH=""
+VERSION=""
+PACKAGE=""
+
+while [ $# -ge 1 ]; do
+	case $1 in
+		-i | -installPath) INSTALL_PATH=$2 ;;
+		-v | -condorVersion) VERSION=$2 ;;
+		-p | -condorPackage) PACKAGE=$2 ;;
+		-u | -url) SERVER_URLS="${SERVER_URLS}$2 " ;;
+		-h | -help) usage ; exit 1 ;;
+		*) echo "Unknown argument: $1" >&2 ; exit 1 ;;
+	esac
+	shift
+	shift
+done
+
+# Must specify path
+if [ -z "${INSTALL_PATH}" ]; then
+	echo "Must specify -installPath" >&2
+	exit 1
+fi
+if ! echo ${INSTALL_PATH} | grep -q -E "^/"; then
+	echo "Install path must be absolute: ${INSTALL_PATH}" >&2
+	exit 1
+fi
+
+# Need at least one server url
+if [ -z "${SERVER_URLS}" ]; then
+	echo "Must specify at least one -url" >&2
+	exit 1
+fi
+for URL in ${SERVER_URLS}; do
+	if ! echo $URL | grep -q -E "(^gsiftp)|(^http)|(^ftp)"; then
+		echo "Invalid URL: $URL" >&2
+		exit 1
+	fi
+done
+
+# Must specify either package or version
+if [ -z "$PACKAGE" ] && [ -z "$VERSION" ]; then
+	echo "Must specify -condorPackage or -condorVersion" >&2
+	exit 1
+fi
+if [ ! -z "$PACKAGE" ] && [ ! -z "$VERSION" ]; then
+	echo "Must specify either -condorPackage or -condorVersion" >&2
+	exit 1
+fi
+if [ ! -z "$VERSION" ]; then
+	if ! echo $VERSION | grep -q -E "^[0-9]+[.][0-9]+[.][0-9]+$"; then
+		echo "Invalid Condor version: $VERSION" >&2
+		exit 1
+	fi
+fi
+
+# Check environment
+if [ -z "${GLOBUS_LOCATION}" ]; then
+	echo "GLOBUS_LOCATION environment variable not set" >&2
+	exit 1
+fi
+
+# If user specified version only, then determine package
+if [ -z "$PACKAGE" ]; then
+
+	# Determine package name
+	os=`uname -s`
+	case $os in
+		Linux)
+			# kernel and major versions only
+			osver=`uname -r | cut -f1,2 -d.`
+			arch=`uname -m`
+			# change all the i486, i586, i686, etc to x86
+			case $arch in
+				i*86) arch="x86" ;;
+			esac
+			# glibc version, just major.minor
+			glibc=`ldd --version | head -1 | cut -f4 -d" " | cut -f1,2 -d.`
+			PACKAGE="${VERSION}-${arch}-${os}-${osver}-glibc${glibc}.tar.gz"
+		;;
+		SunOS)
+			os="Solaris"
+			arch=`uname -p`
+			osver=`uname -r`
+			case $osver in
+				5.6) osver="2.6" ;;
+				5.7) osver="7" ;;
+				5.8) osver="8" ;;
+				5.9) osver="9" ;;
+				5.10) osver="10" ;;
+			esac
+			PACKAGE="${VERSION}-${arch}-${os}-${osver}.tar.gz"
+		;;
+		AIX)
+			arch=`uname -p`
+			osver="`uname -v`.`uname -r`"
+			PACKAGE="${VERSION}-${arch}-${os}-${osver}.tar.gz"
+		;;
+		Darwin)
+			os="MacOSX"
+			arch=`uname -p`
+			case $arch in
+				powerpc64) arch="ppc64" ;;
+				powerpc) arch="ppc" ;;
+				i*86) arch="x86" ;;
+			esac
+			osver=`uname -r`
+			case $osver in
+				5.*) osver="10.1" ;;
+				6.*) osver="10.2" ;;
+				7.*) osver="10.3" ;;
+				8.*) osver="10.4" ;;
+				9.*) osver="10.5" ;;
+				*) osver="unknown" ;;
+			esac
+			PACKAGE="${VERSION}-${arch}-${os}-${osver}.tar.gz"
+		;;
+		HP-UX)
+			# arch will be either ia64 or PA-RISC
+			arch=`uname -m`
+			if [ "$arch" != "ia64" ]; then
+				arch="PA-RISC"
+			fi
+			# uname -r => B.11.00
+			osver=`uname -r | cut -f2,3 -d.`
+			PACKAGE="${VERSION}-${arch}-${os}-${osver}.tar.gz"
+		;;
+		FreeBSD)
+			arch=`uname -p`
+			case $arch in
+				i*86) arch="x86" ;;
+			esac
+			# Major version only
+			# uname -r => 6.1-RELEASE-p15
+			osver=`uname -r | cut -f1 -d- | cut -f1 -d.`
+			PACKAGE="${VERSION}-${arch}-${os}-${osver}.tar.gz"
+		;;
+		*)
+			arch=`uname -p`
+			osver=`uname -r`
+			PACKAGE="${VERSION}-${arch}-${os}-${osver}.tar.gz"
+		;;
+	esac
+fi
+
+# Download Condor package from one of the servers
+PACKAGE_PATH=`pwd`/package.tar.gz
+GUC=${GLOBUS_LOCATION}/bin/globus-url-copy
+if [ ! -x $GUC ]; then
+	echo "Unable to locate globus-url-copy" >&2
+	exit 1
+fi
+for URL in ${SERVER_URLS}; do
+	
+	PACKAGE_URL=$URL/$PACKAGE
+	
+	# Try globus-url-copy first
+	$GUC ${PACKAGE_URL} file:${PACKAGE_PATH} 2>&1
+	rc=$?
+	
+	# If globus-url-copy fails and the url is http or ftp, then try wget
+	if [ $rc != 0 ] || [ ! -f ${PACKAGE_PATH} ] && 
+	echo $URL | grep -q -E '(^http)|(^ftp)'; then
+		wget -q -O ${PACKAGE_PATH} ${PACKAGE_URL} 2>&1
+		rc=$?
+	fi
+
+	# Stop if we were successful
+	if [ $rc = 0 ] && [ -f ${PACKAGE_PATH} ]; then 
+		# Break out of loop
+		break
+	else
+		# Remove any zero-length files that may have been created
+		rm -f ${PACKAGE_PATH}
+	fi
+done
+
+# If package could not be downloaded from any server
+if [ ! -f ${PACKAGE_PATH} ]; then
+	echo "Failed to retrieve $PACKAGE" >&2
+	exit 1
+fi
+
+# Make install directory if it doesn't exist
+if [ ! -d ${INSTALL_PATH} ]; then
+	mkdir -p ${INSTALL_PATH}
+	if [ ! -d ${INSTALL_PATH} ]; then
+		echo "Unable to create remote install directory: ${INSTALL_PATH}" >&2
+		exit 1
+	fi
+fi
+
+# Install package
+cd ${INSTALL_PATH}
+if ! tar -xzf ${PACKAGE_PATH}; then
+	echo "Failed to install Condor glidein package" >&2
+	exit 1
+fi
+
+exit 0
