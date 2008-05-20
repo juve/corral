@@ -6,11 +6,8 @@ import java.io.IOException;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 
-import edu.usc.glidein.common.GlideinConfiguration;
-import edu.usc.glidein.common.GlideinException;
-import edu.usc.glidein.common.util.Base64;
-import edu.usc.glidein.common.util.IOUtil;
-import edu.usc.glidein.common.util.ProxyUtil;
+import edu.usc.glidein.GlideinConfiguration;
+import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.service.exec.Condor;
 import edu.usc.glidein.service.exec.CondorEvent;
 import edu.usc.glidein.service.exec.CondorEventListener;
@@ -25,6 +22,9 @@ import edu.usc.glidein.stubs.types.GlideinStatus;
 import edu.usc.glidein.stubs.types.GlideinStatusCode;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.ServiceType;
+import edu.usc.glidein.util.Base64;
+import edu.usc.glidein.util.IOUtil;
+import edu.usc.glidein.util.ProxyUtil;
 
 public class GlideinHandler implements Runnable, CondorEventListener
 {

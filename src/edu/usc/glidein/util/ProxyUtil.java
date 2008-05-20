@@ -1,11 +1,11 @@
-package edu.usc.glidein.common.util;
+package edu.usc.glidein.util;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.globus.util.ConfigUtil;
 
-import edu.usc.glidein.common.GlideinException;
+import edu.usc.glidein.GlideinException;
 
 /**
  * Manipulate proxies

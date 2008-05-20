@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import edu.usc.glidein.common.GlideinConfiguration;
-import edu.usc.glidein.common.GlideinException;
-import edu.usc.glidein.common.util.CommandLine;
-import edu.usc.glidein.common.util.ProxyUtil;
+import edu.usc.glidein.GlideinConfiguration;
+import edu.usc.glidein.GlideinException;
+import edu.usc.glidein.util.CommandLine;
+import edu.usc.glidein.util.ProxyUtil;
 
 /**
  * This class is an interface for managing condor jobs.

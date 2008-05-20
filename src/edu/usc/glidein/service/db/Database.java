@@ -1,6 +1,6 @@
 package edu.usc.glidein.service.db;
 
-import edu.usc.glidein.common.GlideinConfiguration;
+import edu.usc.glidein.GlideinConfiguration;
 
 public abstract class Database
 {

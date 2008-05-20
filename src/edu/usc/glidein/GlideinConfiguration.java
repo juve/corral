@@ -1,4 +1,4 @@
-package edu.usc.glidein.common;
+package edu.usc.glidein;
 
 import java.io.IOException;
 import java.io.FileInputStream;
@@ -6,6 +6,7 @@ import java.io.File;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 
 /**

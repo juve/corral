@@ -1,4 +1,4 @@
-package edu.usc.glidein.common;
+package edu.usc.glidein;
 
 public class GlideinException extends Exception
 {

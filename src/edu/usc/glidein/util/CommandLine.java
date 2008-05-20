@@ -1,4 +1,4 @@
-package edu.usc.glidein.common.util;
+package edu.usc.glidein.util;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -9,7 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import edu.usc.glidein.common.GlideinException;
+import edu.usc.glidein.GlideinException;
 
 /**
  * This class provides a simple interface to the system command line.

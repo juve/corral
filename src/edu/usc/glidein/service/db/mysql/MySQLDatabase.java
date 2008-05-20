@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-import edu.usc.glidein.common.GlideinConfiguration;
-import edu.usc.glidein.common.GlideinException;
+import edu.usc.glidein.GlideinConfiguration;
+import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.GlideinDAO;
 import edu.usc.glidein.service.db.Database;

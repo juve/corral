@@ -1,4 +1,4 @@
-package edu.usc.glidein.common.util;
+package edu.usc.glidein.util;
 
 import java.io.IOException;
 
