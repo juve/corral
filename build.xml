@@ -222,7 +222,8 @@
 			<include name="edu/usc/glidein/service/**/*"/>
 		</jar>
 		<jar jarfile="${jars.dir}/${common.jar.name}" basedir="${classes.dir}">
-			<include name="edu/usc/glidein/common/**/*"/>
+			<include name="edu/usc/glidein/*"/>
+			<include name="edu/usc/glidein/util/**/*"/>
 		</jar>
 		<jar jarfile="${jars.dir}/${client.jar.name}" basedir="${classes.dir}">
 			<include name="edu/usc/glidein/client/**/*"/>
