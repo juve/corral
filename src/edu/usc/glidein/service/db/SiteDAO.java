@@ -9,6 +9,6 @@ public interface SiteDAO
 	public void store(Site site) throws DatabaseException;
 	public Site load(int siteId) throws DatabaseException;
 	public void delete(int siteId) throws DatabaseException;
-	public SiteStatus getStatus(int siteId) throws DatabaseException;
-	public void updateStatus(int siteId, SiteStatus status) throws DatabaseException;
+	public void updateStatus(int siteId, SiteStatus status, String statusMessage) throws DatabaseException;
+	public Site[] list(boolean full) throws DatabaseException;
 }
