@@ -28,9 +28,6 @@
 			<xsd:element name="deleteRequest" type="glidein:EmptyObject"/>
 			<xsd:element name="deleteResponse" type="glidein:EmptyObject"/>
 			
-			<xsd:element name="getStatusRequest" type="glidein:EmptyObject"/>
-			<xsd:element name="getStatusResponse" type="glidein:GlideinStatus"/>
-			
 			<xsd:element name="getGlideinRequest" type="glidein:EmptyObject"/>
 			<xsd:element name="getGlideinResponse" type="glidein:Glidein"/>
 		</xsd:schema>
@@ -46,13 +43,6 @@
 		<part name="response" element="tns:deleteResponse"/>
 	</message>
 	
-	<message name="getStatusInputMessage">
-		<part name="request" element="tns:getStatusRequest"/>
-	</message>
-	<message name="getStatusOutputMessage">
-		<part name="response" element="tns:getStatusResponse"/>
-	</message>
-	
 	<message name="getGlideinInputMessage">
 		<part name="request" element="tns:getGlideinRequest"/>
 	</message>
@@ -66,11 +56,6 @@
 	<portType name="GlideinPortType"
 		wsdlpp:extends="wsrpw:GetResourceProperty"
 		wsrp:ResourceProperties="tns:GlideinResourceProperties">
-		
-		<operation name="getStatus">
-			<input message="tns:getStatusInputMessage"/>
-			<output message="tns:getStatusOutputMessage"/>
-		</operation>
 		 
 		<operation name="getGlidein">
 			<input message="tns:getGlideinInputMessage"/>
