@@ -11,7 +11,12 @@ import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.container.ServiceHost;
 import org.globus.wsrf.utils.AddressingUtils;
 
+import edu.usc.glidein.service.db.Database;
+import edu.usc.glidein.service.db.DatabaseException;
+import edu.usc.glidein.service.db.SiteDAO;
+import edu.usc.glidein.stubs.types.Sites;
 import edu.usc.glidein.stubs.types.Site;
+import edu.usc.glidein.stubs.types.SiteStatus;
 
 public class SiteFactoryService
 {
@@ -22,6 +27,11 @@ public class SiteFactoryService
 	public EndpointReferenceType createSite(Site site)
 	throws RemoteException
 	{
+		// TODO Initialize site
+		site.setStatus(SiteStatus.NEW);
+		site.setStatusMessage("Created");
+		site.setSubmitPath("/submit/path");
+		
 		// Create a new resource
 		ResourceKey key = null;
 		try {
@@ -50,5 +60,18 @@ public class SiteFactoryService
 		
 		// Return the endpoint reference to the client
 		return epr;
+	}
+	
+	public Sites listSites(boolean longFormat)
+	throws RemoteException
+	{
+		try {
+			Database db = Database.getDatabase();
+			SiteDAO dao = db.getSiteDAO();
+			Site[] sites = dao.list(longFormat);
+			return new Sites(sites);
+		} catch(DatabaseException de) {
+			throw new RemoteException("Unable to list sites",de);
+		}
 	}
 }
