@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Locate appropriate env vars
+if [ -z "$JAVA_HOME" ]; then
+    echo "ERROR: Please set the JAVA_HOME environment variable"
+    exit 1
+fi
+if [ -z "$GLOBUS_LOCATION" ]; then
+	echo "ERROR: Please set the GLOBUS_LOCATION environment variable"
+	exit 1
+fi
+if [ -z "$GLIDEIN_HOME" ]; then
+	echo "ERROR: Please set the GLIDEIN_HOME environment variable"
+	exit 1
+fi
+
+# Set classpath
+# TODO Only add the jars needed
+CLASSPATH="${GLIDEIN_HOME}/classes"
+for jar in `ls $GLIDEIN_HOME/lib/*.jar`; do
+	CLASSPATH="${CLASSPATH}:${jar}"
+done
+# IMPORTANT: Needed for client-config.wsdd!
+CLASSPATH="${CLASSPATH}:${GLOBUS_LOCATION}"
+for jar in `ls $GLOBUS_LOCATION/lib/*.jar`; do
+	CLASSPATH="${CLASSPATH}:${jar}"
+done
+export CLASSPATH
+
+# Run CommandLineClient
+${JAVA_HOME}/bin/java edu.usc.glidein.client.cli.CommandLineClient "$@"
