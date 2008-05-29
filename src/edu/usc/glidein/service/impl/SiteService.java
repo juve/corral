@@ -8,7 +8,6 @@ import org.globus.wsrf.ResourceKey;
 
 import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteStatus;
 
 public class SiteService 
 {
@@ -45,10 +44,6 @@ public class SiteService
 			logger.error(message,e);
 			throw new RemoteException(message, e);
 		}	
-	}
-	
-	public SiteStatus getStatus(EmptyObject empty) throws RemoteException {
-		return getResource().getStatus();
 	}
 	
 	public Site getSite(EmptyObject empty) throws RemoteException {
