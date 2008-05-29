@@ -12,23 +12,20 @@ import edu.usc.glidein.service.db.Database;
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.SiteDAO;
 import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteStatus;
 
 public class SiteResource implements PersistentResource, ResourceProperties
 {
 	private SimpleResourcePropertySet resourceProperties;
 	private Site site;
-	private SiteStatus status;
 	
 	/**
 	 * Default constructor required
 	 */
 	public SiteResource() { }
 	
-	public SiteResource(Site site, SiteStatus status) throws ResourceException
+	public SiteResource(Site site) throws ResourceException
 	{
 		this.site = site;
-		this.status = status;
 		setResourceProperties();
 	}
 	
@@ -40,20 +37,12 @@ public class SiteResource implements PersistentResource, ResourceProperties
 		return site;
 	}
 	
-	public void setStatus(SiteStatus status) {
-		this.status = status;
-	}
-	
-	public SiteStatus getStatus() {
-		return status;
-	}
-	
 	private void setResourceProperties() throws ResourceException
 	{
 		try {
-			resourceProperties = new SimpleResourcePropertySet(SiteQNames.RESOURCE_PROPERTIES);
+			resourceProperties = new SimpleResourcePropertySet(SiteNames.RESOURCE_PROPERTIES);
 			resourceProperties.add(new ReflectionResourceProperty(
-					SiteQNames.RP_SITE_ID,"Id",site));
+					SiteNames.RP_SITE_ID,"Id",site));
 			// TODO Set the rest of the resource properties
 		} catch(Exception e) {
 			throw new ResourceException("Unable to set site resource properties",e);
@@ -79,7 +68,6 @@ public class SiteResource implements PersistentResource, ResourceProperties
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			site = dao.load(id);
-			status = dao.getStatus(id);
 			setResourceProperties();
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
@@ -93,7 +81,6 @@ public class SiteResource implements PersistentResource, ResourceProperties
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			dao.store(site);
-			dao.updateStatus(site.getId(), status);
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
 		}
@@ -101,13 +88,11 @@ public class SiteResource implements PersistentResource, ResourceProperties
 	
 	public synchronized void delete() throws ResourceException
 	{
-		System.out.println("Deleting "+getSite().getId()); //XXX
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			dao.delete(site.getId());
 			site = null;
-			status = null;
 			resourceProperties = null;
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
