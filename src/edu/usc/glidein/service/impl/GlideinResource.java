@@ -12,32 +12,21 @@ import edu.usc.glidein.service.db.Database;
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.GlideinDAO;
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinStatus;
 
 public class GlideinResource implements PersistentResource, ResourceProperties
 {
 	private SimpleResourcePropertySet resourceProperties;
 	private Glidein glidein = null;
-	private GlideinStatus status = null;
 	
 	/**
 	 * Default constructor required
 	 */
 	public GlideinResource() { }
 	
-	public GlideinResource(Glidein glidein, GlideinStatus status) throws ResourceException
+	public GlideinResource(Glidein glidein) throws ResourceException
 	{
 		this.glidein = glidein;
-		this.status = status;
 		setResourceProperties();
-	}
-	
-	public void setStatus(GlideinStatus status) {
-		this.status = status;
-	}
-	
-	public GlideinStatus getStatus() {
-		return status;
 	}
 	
 	public void setGlidein(Glidein glidein) {
@@ -50,8 +39,8 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 	
 	private void setResourceProperties() throws ResourceException {
 		try {
-			resourceProperties = new SimpleResourcePropertySet(GlideinQNames.RESOURCE_PROPERTIES);
-			resourceProperties.add(new ReflectionResourceProperty(GlideinQNames.RP_GLIDEIN_ID,"Id",glidein));
+			resourceProperties = new SimpleResourcePropertySet(GlideinNames.RESOURCE_PROPERTIES);
+			resourceProperties.add(new ReflectionResourceProperty(GlideinNames.RP_GLIDEIN_ID,"Id",glidein));
 			// TODO Set the rest of the resource properties
 		} catch(Exception e) {
 			throw new ResourceException("Unable to set glidein resource properties",e);
@@ -77,7 +66,6 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			glidein = dao.load(id);
-			status = dao.getStatus(id);
 			setResourceProperties();
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
@@ -90,7 +78,6 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.store(glidein);
-			dao.updateStatus(glidein.getId(), status);
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
 		}
@@ -111,7 +98,6 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.delete(glidein.getId());
 			glidein = null;
-			status = null;
 			resourceProperties = null;
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
