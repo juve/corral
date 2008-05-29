@@ -37,17 +37,14 @@ public class SiteClient
 			String project = null;
 			String condorPackage = "7.0.0-x86-Linux-2.6-glibc2.3.tar.gz";
 			String condorVersion = "7.0.0";
-			String proxy = "proxy";
 			
 			ExecutionService stagingService = new ExecutionService();
 			stagingService.setServiceType(ServiceType.GT2);
 			stagingService.setServiceContact(fork);
-			stagingService.setProxy(proxy);
 			
 			ExecutionService glideinService = new ExecutionService();
 			glideinService.setServiceType(ServiceType.GT2);
 			glideinService.setServiceContact(pbs);
-			glideinService.setProxy(proxy);
 			glideinService.setQueue(queue);
 			glideinService.setProject(project);
 			
@@ -77,13 +74,6 @@ public class SiteClient
 			else if(stub.getHeaders().length == 0) System.out.println("Empty headers");
 			else for (SOAPHeaderElement elem : stub.getHeaders())
 				System.out.println(elem.toString());
-			
-			SiteStatus status = instanceService.getStatus(new EmptyObject());
-			if (status==null) {
-				System.out.println("Site status null");
-			} else {
-				System.out.printf("Site status: %s (%s)\n",status.getCode().toString(),status.getMessage());
-			}
 			
 			site = instanceService.getSite(new EmptyObject());
 			if (site==null) {
