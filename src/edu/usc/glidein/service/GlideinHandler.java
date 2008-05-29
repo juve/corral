@@ -18,13 +18,10 @@ import edu.usc.glidein.service.exec.CondorUniverse;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinStatus;
-import edu.usc.glidein.stubs.types.GlideinStatusCode;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.IOUtil;
-import edu.usc.glidein.util.ProxyUtil;
 
 public class GlideinHandler implements Runnable, CondorEventListener
 {
@@ -144,7 +141,6 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		job.setGridContact(glideinService.getServiceContact());
 		job.setProject(glideinService.getProject());
 		job.setQueue(glideinService.getQueue());
-		job.setProxy(glideinService.getProxy());
 		
 		// Set glidein executable
 		String run = config.getProperty("glidein.run");
@@ -172,9 +168,9 @@ public class GlideinHandler implements Runnable, CondorEventListener
 			job.addArgument("-gcbBroker "+glidein.getGcbBroker());
 		if(glidein.getIdleTime()>0)
 			job.addArgument("-idleTime "+glidein.getIdleTime());
-		if(glidein.getDebug()!=null)
+		if(glidein.getCondorDebug()!=null)
 		{
-			String[] debug = glidein.getDebug().split("[ ,]+");
+			String[] debug = glidein.getCondorDebug().split("[ ,]+");
 			for(String level : debug)
 				job.addArgument("-debug "+level);
 		}
@@ -183,7 +179,7 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		
 		// If there is a special config file, use it
 		String configFile = null;
-		if (glidein.getConfigBase64()==null)
+		if (glidein.getCondorConfigBase64()==null)
 		{
 			configFile = config.getProperty("glidein.condor.config");
 		}
@@ -193,7 +189,7 @@ public class GlideinHandler implements Runnable, CondorEventListener
 			configFile = "glidein_condor_config";
 			try 
 			{
-				String cfg = Base64.fromBase64(glidein.getConfigBase64());
+				String cfg = Base64.fromBase64(glidein.getCondorConfigBase64());
 				IOUtil.write(cfg, new File(job.getJobDirectory(),configFile));
 			} 
 			catch(IOException ioe)
@@ -289,17 +285,13 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		
 		try 
 		{
-			String proxy = ProxyUtil.readProxy();
-			
 			ExecutionService stagingService = new ExecutionService();
 			stagingService.setServiceType(ServiceType.GT2);
 			stagingService.setServiceContact(fork);
-			stagingService.setProxy(proxy);
 			
 			ExecutionService glideinService = new ExecutionService();
 			glideinService.setServiceType(ServiceType.GT2);
 			glideinService.setServiceContact(pbs);
-			glideinService.setProxy(proxy);
 			glideinService.setQueue(queue);
 			glideinService.setProject(project);
 			
