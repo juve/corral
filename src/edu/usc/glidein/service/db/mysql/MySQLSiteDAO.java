@@ -4,7 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.LinkedList;
+import java.util.TimeZone;
 
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.JDBCUtil;
@@ -14,7 +17,6 @@ import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteStatus;
-import edu.usc.glidein.stubs.types.SiteStatusCode;
 
 public class MySQLSiteDAO implements SiteDAO
 {
@@ -59,7 +61,7 @@ public class MySQLSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, submitPath, condorPackage, condorVersion, status, statusMessage) VALUES (?,?,?,?,?,?,?,?)");
+			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, submitPath, condorPackage, condorVersion, status, statusMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,?,NOW(),NOW())");
 			int i = 1;
 			stmt.setString(i++, site.getName());
 			stmt.setString(i++, site.getInstallPath());
@@ -67,8 +69,8 @@ public class MySQLSiteDAO implements SiteDAO
 			stmt.setString(i++, site.getSubmitPath());
 			stmt.setString(i++, site.getCondorPackage());
 			stmt.setString(i++, site.getCondorVersion());
-			stmt.setString(i++, SiteStatusCode.NEW.toString());
-			stmt.setString(i++, SiteStatusCode.NEW.toString());
+			stmt.setString(i++, site.getStatus().toString());
+			stmt.setString(i++, site.getStatusMessage());
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create site: wrong number of db updates");
 			}
@@ -96,7 +98,7 @@ public class MySQLSiteDAO implements SiteDAO
 		if (service == null) return;
 		PreparedStatement stmt = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO execution_service (site, function, serviceContact, serviceType, project, queue, proxy) VALUES (?,?,?,?,?,?,?)");
+			stmt = connection.prepareStatement("INSERT INTO execution_service (site, function, serviceContact, serviceType, project, queue) VALUES (?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setInt(i++, siteId);
 			stmt.setString(i++, function.toString());
@@ -104,7 +106,6 @@ public class MySQLSiteDAO implements SiteDAO
 			stmt.setString(i++, service.getServiceType().toString());
 			stmt.setString(i++, service.getProject());
 			stmt.setString(i++, service.getQueue());
-			stmt.setString(i++, service.getProxy());
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create execution service: wrong number of db updates");
 			}
@@ -121,7 +122,7 @@ public class MySQLSiteDAO implements SiteDAO
 		if (env == null || env.length == 0) return;
 		PreparedStatement stmt = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO site_environment (site, variable, value) VALUES (?,?,?)");
+			stmt = connection.prepareStatement("INSERT INTO environment (site, variable, value) VALUES (?,?,?)");
 			for (EnvironmentVariable var : env) {
 				stmt.setInt(1, siteId);
 				stmt.setString(2, var.getVariable());
@@ -169,14 +170,7 @@ public class MySQLSiteDAO implements SiteDAO
 			stmt.setInt(1, siteId);
 			rs = stmt.executeQuery();
 			if (rs.next()) {
-				site = new Site();
-				site.setId(siteId);
-				site.setName(rs.getString("name"));
-				site.setInstallPath(rs.getString("installPath"));
-				site.setLocalPath(rs.getString("localPath"));
-				site.setSubmitPath(rs.getString("submitPath"));
-				site.setCondorPackage(rs.getString("condorPackage"));
-				site.setCondorVersion(rs.getString("condorVersion"));
+				site = newSite(rs);
 			} else {
 				throw new DatabaseException("Site "+siteId+" not found");
 			}
@@ -206,7 +200,6 @@ public class MySQLSiteDAO implements SiteDAO
 				service.setServiceType(ServiceType.fromString(rs.getString("serviceType")));
 				service.setProject(rs.getString("project"));
 				service.setQueue(rs.getString("queue"));
-				service.setProxy(rs.getString("proxy"));
 			}
 		} catch(SQLException sqle) {
 			throw new DatabaseException("Unable to load execution service: select failed",sqle);
@@ -224,7 +217,7 @@ public class MySQLSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("SELECT * FROM site_environment WHERE site=?");
+			stmt = connection.prepareStatement("SELECT * FROM environment WHERE site=?");
 			stmt.setInt(1, siteId);
 			rs = stmt.executeQuery();
 			if (rs.next()) {
@@ -243,95 +236,7 @@ public class MySQLSiteDAO implements SiteDAO
 
 	public void store(Site site) throws DatabaseException 
 	{
-		Connection conn = null;
-		int siteId = site.getId();
-		try {
-			conn = database.getConnection();
-			updateSite(conn, site);
-			updateExecutionService(conn, siteId, site.getStagingService(), ServiceFunction.STAGING);
-			updateExecutionService(conn, siteId, site.getGlideinService(), ServiceFunction.GLIDEIN);
-			updateEnvironment(conn, siteId, site.getEnvironment());
-			conn.commit();
-		} catch (DatabaseException dbe) {
-			JDBCUtil.rollbackQuietly(conn);
-			throw dbe;
-		} catch (SQLException sqle) {
-			JDBCUtil.rollbackQuietly(conn);
-			throw new DatabaseException("Unable to store site: commit failed",sqle);
-		} finally {
-			JDBCUtil.closeQuietly(conn);
-		}
-	}
-	
-	private void updateSite(Connection connection, Site site) throws DatabaseException
-	{
-		PreparedStatement stmt = null;
-		ResultSet rs = null;
-		try {
-			stmt = connection.prepareStatement("UPDATE site SET name=?, installPath=?, localPath=?, submitPath=?, condorPackage=?, condorVersion=? WHERE id=?");
-			int i = 1;
-			stmt.setString(i++, site.getName());
-			stmt.setString(i++, site.getInstallPath());
-			stmt.setString(i++, site.getLocalPath());
-			stmt.setString(i++, site.getSubmitPath());
-			stmt.setString(i++, site.getCondorPackage());
-			stmt.setString(i++, site.getCondorVersion());
-			stmt.setInt(i++, site.getId());
-			if (stmt.executeUpdate()!=1) {
-				throw new DatabaseException("Unable to store site: wrong number of db updates");
-			}
-		} catch (SQLException sqle) {
-			throw new DatabaseException("Unable to store site: update failed",sqle);
-		} finally {
-			JDBCUtil.closeQuietly(rs);
-			JDBCUtil.closeQuietly(stmt);	
-		}
-	}
-
-	private void updateExecutionService(Connection connection, int siteId, ExecutionService service, ServiceFunction function)
-	throws DatabaseException
-	{
-		if (service == null) return;
-		PreparedStatement stmt = null;
-		try {
-			stmt = connection.prepareStatement("UPDATE execution_service SET serviceContact=?, serviceType=?, project=?, queue=?, proxy=? WHERE site=? AND function=?");
-			int i = 1;
-			stmt.setString(i++, service.getServiceContact());
-			stmt.setString(i++, service.getServiceType().toString());
-			stmt.setString(i++, service.getProject());
-			stmt.setString(i++, service.getQueue());
-			stmt.setString(i++, service.getProxy());
-			stmt.setInt(i++, siteId);
-			stmt.setString(i++, function.toString());
-			if (stmt.executeUpdate()!=1) {
-				throw new DatabaseException("Unable to store execution service: wrong number of db updates");
-			}
-		} catch(SQLException sqle) {
-			throw new DatabaseException("Unable to store execution service: update failed",sqle);
-		} finally {
-			JDBCUtil.closeQuietly(stmt);
-		}
-	}
-	
-	private void updateEnvironment(Connection connection, int siteId, EnvironmentVariable[] env)
-	throws DatabaseException
-	{
-		deleteEnvironment(connection,siteId);
-		createEnvironment(connection,siteId,env);
-	}
-	
-	private void deleteEnvironment(Connection connection, int siteId) throws DatabaseException
-	{
-		PreparedStatement stmt = null;
-		try {
-			stmt = connection.prepareStatement("DELETE FROM site_environment WHERE site=?");
-			stmt.setInt(1, siteId);
-			stmt.executeUpdate();
-		} catch(SQLException sqle) {
-			throw new DatabaseException("Unable to store site environment: delete failed",sqle);
-		} finally {
-			JDBCUtil.closeQuietly(stmt);
-		}
+		updateStatus(site.getId(),site.getStatus(),site.getStatusMessage());
 	}
 	
 	public void delete(int siteId) throws DatabaseException
@@ -359,40 +264,15 @@ public class MySQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	public SiteStatus getStatus(int siteId) throws DatabaseException
-	{
-		Connection conn = null;
-		PreparedStatement stmt = null;
-		ResultSet rs = null;
-		try {
-			stmt = conn.prepareStatement("SELECT status, statusMessage FROM site WHERE id=?");
-			stmt.setInt(1, siteId);
-			rs = stmt.executeQuery();
-			if (rs.next()) {
-				SiteStatus status = new SiteStatus();
-				status.setCode(SiteStatusCode.fromString(rs.getString("status")));
-				status.setMessage(rs.getString("statusMessage"));
-				return status;
-			} else {
-				throw new DatabaseException("Unable to get site status: no record found");
-			}
-		} catch (SQLException sqle) {
-			throw new DatabaseException("Unable to get site status: select failed",sqle);
-		} finally {
-			JDBCUtil.closeQuietly(rs);
-			JDBCUtil.closeQuietly(stmt);
-			JDBCUtil.closeQuietly(conn);
-		}
-	}
-	
-	public void updateStatus(int siteId, SiteStatus status) throws DatabaseException
+	public void updateStatus(int siteId, SiteStatus status, String statusMessage)
+	throws DatabaseException
 	{
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
-			stmt = conn.prepareStatement("UPDATE site SET status=?, statusMessage=? WHERE id=?");
-			stmt.setString(1, status.getCode().toString());
-			stmt.setString(2, status.getMessage());
+			stmt = conn.prepareStatement("UPDATE site SET status=?, statusMessage=?, lastUpdate=NOW() WHERE id=?");
+			stmt.setString(1, status.toString());
+			stmt.setString(2, statusMessage);
 			stmt.setInt(3, siteId);
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to update site status: wrong number of db updates");
@@ -407,6 +287,80 @@ public class MySQLSiteDAO implements SiteDAO
 		} finally {
 			JDBCUtil.closeQuietly(stmt);
 			JDBCUtil.closeQuietly(conn);
+		}
+	}
+	
+	public Site[] list(boolean full) throws DatabaseException
+	{
+		Connection conn = null;
+		try {
+			conn = database.getConnection();
+			Site[] sites = getSites(conn);
+			if (full) {
+				for (Site site : sites) {
+					int id = site.getId();
+					site.setEnvironment(getEnvironment(conn, id));
+					site.setStagingService(getExecutionService(
+							conn,id,ServiceFunction.STAGING));
+					site.setGlideinService(getExecutionService(
+							conn,id,ServiceFunction.GLIDEIN));
+				}
+			}
+			return sites;
+		} finally {
+			JDBCUtil.closeQuietly(conn);
+		}
+	}
+	
+	private Site[] getSites(Connection connection) throws DatabaseException
+	{
+		LinkedList<Site> sites = new LinkedList<Site>();
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = connection.prepareStatement("SELECT * FROM site");
+			rs = stmt.executeQuery();
+			while (rs.next()) {
+				Site site = newSite(rs);
+				sites.add(site);
+			}
+		} catch(SQLException sqle) {
+			throw new DatabaseException("Unable to load site: select failed",sqle);
+		} finally {
+			JDBCUtil.closeQuietly(rs);
+			JDBCUtil.closeQuietly(stmt);
+		}
+		return sites.toArray(new Site[0]);
+	}
+	
+	private Site newSite(ResultSet rs) throws DatabaseException
+	{
+		try {
+			Site site = new Site();
+			site.setId(rs.getInt("id"));
+			site.setName(rs.getString("name"));
+			site.setInstallPath(rs.getString("installPath"));
+			site.setLocalPath(rs.getString("localPath"));
+			site.setSubmitPath(rs.getString("submitPath"));
+			site.setCondorPackage(rs.getString("condorPackage"));
+			site.setCondorVersion(rs.getString("condorVersion"));
+			
+			site.setStatus(SiteStatus.fromString(rs.getString("status")));
+			site.setStatusMessage(rs.getString("statusMessage"));
+			
+			Calendar submitted = Calendar.getInstance(TimeZone.getDefault());
+			Timestamp submit = rs.getTimestamp("submitted",submitted);
+			submitted.setTime(submit);
+			site.setSubmitted(submitted);
+			
+			Calendar lastUpdate = Calendar.getInstance(TimeZone.getDefault());
+			Timestamp last = rs.getTimestamp("lastUpdate",lastUpdate);
+			lastUpdate.setTime(last);
+			site.setLastUpdate(lastUpdate);
+			
+			return site;
+		} catch (SQLException sqle) {
+			throw new DatabaseException("Unable to create Site object",sqle);
 		}
 	}
 }
