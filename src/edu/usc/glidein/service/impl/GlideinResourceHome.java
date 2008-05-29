@@ -7,8 +7,6 @@ import org.globus.wsrf.impl.ResourceHomeImpl;
 import org.globus.wsrf.impl.SimpleResourceKey;
 
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinStatus;
-import edu.usc.glidein.stubs.types.GlideinStatusCode;
 
 public class GlideinResourceHome extends ResourceHomeImpl
 {
@@ -24,8 +22,7 @@ public class GlideinResourceHome extends ResourceHomeImpl
 	public ResourceKey create(Glidein glidein)
 	throws ResourceException
 	{
-		GlideinResource resource = new GlideinResource(glidein, 
-				new GlideinStatus(GlideinStatusCode.NEW,GlideinStatusCode.NEW.toString()));
+		GlideinResource resource = new GlideinResource(glidein);
 		resource.create();
 		ResourceKey key = createKey(glidein.getId());
 		this.add(key, resource);
