@@ -36,20 +36,12 @@ public class GlideinClient
 			glidein.setNumCpus(2);
 			glidein.setGcbBroker("192.168.0.1");
 			glidein.setIdleTime(30);
-			glidein.setDebug(null);
-			glidein.setEnvironment(env);
+			glidein.setCondorDebug(null);
 			
 			EndpointReferenceType glideinRef = glideinFactory.createGlidein(glidein);
 			System.out.println(glideinRef.toString());
 			
 			GlideinPortType instanceService = glideinInstanceLocator.getGlideinPortTypePort(glideinRef);
-			
-			GlideinStatus status = instanceService.getStatus(new EmptyObject());
-			if (status==null) {
-				System.out.println("Glidein status null");
-			} else {
-				System.out.printf("Glidein status: %s (%s)\n",status.getCode().toString(),status.getMessage());
-			}
 			
 			glidein = instanceService.getGlidein(new EmptyObject());
 			if (glidein==null) {
@@ -58,7 +50,7 @@ public class GlideinClient
 				System.out.printf("Glidein: %s (%d)\n",glidein.getCondorHost(),glidein.getId());
 			}
 			
-			//instanceService.delete(new EmptyObject());
+			instanceService.delete(new EmptyObject());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
