@@ -19,10 +19,7 @@ import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteStatus;
-import edu.usc.glidein.stubs.types.SiteStatusCode;
 import edu.usc.glidein.util.IOUtil;
-import edu.usc.glidein.util.ProxyUtil;
 
 public class SiteHandler implements Runnable, CondorEventListener
 {
@@ -77,7 +74,6 @@ public class SiteHandler implements Runnable, CondorEventListener
 		job.setGridContact(stagingService.getServiceContact());
 		job.setProject(stagingService.getProject());
 		job.setQueue(stagingService.getQueue());
-		job.setProxy(stagingService.getProxy());
 		
 		// Set glidein_install executable
 		String install = config.getProperty("glidein.install");
@@ -246,17 +242,13 @@ public class SiteHandler implements Runnable, CondorEventListener
 		
 		try 
 		{
-			String proxy = ProxyUtil.readProxy();
-			
 			ExecutionService stagingService = new ExecutionService();
 			stagingService.setServiceType(ServiceType.GT2);
 			stagingService.setServiceContact(fork);
-			stagingService.setProxy(proxy);
 			
 			ExecutionService glideinService = new ExecutionService();
 			glideinService.setServiceType(ServiceType.GT2);
 			glideinService.setServiceContact(pbs);
-			glideinService.setProxy(proxy);
 			glideinService.setQueue(queue);
 			glideinService.setProject(project);
 			
