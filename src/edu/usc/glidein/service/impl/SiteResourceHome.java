@@ -7,8 +7,6 @@ import org.globus.wsrf.impl.ResourceHomeImpl;
 import org.globus.wsrf.impl.SimpleResourceKey;
 
 import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteStatus;
-import edu.usc.glidein.stubs.types.SiteStatusCode;
 
 public class SiteResourceHome extends ResourceHomeImpl
 {
@@ -24,8 +22,7 @@ public class SiteResourceHome extends ResourceHomeImpl
 	public ResourceKey create(Site site)
 	throws ResourceException
 	{
-		SiteResource resource = new SiteResource(site,
-				new SiteStatus(SiteStatusCode.NEW,SiteStatusCode.NEW.toString()));
+		SiteResource resource = new SiteResource(site);
 		resource.create();
 		ResourceKey key = createKey(site.getId());
 		this.add(key, resource);
