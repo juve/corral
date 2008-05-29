@@ -39,6 +39,13 @@
 		<part name="endpoint" type="wsa:EndpointReferenceType"/>
 	</message>
 	
+	<message name="listSitesRequestMessage">
+		<part name="longFormat" type="xsd:boolean"/>
+	</message>
+	<message name="listSitesResponseMessage">
+		<part name="sites" type="glidein:Sites"/>
+	</message>
+	
 	<!--============================================================
 							PORT TYPE
 	============================================================-->
@@ -47,6 +54,11 @@
 		<operation name="createSite">
 			<input message="tns:createSiteRequestMessage"/>
 			<output message="tns:createSiteResponseMessage"/>
+		</operation>
+		
+		<operation name="listSites">
+			<input message="tns:listSitesRequestMessage"/>
+			<output message="tns:listSitesResponseMessage"/>
 		</operation>
 	</portType>
 	
