@@ -3,7 +3,14 @@ package edu.usc.glidein.util;
 import java.io.File;
 import java.io.IOException;
 
+import javax.security.auth.Subject;
+
+import org.apache.axis.MessageContext;
+import org.globus.gsi.GlobusCredential;
+import org.globus.gsi.gssapi.GlobusGSSCredentialImpl;
 import org.globus.util.ConfigUtil;
+import org.globus.wsrf.impl.security.authentication.Constants;
+import org.globus.wsrf.security.SecurityManager;
 
 import edu.usc.glidein.GlideinException;
 
@@ -55,6 +62,86 @@ public class ProxyUtil
 					"Stdout:\n"+chmod.getOutput()+
 					"Stderr:\n"+chmod.getError());
 		}
+	}
+	
+	/*
+	 
+	THESE TWO METHODS WERE NEEDED WHEN USING THE DELEGATION SERVICE. NOW THIS IS DONE
+	USING THE DELEGATION MODE OF GSI SECURE CONVERSATION.
+	 
+	public void delegateCredential()
+	{
+		//DelegationUtil.delegate(delegationServiceUrl, issuingCred, certificate, fullDelegation, desc);
+	}
+	
+	public GlobusCredential getDelegatedCredential(String host, String id)
+	throws GlideinException
+	{
+		
+		try {
+			// Create resource key
+			ResourceKey key = new SimpleResourceKey(
+					new QName(DelegationConstants.NS,"DelegationKey"), id);
+			
+			// Get EPR
+			EndpointReferenceType epr = new EndpointReferenceType();
+			ReferencePropertiesType referenceProperties = new ReferencePropertiesType();
+			MessageElement elem = (MessageElement)key.toSOAPElement();
+			referenceProperties.set_any(new MessageElement[] {
+					(MessageElement)elem
+			});
+			epr.setProperties(referenceProperties);
+			epr.setAddress(new Address("http://"+host+
+					DelegationConstants.SERVICE_BASE_PATH+DelegationConstants.SERVICE_PATH));
+			
+			// Get resource
+			DelegationResource resource = DelegationUtil.getDelegationResource(epr);
+			
+			// Get credential
+			GlobusCredential cred = resource.getCredential();
+
+			return cred;
+		} catch(Exception e){
+			throw new GlideinException("Unable to find delegated credential",e);
+		}
+	}
+	*/
+	
+	/**
+	 * This only works if the client uses secure conversation and
+	 * enables GSI delegation mode.
+	 * 
+	 * @see org.globus.wsrf.security.Constants.GSI_SEC_CONV
+	 * @see org.globus.axis.gsi.GSIConstants.GSI_MODE
+	 * @return The delegated credential.
+	 */
+	public static GlobusCredential getCallerCredential()
+	{
+		GlobusCredential cred = null;
+		MessageContext msgCtx = MessageContext.getCurrentContext();
+		Subject subject = (Subject) msgCtx.getProperty(Constants.PEER_SUBJECT);
+		if (subject == null) {
+			return null;
+		} else {
+			for (Object o : subject.getPrivateCredentials()) {
+				cred = ((GlobusGSSCredentialImpl)o).getGlobusCredential();
+			}
+			return cred;
+		}
+	}
+	
+	/** 
+	 * This only works if the client turns on secure conversation or
+	 * secure message mode.
+	 * @see org.globus.wsrf.security.Constants.GSI_SEC_CONV
+	 * @see org.globus.wsrf.security.Constants.GSI_SEC_MSG
+	 * @return The callers subject name
+	 */
+	public static String getCallerDN()
+	{
+		SecurityManager manager = SecurityManager.getManager();
+        String callerDN = manager.getCaller();
+        return callerDN;
 	}
 
 	public static void main(String[] args)
