@@ -26,11 +26,10 @@
 			<xsd:element name="serviceType" type="glidein:ServiceType"/>
 			<xsd:element name="project" type="xsd:string" nillable="true"/>
 			<xsd:element name="queue" type="xsd:string" nillable="true"/>
-			<xsd:element name="proxy" type="xsd:string"/>
 		</xsd:sequence>
 	</xsd:complexType>
 	
-	<xsd:simpleType name="SiteStatusCode">
+	<xsd:simpleType name="SiteStatus">
 		<xsd:restriction base="xsd:string">
 			<xsd:enumeration value="NEW"/>
 			<xsd:enumeration value="STAGING"/>
@@ -42,13 +41,6 @@
 		</xsd:restriction>
 	</xsd:simpleType>
 	
-	<xsd:complexType name="SiteStatus">
-		<xsd:sequence>
-			<xsd:element name="code" type="glidein:SiteStatusCode" default="NEW"/>
-			<xsd:element name="message" type="xsd:string" nillable="true"/>
-		</xsd:sequence>
-	</xsd:complexType>
-	
 	<xsd:complexType name="Site">
 		<xsd:sequence>
 			<xsd:element name="id" type="xsd:int" default="-1"/>
@@ -58,16 +50,24 @@
 			<xsd:element name="submitPath" type="xsd:string" nillable="true"/>
 			<xsd:element name="stagingService" type="glidein:ExecutionService"/>
 			<xsd:element name="glideinService" type="glidein:ExecutionService"/>
-			<xsd:choice>
-				<xsd:element name="condorVersion" type="xsd:string" nillable="true"/>
-				<xsd:element name="condorPackage" type="xsd:string" nillable="true"/>
-			</xsd:choice>
+			<xsd:element name="condorVersion" type="xsd:string" nillable="true"/>
+			<xsd:element name="condorPackage" type="xsd:string" nillable="true"/>
 			<xsd:element name="environment" type="glidein:EnvironmentVariable" 
 				minOccurs="0" maxOccurs="0" nillable="true"/>
+			<xsd:element name="status" type="glidein:SiteStatus" default="NEW"/>
+			<xsd:element name="statusMessage" type="xsd:string" nillable="true"/>
+			<xsd:element name="submitted" type="xsd:dateTime" nillable="true"/>
+			<xsd:element name="lastUpdate" type="xsd:dateTime" nillable="true"/>
 		</xsd:sequence>
 	</xsd:complexType>
 	
-	<xsd:simpleType name="GlideinStatusCode">
+	<xsd:complexType name="Sites">
+		<xsd:sequence>
+			<xsd:element name="sites" type="glidein:Site" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:simpleType name="GlideinStatus">
 		<xsd:restriction base="xsd:string">
 			<xsd:enumeration value="NEW"/>
 			<xsd:enumeration value="SUBMITTED"/>
@@ -77,13 +77,6 @@
 			<xsd:enumeration value="FAILED"/>
 		</xsd:restriction>
 	</xsd:simpleType>
-	
-	<xsd:complexType name="GlideinStatus">
-		<xsd:sequence>
-			<xsd:element name="code" type="glidein:GlideinStatusCode" default="PENDING"/>
-			<xsd:element name="message" type="xsd:string" nillable="true"/>
-		</xsd:sequence>
-	</xsd:complexType>
 	
 	<xsd:complexType name="Glidein">
 		<xsd:sequence>
@@ -95,13 +88,21 @@
 			<xsd:element name="hostCount" type="xsd:int"/>
 			<xsd:element name="wallTime" type="xsd:int"/>
 			<xsd:element name="numCpus" type="xsd:int" default="0"/>
-			<xsd:element name="configBase64" type="xsd:string" nillable="true"/>
-			<xsd:element name="environment" type="glidein:EnvironmentVariable" 
-				minOccurs="0" maxOccurs="0" nillable="true"/>
+			<xsd:element name="condorConfigBase64" type="xsd:string" nillable="true"/>
 			<xsd:element name="gcbBroker" type="xsd:string" nillable="true"/>
 			<xsd:element name="idleTime" type="xsd:int" default="0"/>
-			<xsd:element name="debug" type="xsd:string" nillable="true"/>
+			<xsd:element name="condorDebug" type="xsd:string" nillable="true"/>
+			<xsd:element name="status" type="glidein:GlideinStatus" default="NEW"/>
+			<xsd:element name="statusMessage" type="xsd:string" nillable="true"/>
+			<xsd:element name="submitted" type="xsd:dateTime" nillable="true"/>
+			<xsd:element name="lastUpdate" type="xsd:dateTime" nillable="true"/>
 		</xsd:sequence>
 	</xsd:complexType>
 	
+	<xsd:complexType name="Glideins">
+		<xsd:sequence>
+			<xsd:element name="glideins" type="glidein:Glidein" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+			
 </xsd:schema>
