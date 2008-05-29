@@ -8,7 +8,6 @@ import org.globus.wsrf.ResourceKey;
 
 import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinStatus;
 
 public class GlideinService
 {
@@ -49,10 +48,6 @@ public class GlideinService
 			logger.error(message,e);
 			throw new RemoteException(message, e);
 		}
-	}
-	
-	public GlideinStatus getStatus(EmptyObject empty) throws RemoteException {
-		return getResource().getStatus();
 	}
 	
 	public Glidein getGlidein(EmptyObject empty) throws RemoteException {
