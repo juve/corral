@@ -24,7 +24,7 @@
 			<xsd:import
 				namespace="http://www.usc.edu/glidein/GlideinTypes"
 				schemaLocation="GlideinTypes.xsd" />
-			
+				
 		</xsd:schema>
 	</types>
 	
@@ -39,6 +39,13 @@
 		<part name="endpoint" type="wsa:EndpointReferenceType"/>
 	</message>
 	
+	<message name="listGlideinsRequestMessage">
+		<part name="longFormat" type="xsd:boolean"/>
+	</message>
+	<message name="listGlideinsResponseMessage">
+		<part name="glideins" type="glidein:Glideins"/>
+	</message>
+	
 	<!--============================================================
 							PORT TYPE
 	============================================================-->
@@ -48,6 +55,11 @@
 		<operation name="createGlidein">
 			<input message="tns:createGlideinRequestMessage"/>
 			<output message="tns:createGlideinResponseMessage"/>
+		</operation>
+		
+		<operation name="listGlideins">
+			<input message="tns:listGlideinsRequestMessage"/>
+			<output message="tns:listGlideinsResponseMessage"/>
 		</operation>
 		
 	</portType>
