@@ -27,10 +27,7 @@
 	<property name="schema.src" location="${globus.location}/share/schema"/>
     <property name="schema.dest" location="${build.dir}/schema"/>
     
-	<property name="service.jar.name" value="${base.name}_service.jar"/>
-	<property name="stubs.jar.name" value="${base.name}_stubs.jar"/>
-	<property name="client.jar.name" value="${base.name}_client.jar"/>
-	<property name="common.jar.name" value="${base.name}_common.jar"/>
+	<property name="jar.name" value="${base.name}.jar"/>
     <property name="gar.name" value="${package.name}.gar"/>
     
 	<!-- Globus build scripts -->
@@ -215,18 +212,8 @@
 	<!-- Create a JAR file with the implementation classes -->
 	<target name="jar" depends="compile">
 		<!-- Create jar files -->
-		<jar destfile="${jars.dir}/${stubs.jar.name}" basedir="${classes.dir}">
-			<include name="edu/usc/glidein/stubs/**/*"/>
-		</jar>
-		<jar jarfile="${jars.dir}/${service.jar.name}" basedir="${classes.dir}">
-			<include name="edu/usc/glidein/service/**/*"/>
-		</jar>
-		<jar jarfile="${jars.dir}/${common.jar.name}" basedir="${classes.dir}">
-			<include name="edu/usc/glidein/*"/>
-			<include name="edu/usc/glidein/util/**/*"/>
-		</jar>
-		<jar jarfile="${jars.dir}/${client.jar.name}" basedir="${classes.dir}">
-			<include name="edu/usc/glidein/client/**/*"/>
+		<jar destfile="${jars.dir}/${jar.name}" basedir="${classes.dir}">
+			<include name="edu/usc/glidein/**/*"/>
 		</jar>
 		
 		<!-- Copy jars -->
