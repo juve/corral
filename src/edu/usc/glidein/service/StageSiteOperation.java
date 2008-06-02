@@ -191,7 +191,7 @@ public class StageSiteOperation implements CondorEventListener
 				// Kill job if it is held, job will become aborted
 				try {
 					Condor condor = new Condor();
-					condor.cancelJob(event.getJob());
+					condor.cancelJob(event.getJob().getCondorId());
 				} catch(CondorException ce) {
 					failed("Unable to cancel held staging job", ce);
 				}
