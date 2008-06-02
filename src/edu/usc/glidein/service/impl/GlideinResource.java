@@ -41,7 +41,7 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 		try {
 			resourceProperties = new SimpleResourcePropertySet(GlideinNames.RESOURCE_PROPERTIES);
 			resourceProperties.add(new ReflectionResourceProperty(GlideinNames.RP_GLIDEIN_ID,"Id",glidein));
-			// TODO Set the rest of the resource properties
+			// TODO: Set the rest of the resource properties, or don't
 		} catch(Exception e) {
 			throw new ResourceException("Unable to set glidein resource properties",e);
 		}
@@ -104,6 +104,13 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 		}
 	}
 
+	public synchronized void submit() throws ResourceException
+	{
+		// TODO: Get delegated credential
+		// TODO: Check to make sure site is ready before submitting
+		// TODO: Submit glidein
+	}
+	
 	public ResourcePropertySet getResourcePropertySet() {
 		return resourceProperties;
 	}
