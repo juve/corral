@@ -21,7 +21,10 @@ import org.apache.commons.cli.PosixParser;
 import edu.usc.glidein.GlideinConfiguration;
 import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.stubs.SiteFactoryPortType;
+import edu.usc.glidein.stubs.SitePortType;
 import edu.usc.glidein.stubs.service.SiteFactoryServiceAddressingLocator;
+import edu.usc.glidein.stubs.service.SiteServiceAddressingLocator;
+import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
@@ -273,13 +276,16 @@ public class CreateSiteCommand extends Command
 	{
 		if (isDebug()) System.out.printf("Creating sites...\n");
 		for (Site s : sites) {
-			createSite(s);
+			EndpointReferenceType epr = createSite(s);
+			submitSite(epr,s);
 		}
 		if (isDebug()) System.out.printf("Done creating sites.\n");
 	}
 	
-	public void createSite(Site site) throws CommandException
+	public EndpointReferenceType createSite(Site site) throws CommandException
 	{
+		EndpointReferenceType siteEPR;
+		
 		if (isDebug()) System.out.printf("Creating site '%s'... ",site.getName());
 		try {
 			// Look up the site factory
@@ -295,9 +301,40 @@ public class CreateSiteCommand extends Command
 					org.globus.wsrf.security.Constants.SIGNATURE);
 			
 			// Create the site
-			factory.createSite(site);
+			siteEPR = factory.createSite(site);
 		} catch (Exception e) {
 			throw new CommandException("Unable to create site '"+site.getName()+"': "+
+					"Error communicating with service: "+e.getMessage(), e);
+		}
+		if (isDebug()) System.out.printf("done.\n");
+		
+		return siteEPR;
+	}
+	
+	public void submitSite(EndpointReferenceType siteEPR, Site site) throws CommandException
+	{
+		if (isDebug()) System.out.printf("Submitting site '%s'... ",site.getName());
+		try {
+			// Look up the site instance
+			SiteServiceAddressingLocator locator = 
+				new SiteServiceAddressingLocator();
+			SitePortType instance = 
+				locator.getSitePortTypePort(siteEPR);
+			
+			// Use GSI Secure Conversation
+			((Stub)instance)._setProperty(
+					org.globus.wsrf.security.Constants.GSI_SEC_CONV, 
+					org.globus.wsrf.security.Constants.SIGNATURE);
+			
+			// Use full delegation so the service can submit the job
+			((Stub)instance)._setProperty(
+					org.globus.axis.gsi.GSIConstants.GSI_MODE, 
+					org.globus.axis.gsi.GSIConstants.GSI_MODE_FULL_DELEG);
+			
+			// Create the site
+			instance.submit(new EmptyObject());
+		} catch (Exception e) {
+			throw new CommandException("Unable to submit site '"+site.getName()+"': "+
 					"Error communicating with service: "+e.getMessage(), e);
 		}
 		if (isDebug()) System.out.printf("done.\n");

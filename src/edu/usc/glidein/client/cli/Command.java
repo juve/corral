@@ -9,10 +9,10 @@ public abstract class Command
 	public static final Class[] SUBCOMMANDS = {
 		HelpCommand.class,
 		CreateSiteCommand.class,
-		DeleteSiteCommand.class,
+		RemoveSiteCommand.class,
 		ListSiteCommand.class,
 		CreateGlideinCommand.class,
-		DeleteGlideinCommand.class,
+		RemoveGlideinCommand.class,
 		ListGlideinCommand.class
 	};
 	
