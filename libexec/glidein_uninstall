@@ -9,7 +9,7 @@ usage ()
 REQUIRED
 
   -i | -installPath <path>
-      The path to install the Condor executables.
+      The path where the Condor executables are installed.
       
 OPTIONS
 
