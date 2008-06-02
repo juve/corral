@@ -46,13 +46,26 @@ public class SiteService
 		}	
 	}
 	
-	public Site getSite(EmptyObject empty) throws RemoteException {
+	public Site getSite(EmptyObject empty) throws RemoteException
+	{
 		return getResource().getSite();
 	}
 	
-	public EmptyObject delete(EmptyObject empty) throws RemoteException {
+	public EmptyObject submit(EmptyObject empty) throws RemoteException
+	{
+		SiteResource resource = getResource();
+		resource.submit();
+		return new EmptyObject();
+	}
+	
+	public EmptyObject remove(EmptyObject empty) throws RemoteException
+	{
+		// Delete the resource from the databse
 		getResource().delete();
+		
+		// Remove the resource from the resource home
 		getResourceHome().remove(getResourceKey());
+		
 		return new EmptyObject();
 	}
 }
