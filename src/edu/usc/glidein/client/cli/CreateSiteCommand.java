@@ -244,7 +244,6 @@ public class CreateSiteCommand extends Command
 		String env = getINIValue(ini,name,"environment");
 		if (env!=null) {
 			List<EnvironmentVariable> envs = new LinkedList<EnvironmentVariable>();
-			/* XXX This could probably be done better */
 			Pattern p = Pattern.compile("([^=]+)=([^:]+):?");
 			Matcher m = p.matcher(env);
 			while (m.find()) {
