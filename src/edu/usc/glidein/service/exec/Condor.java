@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.globus.gsi.GlobusCredential;
+
 import edu.usc.glidein.GlideinConfiguration;
 import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.util.CommandLine;
@@ -333,12 +335,12 @@ public class Condor
 			}
 			
 			// X509 User Proxy
-			String proxy = job.getProxy();
-			if(proxy!=null)
+			GlobusCredential cred = job.getCredential();
+			if(cred!=null)
 			{
 				File proxyFile = new File(job.getJobDirectory(),"proxy");
 				try {
-					ProxyUtil.writeProxy(proxy, proxyFile);
+					ProxyUtil.writeProxy(cred, proxyFile);
 				} catch(GlideinException ge) {
 					throw new CondorException("Unable to write proxy file",ge);
 				}

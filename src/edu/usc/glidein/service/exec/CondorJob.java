@@ -8,6 +8,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.globus.gsi.GlobusCredential;
+
 /**
  * A class representing a condor job.
  *
@@ -126,9 +128,9 @@ public class CondorJob
 	private List<String> outputFiles;
 	
 	/**
-	 * Globus proxy credential (the actual credential, not the file)
+	 * Globus proxy credential
 	 */
-	private String proxy;
+	private GlobusCredential credential;
 	
 	/**
 	 * remote_initialdir
@@ -328,14 +330,14 @@ public class CondorJob
 		this.outputFiles.add(outputFile);
 	}
 
-	public String getProxy()
+	public GlobusCredential getCredential()
 	{
-		return proxy;
+		return credential;
 	}
 
-	public void setProxy(String proxy)
+	public void setCredential(GlobusCredential credential)
 	{
-		this.proxy = proxy;
+		this.credential = credential;
 	}
 
 	public String getRemoteDirectory()
