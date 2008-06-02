@@ -25,8 +25,11 @@
 				namespace="http://www.usc.edu/glidein/GlideinTypes"
 				schemaLocation="GlideinTypes.xsd" />
 			
-			<xsd:element name="deleteRequest" type="glidein:EmptyObject"/>
-			<xsd:element name="deleteResponse" type="glidein:EmptyObject"/>
+			<xsd:element name="submitRequest" type="glidein:EmptyObject"/>
+			<xsd:element name="submitResponse" type="glidein:EmptyObject"/>
+			
+			<xsd:element name="removeRequest" type="glidein:EmptyObject"/>
+			<xsd:element name="removeResponse" type="glidein:EmptyObject"/>
 			
 			<xsd:element name="getSiteRequest" type="glidein:EmptyObject"/>
 			<xsd:element name="getSiteResponse" type="glidein:Site"/>
@@ -41,17 +44,22 @@
 	<message name="getSiteInputMessage">
 		<part name="request" element="tns:getSiteRequest"/>
 	</message>
-	
 	<message name="getSiteOutputMessage">
 		<part name="response" element="tns:getSiteResponse"/>
 	</message>
 	
-	<message name="deleteInputMessage">
-		<part name="request" element="tns:deleteRequest"/>
+	<message name="removeInputMessage">
+		<part name="request" element="tns:removeRequest"/>
+	</message>
+	<message name="removeOutputMessage">
+		<part name="response" element="tns:removeResponse"/>
 	</message>
 	
-	<message name="deleteOutputMessage">
-		<part name="response" element="tns:deleteResponse"/>
+	<message name="submitInputMessage">
+		<part name="request" element="tns:submitRequest"/>
+	</message>
+	<message name="submitOutputMessage">
+		<part name="response" element="tns:submitResponse"/>
 	</message>
 	 
 	<!--============================================================
@@ -66,9 +74,14 @@
 			<output message="tns:getSiteOutputMessage"/>
 		</operation>
 		
-		<operation name="delete">
-			<input message="tns:deleteInputMessage"/>
-			<output message="tns:deleteOutputMessage"/>
+		<operation name="remove">
+			<input message="tns:removeInputMessage"/>
+			<output message="tns:removeOutputMessage"/>
+		</operation>
+		
+		<operation name="submit">
+			<input message="tns:submitInputMessage"/>
+			<output message="tns:submitOutputMessage"/>
 		</operation>
 	</portType>
 
