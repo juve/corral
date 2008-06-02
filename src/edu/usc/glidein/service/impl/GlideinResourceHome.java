@@ -6,6 +6,9 @@ import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.impl.ResourceHomeImpl;
 import org.globus.wsrf.impl.SimpleResourceKey;
 
+import edu.usc.glidein.service.db.Database;
+import edu.usc.glidein.service.db.DatabaseException;
+import edu.usc.glidein.service.db.GlideinDAO;
 import edu.usc.glidein.stubs.types.Glidein;
 
 public class GlideinResourceHome extends ResourceHomeImpl
@@ -16,7 +19,7 @@ public class GlideinResourceHome extends ResourceHomeImpl
 	{
 		logger.info("Initializing glideins...");
 		super.initialize();
-		// TODO Recover glidein state
+		// TODO: Recover glidein state
 	}
 	
 	public ResourceKey create(Glidein glidein)
@@ -31,5 +34,17 @@ public class GlideinResourceHome extends ResourceHomeImpl
 	
 	public ResourceKey createKey(int id) {
 		return new SimpleResourceKey(getKeyTypeName(), new Integer(id));
+	}
+
+	public Glidein[] list(boolean longFormat)
+	throws ResourceException
+	{
+		try {
+			Database db = Database.getDatabase();
+			GlideinDAO dao = db.getGlideinDAO();
+			return dao.list(longFormat);
+		} catch(DatabaseException de) {
+			throw new ResourceException("Unable to list sites",de);
+		}
 	}
 }
