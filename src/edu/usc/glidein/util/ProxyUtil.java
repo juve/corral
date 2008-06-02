@@ -1,6 +1,7 @@
 package edu.usc.glidein.util;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 import javax.security.auth.Subject;
@@ -43,11 +44,13 @@ public class ProxyUtil
 		return readProxy(location);
 	}
 	
-	public static void writeProxy(String proxy, File proxyFile) 
+	public static void writeProxy(GlobusCredential proxy, File proxyFile) 
 	throws IOException, GlideinException
 	{
 		// Write proxy file
-		IOUtil.write(proxy, proxyFile);
+		FileOutputStream fos = new FileOutputStream(proxyFile);
+		proxy.save(fos);
+		fos.close();
 		
 		// Change permissions
 		CommandLine chmod = new CommandLine();
@@ -115,16 +118,26 @@ public class ProxyUtil
 	 * @see org.globus.axis.gsi.GSIConstants.GSI_MODE
 	 * @return The delegated credential.
 	 */
-	public static GlobusCredential getCallerCredential()
+	public static GlobusCredential getCallerCredential() throws GlideinException
 	{
-		GlobusCredential cred = null;
+		
 		MessageContext msgCtx = MessageContext.getCurrentContext();
 		Subject subject = (Subject) msgCtx.getProperty(Constants.PEER_SUBJECT);
 		if (subject == null) {
-			return null;
+			throw new GlideinException("Delegated credential not found: " +
+					"peer Subject not found: " +
+					"make sure you set GSI_MODE to GSI_MODE_FULL_DELEG");
 		} else {
+			GlobusCredential cred = null;
 			for (Object o : subject.getPrivateCredentials()) {
-				cred = ((GlobusGSSCredentialImpl)o).getGlobusCredential();
+				if (o instanceof GlobusGSSCredentialImpl) {
+					cred = ((GlobusGSSCredentialImpl)o).getGlobusCredential();
+				}
+			}
+			if (cred == null) {
+				throw new GlideinException("Delegated credential not found: " +
+						"Subject did not contain delegated credential: " +
+						"make sure you set GSI_MODE to GSI_MODE_FULL_DELEG");
 			}
 			return cred;
 		}
@@ -142,19 +155,5 @@ public class ProxyUtil
 		SecurityManager manager = SecurityManager.getManager();
         String callerDN = manager.getCaller();
         return callerDN;
-	}
-
-	public static void main(String[] args)
-	{
-		try
-		{
-			String proxy = ProxyUtil.readProxy();
-			System.out.println(proxy);
-			ProxyUtil.writeProxy(proxy,new File("/tmp/proxy"));
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
 	}
 }
