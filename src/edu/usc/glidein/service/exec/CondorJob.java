@@ -255,7 +255,6 @@ public class CondorJob
 
 	public Map<String, String> getEnvironment()
 	{
-		// TODO clone environment?
 		return environment;
 	}
 
