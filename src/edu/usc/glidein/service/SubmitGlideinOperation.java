@@ -23,37 +23,17 @@ import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.IOUtil;
 
-public class GlideinHandler implements Runnable, CondorEventListener
+public class SubmitGlideinOperation implements CondorEventListener
 {
-	private Logger logger = Logger.getLogger(GlideinHandler.class);
+	private Logger logger = Logger.getLogger(SubmitGlideinOperation.class);
 	
 	private Site site;
 	private Glidein glidein;
 	
-	public GlideinHandler(Site site, Glidein glidein)
+	public SubmitGlideinOperation(Site site, Glidein glidein)
 	{
 		this.site = site;
 		this.glidein = glidein;
-	}
-	
-	public void run()
-	{
-		try 
-		{
-			if(logger.isDebugEnabled())
-				logger.debug("Submitting glidein job for site '"+
-							 site.getName()+"'");
-			
-			submitGlideinJob();
-			
-			if(logger.isDebugEnabled())
-				logger.debug("Submitted glidein job for site '"+
-							 site.getName()+"'");
-		}
-		catch(GlideinException ge)
-		{
-			glideinFailed("Unable to submit staging job",ge);
-		}
 	}
 	
 	private void checkGlideinSuccess(CondorJob job)
@@ -96,7 +76,7 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		// Log message
 		logger.debug("Glidein exited successfully");
 		
-		// TODO Update glidein status to success
+		// TODO: Update glidein status to success
 		//glidein.setStatus(new GlideinStatus(GlideinStatusCode.TERMINATED,
 		//									"Glidein exited successfully"));
 		
@@ -115,13 +95,15 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		if(e==null) logger.error(message);
 		else logger.error(message, e);
 		
-		// TODO Update glidein status to failed
+		// TODO: Update glidein status to failed
 		//glidein.setStatus(new GlideinStatus(GlideinStatusCode.FAILED,
 		//									message));
 	}
 	
-	private void submitGlideinJob() throws GlideinException
+	private void invoke() throws GlideinException
 	{
+		logger.debug("Submitting glidein job for site '"+site.getName()+"'");
+		
 		GlideinConfiguration config = GlideinConfiguration.getInstance();
 		
 		// Create working directory
@@ -211,8 +193,10 @@ public class GlideinHandler implements Runnable, CondorEventListener
 		}
 		catch(CondorException ce)
 		{
-			glideinFailed("Unable to submit glidein job to Condor",ce);
+			throw new GlideinException("Unable to submit glidein job to Condor",ce);
 		}
+		
+		logger.debug("Submitted glidein job for site '"+site.getName()+"'");
 	}
 	
 	public void handleEvent(CondorEvent event)
@@ -235,7 +219,7 @@ public class GlideinHandler implements Runnable, CondorEventListener
 				try
 				{
 					Condor condor = new Condor();
-					condor.cancelJob(event.getJob());
+					condor.cancelJob(event.getJob().getCondorId());
 				} 
 				catch(CondorException ce)
 				{
@@ -313,9 +297,8 @@ public class GlideinHandler implements Runnable, CondorEventListener
 			//gd.setIdleTime(1); // 1 min for test
 			//gd.setDebug("D_FULLDEBUG,D_DAEMONCORE");
 			
-			GlideinHandler h = new GlideinHandler(s,g);
-			Thread t = new Thread(h);
-			t.start();
+			SubmitGlideinOperation h = new SubmitGlideinOperation(s,g);
+			h.invoke();
 		}
 		catch(Exception e)
 		{
