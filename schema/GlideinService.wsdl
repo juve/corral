@@ -25,8 +25,11 @@
 				namespace="http://www.usc.edu/glidein/GlideinTypes"
 				schemaLocation="GlideinTypes.xsd" />
 			
-			<xsd:element name="deleteRequest" type="glidein:EmptyObject"/>
-			<xsd:element name="deleteResponse" type="glidein:EmptyObject"/>
+			<xsd:element name="removeRequest" type="glidein:EmptyObject"/>
+			<xsd:element name="removeResponse" type="glidein:EmptyObject"/>
+			
+			<xsd:element name="submitRequest" type="glidein:EmptyObject"/>
+			<xsd:element name="submitResponse" type="glidein:EmptyObject"/>
 			
 			<xsd:element name="getGlideinRequest" type="glidein:EmptyObject"/>
 			<xsd:element name="getGlideinResponse" type="glidein:Glidein"/>
@@ -36,11 +39,18 @@
 	<!--============================================================
 							MESSAGES
 	============================================================-->
-	<message name="deleteInputMessage">
-		<part name="request" element="tns:deleteRequest"/>
+	<message name="removeInputMessage">
+		<part name="request" element="tns:removeRequest"/>
 	</message>
-	<message name="deleteOutputMessage">
-		<part name="response" element="tns:deleteResponse"/>
+	<message name="removeOutputMessage">
+		<part name="response" element="tns:removeResponse"/>
+	</message>
+	
+	<message name="submitInputMessage">
+		<part name="request" element="tns:submitRequest"/>
+	</message>
+	<message name="submitOutputMessage">
+		<part name="response" element="tns:submitResponse"/>
 	</message>
 	
 	<message name="getGlideinInputMessage">
@@ -62,11 +72,15 @@
 			<output message="tns:getGlideinOutputMessage"/>
 		</operation>
 		
-		<operation name="delete">
-			<input message="tns:deleteInputMessage"/>
-			<output message="tns:deleteOutputMessage"/>
+		<operation name="submit">
+			<input message="tns:submitInputMessage"/>
+			<output message="tns:submitOutputMessage"/>
 		</operation>
 		
+		<operation name="remove">
+			<input message="tns:removeInputMessage"/>
+			<output message="tns:removeOutputMessage"/>
+		</operation>
 	</portType>
 
 </definitions>
