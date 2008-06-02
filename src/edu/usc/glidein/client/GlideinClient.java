@@ -50,7 +50,7 @@ public class GlideinClient
 				System.out.printf("Glidein: %s (%d)\n",glidein.getCondorHost(),glidein.getId());
 			}
 			
-			instanceService.delete(new EmptyObject());
+			instanceService.remove(new EmptyObject());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

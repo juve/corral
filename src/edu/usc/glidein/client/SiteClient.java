@@ -82,7 +82,7 @@ public class SiteClient
 				System.out.printf("Site: %s (%d)\n",site.getName(),site.getId());
 			}
 			
-			instanceService.delete(new EmptyObject());
+			instanceService.remove(new EmptyObject());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
