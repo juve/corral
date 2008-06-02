@@ -205,7 +205,7 @@ public class Condor
 	 * @param job The job to cancel
 	 * @throws CondorException If there is an error cancelling the job
 	 */
-	public void cancelJob(CondorJob job)
+	public void cancelJob(String condorId)
 	throws CondorException
 	{	
 		//Run rm command
@@ -218,7 +218,7 @@ public class Condor
 			cancel.setExecutable(condorRm);
 			
 			// Arguments
-			cancel.addArgument(job.getCondorId());
+			cancel.addArgument(condorId);
 			
 			// Set environment
 			cancel.addEnvironmentVariable("CONDOR_HOME",
