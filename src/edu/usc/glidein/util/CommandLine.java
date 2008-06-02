@@ -91,13 +91,15 @@ public class CommandLine
 	 * @param environment A map of environment variable name,value pairs
 	 * @throws GlideinException if the new environment is invalid
 	 */
-	public void setEnvironment(Map<String,String> environment)
+	public void setEnvironment(Map<String,String> env)
 	throws GlideinException
 	{
-		if(environment == null)
+		if(env == null)
 			throw new GlideinException("null environment");
-		// TODO Maybe validate the environment passed in?
-		this.environment = environment;
+		environment = new HashMap<String, String>();
+		for (String name : env.keySet()) {
+			addEnvironmentVariable(name, env.get(name));
+		}
 	}
 	
 	/**
@@ -106,7 +108,6 @@ public class CommandLine
 	 */
 	public Map<String,String> getEnvironment()
 	{
-		// TODO Maybe clone?
 		return environment;
 	}
 	
@@ -164,8 +165,10 @@ public class CommandLine
 	{
 		if(arguments == null) 
 			throw new GlideinException("null arguments");
-		// TODO Maybe validate all the new arguments?
-		this.arguments = arguments;
+		this.arguments = new LinkedList<String>();
+		for (String argument : arguments) {
+			addArgument(argument);
+		}
 	}
 	
 	/**
@@ -174,7 +177,6 @@ public class CommandLine
 	 */
 	public List<String> getArguments()
 	{
-		// TODO Maybe clone?
 		return arguments;
 	}
 	
