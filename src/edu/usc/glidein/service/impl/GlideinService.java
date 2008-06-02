@@ -50,21 +50,19 @@ public class GlideinService
 		}
 	}
 	
-	public Glidein getGlidein(EmptyObject empty) throws RemoteException {
+	public Glidein getGlidein(EmptyObject empty) throws RemoteException
+	{
 		return getResource().getGlidein();
 	}
 	
-	public EmptyObject start(EmptyObject empty) throws RemoteException {
-		// TODO submit glidein job
+	public EmptyObject submit(EmptyObject empty) throws RemoteException
+	{
+		getResource().submit();
 		return new EmptyObject();
 	}
 	
-	public EmptyObject cancel(EmptyObject empty) throws RemoteException {
-		// TODO cancel glidein job
-		return new EmptyObject();
-	}
-	
-	public EmptyObject delete(EmptyObject empty) throws RemoteException {
+	public EmptyObject remove(EmptyObject empty) throws RemoteException
+	{
 		getResource().delete();
 		getResourceHome().remove(getResourceKey());
 		return new EmptyObject();
