@@ -63,7 +63,6 @@ public class GlideinService
 	
 	public EmptyObject remove(EmptyObject empty) throws RemoteException
 	{
-		getResource().delete();
 		getResourceHome().remove(getResourceKey());
 		return new EmptyObject();
 	}
