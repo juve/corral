@@ -270,6 +270,7 @@ public class MySQLSiteDAO implements SiteDAO
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
+			conn = database.getConnection();
 			stmt = conn.prepareStatement("UPDATE site SET status=?, statusMessage=?, lastUpdate=NOW() WHERE id=?");
 			stmt.setString(1, status.toString());
 			stmt.setString(2, statusMessage);

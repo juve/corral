@@ -153,6 +153,7 @@ public class MySQLGlideinDAO implements GlideinDAO
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
+			conn = database.getConnection();
 			stmt = conn.prepareStatement("UPDATE glidein SET status=?, statusMessage=? WHERE id=?");
 			stmt.setString(1, status.toString());
 			stmt.setString(2, statusMessage);
