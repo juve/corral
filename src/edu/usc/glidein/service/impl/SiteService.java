@@ -60,12 +60,7 @@ public class SiteService
 	
 	public EmptyObject remove(EmptyObject empty) throws RemoteException
 	{
-		// Delete the resource from the databse
-		getResource().delete();
-		
-		// Remove the resource from the resource home
 		getResourceHome().remove(getResourceKey());
-		
 		return new EmptyObject();
 	}
 }
