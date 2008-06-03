@@ -1,5 +1,6 @@
 package edu.usc.glidein.service.impl;
 
+import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.PersistentResource;
@@ -12,9 +13,11 @@ import edu.usc.glidein.service.db.Database;
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.GlideinDAO;
 import edu.usc.glidein.stubs.types.Glidein;
+import edu.usc.glidein.stubs.types.GlideinStatus;
 
 public class GlideinResource implements PersistentResource, ResourceProperties
 {
+	private Logger logger = Logger.getLogger(GlideinResource.class);
 	private SimpleResourcePropertySet resourceProperties;
 	private Glidein glidein = null;
 	
@@ -29,15 +32,24 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 		setResourceProperties();
 	}
 	
-	public void setGlidein(Glidein glidein) {
-		this.glidein = glidein;
-	}
-	
-	public Glidein getGlidein() {
+	public Glidein getGlidein()
+	{
 		return glidein;
 	}
 	
-	private void setResourceProperties() throws ResourceException {
+	public Object getID()
+	{
+		if (glidein == null) return null;
+		return new Integer(glidein.getId());
+	}
+	
+	public ResourcePropertySet getResourcePropertySet()
+	{
+		return resourceProperties;
+	}
+	
+	private void setResourceProperties() throws ResourceException
+	{
 		try {
 			resourceProperties = new SimpleResourcePropertySet(GlideinNames.RESOURCE_PROPERTIES);
 			resourceProperties.add(new ReflectionResourceProperty(GlideinNames.RP_GLIDEIN_ID,"Id",glidein));
@@ -49,6 +61,7 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 	
 	public synchronized void create() throws ResourceException
 	{
+		logger.debug("Creating glidein");
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
@@ -59,8 +72,9 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 		}
 	}
 
-	public synchronized void load(ResourceKey key) throws ResourceException {
-		System.out.println("Loading "+key.getValue());
+	public synchronized void load(ResourceKey key) throws ResourceException
+	{
+		logger.debug("Loading "+key.getValue());
 		int id = ((Integer)key.getValue()).intValue();
 		try {
 			Database db = Database.getDatabase();
@@ -72,8 +86,9 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 		}
 	}
 	
-	public synchronized void store() throws ResourceException {
-		System.out.println("Storing "+getGlidein().getId());
+	public synchronized void store() throws ResourceException 
+	{
+		logger.debug("Storing "+getGlidein().getId());
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
@@ -82,17 +97,10 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 			throw new ResourceException(de);
 		}
 	}
-
-	public Object getID() {
-		return new Integer(glidein.getId());
-	}
-
-	public void remove() throws ResourceException {
-		
-	}
 	
-	public synchronized void delete() throws ResourceException {
-		System.out.println("Deleting "+getGlidein().getId());
+	public synchronized void remove() throws ResourceException 
+	{
+		logger.debug("Removing "+getGlidein().getId());
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
@@ -106,12 +114,29 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 
 	public synchronized void submit() throws ResourceException
 	{
+		logger.debug("Submitting "+getGlidein().getId());
+		
 		// TODO: Get delegated credential
 		// TODO: Check to make sure site is ready before submitting
 		// TODO: Submit glidein
 	}
 	
-	public ResourcePropertySet getResourcePropertySet() {
-		return resourceProperties;
+	public synchronized void updateStatus(GlideinStatus status, String statusMessage) 
+	throws ResourceException
+	{
+		logger.debug("Changing status of glidein "+getGlidein().getId()+" to "+status+": "+statusMessage);
+		
+		// Update object
+		glidein.setStatus(status);
+		glidein.setStatusMessage(statusMessage);
+		
+		// Update database
+		try {
+			Database db = Database.getDatabase();
+			GlideinDAO dao = db.getGlideinDAO();
+			dao.updateStatus(glidein.getId(), status, statusMessage);
+		} catch(DatabaseException de) {
+			throw new ResourceException(de);
+		}
 	}
 }
