@@ -46,9 +46,11 @@ public class StageSiteOperation implements CondorEventListener
 		
 		GlideinConfiguration config = GlideinConfiguration.getInstance();
 		
+		// TODO: How to do the job directory?
 		// Create working directory
-		File varDirectory = new File(config.getProperty("glidein.var"));
-		File jobDirectory = new File(varDirectory,"site-"+site.getId());
+		File jobDirectory = new File(site.getSubmitPath());
+		//File varDirectory = new File(config.getProperty("glidein.var"));
+		//File jobDirectory = new File(varDirectory,"site-"+site.getId());
 		
 		// Create a job description
 		CondorJob job = new CondorJob(jobDirectory);
