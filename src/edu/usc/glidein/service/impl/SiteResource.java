@@ -28,9 +28,7 @@ public class SiteResource implements PersistentResource, ResourceProperties
 	/**
 	 * Default constructor required
 	 */
-	public SiteResource() {
-		
-	}
+	public SiteResource() { }
 	
 	public SiteResource(Site site) throws ResourceException
 	{
@@ -43,17 +41,12 @@ public class SiteResource implements PersistentResource, ResourceProperties
 		return site;
 	}
 	
-	/** 
-	 * @see org.globus.wsrf.ResourceIdentifier 
-	 */
 	public Object getID()
 	{
+		if (site==null) return null;
 		return new Integer(site.getId());
 	}
 	
-	/**
-	 * @see org.globus.wsrf.ResourceProperties
-	 */
 	public ResourcePropertySet getResourcePropertySet()
 	{
 		return resourceProperties;
@@ -70,10 +63,7 @@ public class SiteResource implements PersistentResource, ResourceProperties
 			throw new ResourceException("Unable to set site resource properties",e);
 		}
 	}
-	
-	/**
-	 * Create the resource
-	 */
+
 	public synchronized void create() throws ResourceException
 	{
 		logger.debug("Creating site resource "+getSite().getId());
@@ -86,10 +76,6 @@ public class SiteResource implements PersistentResource, ResourceProperties
 		}
 	}
 
-	/**
-	 * Load the resource
-	 * @see org.globus.wsrf.PersistenceCallback
-	 */
 	public synchronized void load(ResourceKey key) throws ResourceException
 	{
 		logger.debug("Loading site resource "+key.getValue());
@@ -104,10 +90,6 @@ public class SiteResource implements PersistentResource, ResourceProperties
 		}
 	}
 	
-	/**
-	 * Store the resource
-	 * @see org.globus.wsrf.PersistenceCallback
-	 */
 	public synchronized void store() throws ResourceException
 	{
 		logger.debug("Storing site resource "+getSite().getId());
@@ -119,33 +101,11 @@ public class SiteResource implements PersistentResource, ResourceProperties
 			throw new ResourceException(de);
 		}
 	}
-
-	/**
-	 * Remove the resource
-	 * 
-	 * NOTE: Don't get confused, this method is called when the ResourceHome
-	 * decides to remove this resource from its cache, not when the client
-	 * invokes the remove operation. The delete method is called when the
-	 * client invokes the remove operation.
-	 * 
-	 * TODO: Need to work out the issues around remove. The home should not
-	 * be able to remove anything that is running, or else the service will
-	 * get confused because the service will not see the updates caused
-	 * by the thread watching the job.
-	 * 
-	 * @see org.globus.wsrf.RemoveCallback
-	 */
+	
 	public synchronized void remove() throws ResourceException
 	{
 		logger.debug("Removing site resource "+getSite().getId());
-	}
-	
-	/**
-	 * Delete the resource from the database
-	 * @throws ResourceException
-	 */
-	public synchronized void delete() throws ResourceException
-	{
+
 		// TODO: Check status and cancel staging job if necessary
 		
 		// Remove the site from the database
@@ -153,16 +113,11 @@ public class SiteResource implements PersistentResource, ResourceProperties
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			dao.delete(site.getId());
-			site = null;
-			resourceProperties = null;
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
 		}
 	}
 	
-	/**
-	 * Submit a staging job to the remote site
-	 */
 	public synchronized void submit() throws ResourceException 
 	{
 		logger.debug("Submitting site "+getSite().getId());
