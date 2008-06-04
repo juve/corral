@@ -34,9 +34,7 @@
 			<xsd:enumeration value="NEW"/>
 			<xsd:enumeration value="STAGING"/>
 			<xsd:enumeration value="READY"/>
-			<xsd:enumeration value="STOPPING"/>
-			<xsd:enumeration value="CLEANING"/>
-			<xsd:enumeration value="CLEANED"/>
+			<xsd:enumeration value="REMOVING"/>
 			<xsd:enumeration value="FAILED"/>
 		</xsd:restriction>
 	</xsd:simpleType>
@@ -73,7 +71,6 @@
 			<xsd:enumeration value="SUBMITTED"/>
 			<xsd:enumeration value="RUNNING"/>
 			<xsd:enumeration value="TERMINATED"/>
-			<xsd:enumeration value="CANCELLED"/>
 			<xsd:enumeration value="FAILED"/>
 		</xsd:restriction>
 	</xsd:simpleType>
