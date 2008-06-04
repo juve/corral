@@ -2,15 +2,19 @@ package edu.usc.glidein.service.impl;
 
 import org.apache.log4j.Logger;
 import org.globus.gsi.GlobusCredential;
+import org.globus.wsrf.PersistenceCallback;
+import org.globus.wsrf.RemoveCallback;
+import org.globus.wsrf.Resource;
 import org.globus.wsrf.ResourceException;
+import org.globus.wsrf.ResourceIdentifier;
 import org.globus.wsrf.ResourceKey;
-import org.globus.wsrf.PersistentResource;
 import org.globus.wsrf.ResourceProperties;
 import org.globus.wsrf.ResourcePropertySet;
 import org.globus.wsrf.impl.ReflectionResourceProperty;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
 
 import edu.usc.glidein.GlideinException;
+import edu.usc.glidein.service.RemoveSiteOperation;
 import edu.usc.glidein.service.StageSiteOperation;
 import edu.usc.glidein.service.db.Database;
 import edu.usc.glidein.service.db.DatabaseException;
@@ -19,7 +23,7 @@ import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteStatus;
 import edu.usc.glidein.util.ProxyUtil;
 
-public class SiteResource implements PersistentResource, ResourceProperties
+public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, RemoveCallback, ResourceProperties
 {
 	private Logger logger = Logger.getLogger(SiteResource.class);
 	private SimpleResourcePropertySet resourceProperties;
@@ -93,6 +97,12 @@ public class SiteResource implements PersistentResource, ResourceProperties
 	public synchronized void store() throws ResourceException
 	{
 		logger.debug("Storing site resource "+getSite().getId());
+		
+		// If we are removing, then don't store
+		if (SiteStatus.REMOVING.equals(site.getStatus())) {
+			throw new ResourceException("Site is being removed");
+		}
+		
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
@@ -105,22 +115,34 @@ public class SiteResource implements PersistentResource, ResourceProperties
 	public synchronized void remove() throws ResourceException
 	{
 		logger.debug("Removing site resource "+getSite().getId());
-
-		// TODO: Check status and cancel staging job if necessary
 		
-		// Remove the site from the database
+		// If we are already removing, then just return
+		if (SiteStatus.REMOVING.equals(site.getStatus())) {
+			return;
+		}
+		
+		// Update status to prevent others from updating
+		updateStatus(SiteStatus.REMOVING, "Removing site");
+		
+		// Start a remove operation
 		try {
-			Database db = Database.getDatabase();
-			SiteDAO dao = db.getSiteDAO();
-			dao.delete(site.getId());
-		} catch(DatabaseException de) {
-			throw new ResourceException(de);
+			GlobusCredential cred = ProxyUtil.getCallerCredential();
+			RemoveSiteOperation op = new RemoveSiteOperation(this,cred); 
+			op.invoke();
+		} catch (GlideinException ge) {
+			throw new ResourceException("Unable to remove site: "+ge.getMessage(),ge);
 		}
 	}
 	
 	public synchronized void submit() throws ResourceException 
 	{
 		logger.debug("Submitting site "+getSite().getId());
+		
+		// If we are not new, then don't submit
+		if (!SiteStatus.NEW.equals(site.getStatus())) {
+			throw new ResourceException("Can only submit sites with NEW status");
+		}
+		
 		try {
 			// Get delegated credential
 			GlobusCredential cred = ProxyUtil.getCallerCredential();
@@ -130,6 +152,18 @@ public class SiteResource implements PersistentResource, ResourceProperties
 			operation.invoke();
 		} catch (GlideinException ge) {
 			throw new ResourceException("Unable to submit site: "+ge.getMessage(),ge);
+		}
+	}
+	
+	public synchronized void delete() throws ResourceException
+	{
+		// Remove the site from the database
+		try {
+			Database db = Database.getDatabase();
+			SiteDAO dao = db.getSiteDAO();
+			dao.delete(site.getId());
+		} catch(DatabaseException de) {
+			throw new ResourceException(de);
 		}
 	}
 	

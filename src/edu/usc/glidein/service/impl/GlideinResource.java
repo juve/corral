@@ -1,9 +1,12 @@
 package edu.usc.glidein.service.impl;
 
 import org.apache.log4j.Logger;
+import org.globus.wsrf.PersistenceCallback;
+import org.globus.wsrf.RemoveCallback;
+import org.globus.wsrf.Resource;
 import org.globus.wsrf.ResourceException;
+import org.globus.wsrf.ResourceIdentifier;
 import org.globus.wsrf.ResourceKey;
-import org.globus.wsrf.PersistentResource;
 import org.globus.wsrf.ResourceProperties;
 import org.globus.wsrf.ResourcePropertySet;
 import org.globus.wsrf.impl.ReflectionResourceProperty;
@@ -15,7 +18,7 @@ import edu.usc.glidein.service.db.GlideinDAO;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinStatus;
 
-public class GlideinResource implements PersistentResource, ResourceProperties
+public class GlideinResource implements Resource, ResourceIdentifier, PersistenceCallback, RemoveCallback, ResourceProperties
 {
 	private Logger logger = Logger.getLogger(GlideinResource.class);
 	private SimpleResourcePropertySet resourceProperties;
@@ -101,15 +104,9 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 	public synchronized void remove() throws ResourceException 
 	{
 		logger.debug("Removing "+getGlidein().getId());
-		try {
-			Database db = Database.getDatabase();
-			GlideinDAO dao = db.getGlideinDAO();
-			dao.delete(glidein.getId());
-			glidein = null;
-			resourceProperties = null;
-		} catch(DatabaseException de) {
-			throw new ResourceException(de);
-		}
+		
+		// TODO: Remove glideins correctly
+		delete();
 	}
 
 	public synchronized void submit() throws ResourceException
@@ -119,6 +116,19 @@ public class GlideinResource implements PersistentResource, ResourceProperties
 		// TODO: Get delegated credential
 		// TODO: Check to make sure site is ready before submitting
 		// TODO: Submit glidein
+	}
+	
+	public synchronized void delete() throws ResourceException
+	{
+		try {
+			Database db = Database.getDatabase();
+			GlideinDAO dao = db.getGlideinDAO();
+			dao.delete(glidein.getId());
+			glidein = null;
+			resourceProperties = null;
+		} catch(DatabaseException de) {
+			throw new ResourceException(de);
+		}
 	}
 	
 	public synchronized void updateStatus(GlideinStatus status, String statusMessage) 

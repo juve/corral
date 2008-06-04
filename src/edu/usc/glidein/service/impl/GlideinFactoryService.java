@@ -3,10 +3,13 @@ package edu.usc.glidein.service.impl;
 import java.net.URL;
 import java.rmi.RemoteException;
 
+import javax.naming.NamingException;
+
 import org.apache.axis.MessageContext;
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceContext;
+import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.container.ServiceHost;
 import org.globus.wsrf.utils.AddressingUtils;
@@ -14,6 +17,8 @@ import org.globus.wsrf.utils.AddressingUtils;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinStatus;
 import edu.usc.glidein.stubs.types.Glideins;
+import edu.usc.glidein.util.AddressingUtil;
+import edu.usc.glidein.util.NamingUtil;
 
 public class GlideinFactoryService
 {
@@ -28,7 +33,13 @@ public class GlideinFactoryService
 		glidein.setStatus(GlideinStatus.NEW);
 		glidein.setStatusMessage("Created");
 		
-		// TODO: Get site or fail
+		// Get site or fail
+		try {
+			SiteResourceHome siteHome = NamingUtil.getSiteResourceHome();
+			siteHome.find(AddressingUtil.getSiteKey(glidein.getSiteId()));
+		} catch(NamingException ne) {
+			throw new ResourceException("Unable to locate site",ne);
+		}
 		
 		// Create a new resource
 		ResourceKey key = null;
