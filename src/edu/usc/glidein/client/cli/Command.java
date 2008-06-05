@@ -1,5 +1,7 @@
 package edu.usc.glidein.client.cli;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 
 public abstract class Command
@@ -60,6 +62,37 @@ public abstract class Command
 		} catch(Exception e) {
 			return null;
 		}
+	}
+	
+	public URL parseURL(String url) throws MalformedURLException
+	{
+		URL u =  new URL(url);
+		
+		String protocol = "https";
+		if (u.getProtocol() != null)
+			protocol = u.getProtocol();
+		
+		String host = "localhost";
+		if (u.getHost() != null)
+			host = u.getHost();
+		
+		int port = 0;
+		if (u.getPort() == 0) {
+			if ("https".equals(protocol)) {
+				port = 8443;
+			} else {
+				port = 8080;
+			}
+		} else {
+			port = u.getPort();
+		}
+		
+		String path = "/wsrf/services/";
+		if (u.getPath() != null) {
+			path = u.getPath();
+		}
+		
+		return new URL(protocol+"://"+host+":"+port+"/"+path);
 	}
 	
 	abstract public void invoke(String[] args) throws CommandException;

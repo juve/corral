@@ -1,5 +1,7 @@
 package edu.usc.glidein.client.cli;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collection;
 
 import javax.xml.rpc.Stub;
@@ -13,8 +15,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 
-import edu.usc.glidein.GlideinConfiguration;
-import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.stubs.GlideinPortType;
 import edu.usc.glidein.stubs.service.GlideinServiceAddressingLocator;
 import edu.usc.glidein.stubs.types.EmptyObject;
@@ -23,17 +23,18 @@ import edu.usc.glidein.util.AddressingUtil;
 public class RemoveGlideinCommand extends Command
 {
 	private Options options = null;
-
+	private URL glideinURL = null;
+	
 	@SuppressWarnings("static-access")
 	public RemoveGlideinCommand()
 	{
 		options = new Options();
 		options.addOption(
-			OptionBuilder.withLongOpt("host")
-						 .withDescription("-h [--host] <name:port>          : " +
-						 		"The host:port where the service is running (default: localhost:8443)")
+			OptionBuilder.withLongOpt("service")
+						 .withDescription("-S [--service] <contact>          : " +
+						 		"The service URL (default: "+AddressingUtil.GLIDEIN_SERVICE_URL+")")
 						 .hasArg()
-						 .create("h")
+						 .create("S")
 		);
 	}
 	
@@ -54,36 +55,45 @@ public class RemoveGlideinCommand extends Command
 			throw new CommandException(getHelp());
 		}
 		
-		/* Host */
-		String host = null;
-		if (cmdln.hasOption("h")) {
-			/* User-provided */
-			host = cmdln.getOptionValue("host");
-		} else {
-			/* From config file */
-			try {
-				GlideinConfiguration config = GlideinConfiguration.getInstance();
-				host = config.getProperty("glidein.host", "localhost:8443");
-			} catch (GlideinException ge) {
-				throw new CommandException("Error reading config file: "+ge.getMessage(), ge);
+		/* Service URL */
+		try {
+			if (cmdln.hasOption("S")) {
+				glideinURL = new URL(cmdln.getOptionValue("service"));
+			} else {
+				glideinURL = new URL(AddressingUtil.GLIDEIN_SERVICE_URL);
 			}
+			if (isDebug()) System.out.println("GlideinService: "+glideinURL);
+		} catch (MalformedURLException e) {
+			throw new CommandException("Invalid glidein service URL: "+e.getMessage(),e);
 		}
-		if (isDebug()) System.out.println("Host: "+host);
-			
+		
 		/* Delete all the sites */
-		GlideinServiceAddressingLocator glideinInstanceLocator = new GlideinServiceAddressingLocator();
+		GlideinServiceAddressingLocator glideinInstanceLocator = 
+			new GlideinServiceAddressingLocator();
 		for (String arg : args) {
 			if (arg.matches("[1-9][0-9]*")) {
 				try {
 					int id = Integer.parseInt(arg);
-					EndpointReferenceType glideinEPR = AddressingUtil.getGlideinEPR(host,id);
-					GlideinPortType glidein = glideinInstanceLocator.getGlideinPortTypePort(glideinEPR);
+					EndpointReferenceType glideinEPR = 
+						AddressingUtil.getGlideinEPR(glideinURL,id);
+					GlideinPortType glidein = 
+						glideinInstanceLocator.getGlideinPortTypePort(glideinEPR);
 						
 					// Use GSI Secure Conversation so that the service can
 					// retrieve the user's subject name
 					((Stub)glidein)._setProperty(
 							org.globus.wsrf.security.Constants.GSI_SEC_CONV, 
 							org.globus.wsrf.security.Constants.SIGNATURE);
+					
+					// Use full delegation so the service can submit the job
+					((Stub)glidein)._setProperty(
+							org.globus.axis.gsi.GSIConstants.GSI_MODE, 
+							org.globus.axis.gsi.GSIConstants.GSI_MODE_FULL_DELEG);
+					
+					// Use self authorization
+					((Stub)glidein)._setProperty(
+							org.globus.wsrf.security.Constants.AUTHORIZATION,
+							org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
 					
 					if (isDebug()) System.out.print("Removing glidein "+id+"... ");
 					glidein.remove(new EmptyObject());

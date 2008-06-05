@@ -1,5 +1,7 @@
 package edu.usc.glidein.client.cli;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -16,7 +18,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 
-import edu.usc.glidein.GlideinConfiguration;
 import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.stubs.SiteFactoryPortType;
 import edu.usc.glidein.stubs.SitePortType;
@@ -32,7 +33,8 @@ public class ListSiteCommand extends Command
 {
 	private Options options;
 	private boolean longFormat = false;
-	private String host = null;
+	private URL siteFactoryURL = null;
+	private URL siteURL = null;
 	
 	@SuppressWarnings("static-access")
 	public ListSiteCommand()
@@ -45,11 +47,18 @@ public class ListSiteCommand extends Command
 							 .create("l")
 		);
 		options.addOption(
-				OptionBuilder.withLongOpt("host")
-							 .withDescription("-h [--host] <name:port>     : " +
-							 		"The host:port where the service is running (default: localhost:8443)")
+				OptionBuilder.withLongOpt("factory")
+							 .withDescription("-F [--factory] <contact>    : " +
+							 		"The factory url (default: "+AddressingUtil.SITE_FACTORY_SERVICE_URL+")")
 							 .hasArg()
-							 .create("h")
+							 .create("F")
+		);
+		options.addOption(
+				OptionBuilder.withLongOpt("service")
+							 .withDescription("-S [--service] <contact>    : " +
+							 		"The service url (default: "+AddressingUtil.SITE_SERVICE_URL+")")
+							 .hasArg()
+							 .create("S")
 		);
 	}
 	
@@ -69,20 +78,29 @@ public class ListSiteCommand extends Command
 			longFormat = true;
 		}
 		
-		/* Host name / port */
-		if (cmdln.hasOption("h")) {
-			/* User-provided */
-			host = cmdln.getOptionValue("host");
-		} else {
-			/* From config file */
-			try {
-				GlideinConfiguration config = GlideinConfiguration.getInstance();
-				host = config.getProperty("glidein.host", "localhost:8443");
-			} catch (GlideinException ge) {
-				throw new CommandException("Error reading config file: "+ge.getMessage(), ge);
+		/* SiteFactoryService URL */
+		try {
+			if (cmdln.hasOption("F")) {
+				siteFactoryURL = new URL(cmdln.getOptionValue("factory"));
+			} else {
+				siteFactoryURL = new URL(AddressingUtil.SITE_FACTORY_SERVICE_URL);
 			}
+			if (isDebug()) System.out.println("SiteFactoryService: "+siteFactoryURL);
+		} catch(MalformedURLException e) {
+			throw new CommandException("Invalid site factory service URL: "+e.getMessage(),e);
 		}
-		if (isDebug()) System.out.println("Host: "+host);
+		
+		/* SiteService URL */
+		try {
+			if (cmdln.hasOption("S")) {
+				siteURL = new URL(cmdln.getOptionValue("service"));
+			} else {
+				siteURL = new URL(AddressingUtil.SITE_SERVICE_URL);
+			}
+			if (isDebug()) System.out.println("SiteService: "+siteURL);
+		} catch (MalformedURLException e) {
+			throw new CommandException("Invalid site service URL: "+e.getMessage(),e);
+		}
 		
 		/* Check for specific arguments */
 		args = cmdln.getArgs();
@@ -99,17 +117,21 @@ public class ListSiteCommand extends Command
 		Site[] sites;
 		try {
 			EndpointReferenceType siteFactoryEPR = 
-				AddressingUtil.getSiteFactoryEPR(host);
+				AddressingUtil.getSiteFactoryEPR(siteFactoryURL);
 			SiteFactoryServiceAddressingLocator locator = 
 				new SiteFactoryServiceAddressingLocator();
 			SiteFactoryPortType factory = 
 				locator.getSiteFactoryPortTypePort(siteFactoryEPR);
 			
-			// Use GSI Secure Conversation so that the service can
-			// retrieve the user's subject name
+			// Use GSI Secure Conversation
 			((Stub)factory)._setProperty(
 					org.globus.wsrf.security.Constants.GSI_SEC_CONV, 
 					org.globus.wsrf.security.Constants.SIGNATURE);
+
+			// Use self authorization
+			((Stub)factory)._setProperty(
+					org.globus.wsrf.security.Constants.AUTHORIZATION,
+					org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
 			
 			// Get the sites
 			sites = factory.listSites(longFormat).getSites();
@@ -132,15 +154,19 @@ public class ListSiteCommand extends Command
 			try {
 				int id = Integer.parseInt(siteId);
 				EndpointReferenceType siteEPR = 
-					AddressingUtil.getSiteEPR(host,id);
+					AddressingUtil.getSiteEPR(siteURL,id);
 				SitePortType instance = 
 					siteInstanceLocator.getSitePortTypePort(siteEPR);
 					
-				// Use GSI Secure Conversation so that the service can
-				// retrieve the user's subject name
+				// Use GSI Secure Conversation
 				((Stub)instance)._setProperty(
 						org.globus.wsrf.security.Constants.GSI_SEC_CONV, 
 						org.globus.wsrf.security.Constants.SIGNATURE);
+				
+				// Use self authorization
+				((Stub)instance)._setProperty(
+						org.globus.wsrf.security.Constants.AUTHORIZATION,
+						org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
 				
 				Site site = instance.getSite(new EmptyObject());
 				sites.add(site);

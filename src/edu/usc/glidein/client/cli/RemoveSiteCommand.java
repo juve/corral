@@ -1,5 +1,7 @@
 package edu.usc.glidein.client.cli;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collection;
 
 import javax.xml.rpc.Stub;
@@ -13,8 +15,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.cli.ParseException;
 
-import edu.usc.glidein.GlideinConfiguration;
-import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.stubs.SitePortType;
 import edu.usc.glidein.stubs.service.SiteServiceAddressingLocator;
 import edu.usc.glidein.stubs.types.EmptyObject;
@@ -23,17 +23,18 @@ import edu.usc.glidein.util.AddressingUtil;
 public class RemoveSiteCommand extends Command
 {	
 	private Options options = null;
+	private URL siteURL = null;
 	
 	@SuppressWarnings("static-access")
 	public RemoveSiteCommand()
 	{
 		options = new Options();
 		options.addOption(
-			OptionBuilder.withLongOpt("host")
-						 .withDescription("-h [--host] <name:port>          : " +
-						 		"The host:port where the service is running (default: localhost:8443)")
+			OptionBuilder.withLongOpt("service")
+						 .withDescription("-S [--service] <url>          : " +
+						 		"The service URL (default: "+AddressingUtil.SITE_SERVICE_URL+")")
 						 .hasArg()
-						 .create("h")
+						 .create("S")
 		);
 	}
 	
@@ -54,36 +55,43 @@ public class RemoveSiteCommand extends Command
 			throw new CommandException(getHelp());
 		}
 		
-		/* Host */
-		String host = null;
-		if (cmdln.hasOption("h")) {
-			/* User-provided */
-			host = cmdln.getOptionValue("host");
-		} else {
-			/* From config file */
-			try {
-				GlideinConfiguration config = GlideinConfiguration.getInstance();
-				host = config.getProperty("glidein.host", "localhost:8443");
-			} catch (GlideinException ge) {
-				throw new CommandException("Error reading config file: "+ge.getMessage(), ge);
+		/* Service URL */
+		try {
+			if (cmdln.hasOption("S")) {
+				siteURL = new URL(cmdln.getOptionValue("service"));
+			} else {
+				siteURL = new URL(AddressingUtil.SITE_SERVICE_URL);
 			}
+			if (isDebug()) System.out.println("SiteService: "+siteURL);
+		} catch (MalformedURLException e) {
+			throw new CommandException("Invalid site service URL: "+e.getMessage(),e);
 		}
-		if (isDebug()) System.out.println("Host: "+host);
-			
 		/* Delete all the sites */
 		SiteServiceAddressingLocator siteInstanceLocator = new SiteServiceAddressingLocator();
 		for (String arg : args) {
 			if (arg.matches("[1-9][0-9]*")) {
 				try {
 					int id = Integer.parseInt(arg);
-					EndpointReferenceType siteEPR = AddressingUtil.getSiteEPR(host,id);
-					SitePortType site = siteInstanceLocator.getSitePortTypePort(siteEPR);
+					EndpointReferenceType siteEPR = 
+						AddressingUtil.getSiteEPR(siteURL,id);
+					SitePortType site = 
+						siteInstanceLocator.getSitePortTypePort(siteEPR);
 						
 					// Use GSI Secure Conversation so that the service can
 					// retrieve the user's subject name
 					((Stub)site)._setProperty(
 							org.globus.wsrf.security.Constants.GSI_SEC_CONV, 
 							org.globus.wsrf.security.Constants.SIGNATURE);
+					
+					// Use full delegation so the service can submit the job
+					((Stub)site)._setProperty(
+							org.globus.axis.gsi.GSIConstants.GSI_MODE, 
+							org.globus.axis.gsi.GSIConstants.GSI_MODE_FULL_DELEG);
+					
+					// Use self authorization
+					((Stub)site)._setProperty(
+							org.globus.wsrf.security.Constants.AUTHORIZATION,
+							org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
 					
 					if (isDebug()) System.out.print("Removing site "+id+"... ");
 					site.remove(new EmptyObject());

@@ -1,6 +1,8 @@
 package edu.usc.glidein.client.cli;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,8 +20,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 
-import edu.usc.glidein.GlideinConfiguration;
-import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.stubs.SiteFactoryPortType;
 import edu.usc.glidein.stubs.SitePortType;
 import edu.usc.glidein.stubs.service.SiteFactoryServiceAddressingLocator;
@@ -36,7 +36,7 @@ public class CreateSiteCommand extends Command
 {
 	private Options options = null;
 	private List<Site> sites = null;
-	private EndpointReferenceType siteFactoryEPR = null;
+	private URL siteFactoryURL = null;
 	
 	private static enum SiteCatalogFormat {
 		ini,
@@ -72,11 +72,11 @@ public class CreateSiteCommand extends Command
 						 .create("n")
 		);
 		options.addOption(
-			OptionBuilder.withLongOpt("host")
-						 .withDescription("-h [--host] <name:port>          : " +
-						 		"The host:port where the service is running (default: localhost:8443)")
+			OptionBuilder.withLongOpt("factory")
+						 .withDescription("-F [--factory] <contact>         : " +
+						 		"The factory URL (default: "+AddressingUtil.SITE_FACTORY_SERVICE_URL+")")
 						 .hasArg()
-						 .create("h")
+						 .create("F")
 		);
 	}
 	
@@ -113,27 +113,16 @@ public class CreateSiteCommand extends Command
 			throw new CommandException("Invalid catalog format: "+format);
 		}
 				
-		/* Host */
-		String host = null;
-		if (cmdln.hasOption("h")) {
-			/* User-provided */
-			host = cmdln.getOptionValue("host");
-		} else {
-			/* From config file */
-			try {
-				GlideinConfiguration config = GlideinConfiguration.getInstance();
-				host = config.getProperty("glidein.host", "localhost:8443");
-			} catch (GlideinException ge) {
-				throw new CommandException("Error reading config file: "+ge.getMessage(), ge);
-			}
-		}
-		if (isDebug()) System.out.println("Host: "+host);
-			
-		/* Create EPR */
+		/* Factory URL */
 		try {
-			siteFactoryEPR = AddressingUtil.getSiteFactoryEPR(host);
-		} catch(GlideinException ge) {
-			throw new CommandException("Error creating factory EPR: "+ge.getMessage(),ge);
+			if (cmdln.hasOption("F")) {
+				siteFactoryURL = new URL(cmdln.getOptionValue("factory"));
+			} else {
+				siteFactoryURL = new URL(AddressingUtil.SITE_FACTORY_SERVICE_URL);
+			}
+			if (isDebug()) System.out.println("SiteFactoryService: "+siteFactoryURL);
+		} catch (MalformedURLException e) {
+			throw new CommandException("Invalid site factory URL: "+e.getMessage(),e);
 		}
 				
 		/* Create the site */
@@ -288,6 +277,8 @@ public class CreateSiteCommand extends Command
 		if (isDebug()) System.out.printf("Creating site '%s'... ",site.getName());
 		try {
 			// Look up the site factory
+			EndpointReferenceType siteFactoryEPR = 
+				AddressingUtil.getSiteFactoryEPR(siteFactoryURL);
 			SiteFactoryServiceAddressingLocator locator = 
 				new SiteFactoryServiceAddressingLocator();
 			SiteFactoryPortType factory = 
@@ -298,6 +289,11 @@ public class CreateSiteCommand extends Command
 			((Stub)factory)._setProperty(
 					org.globus.wsrf.security.Constants.GSI_SEC_CONV, 
 					org.globus.wsrf.security.Constants.SIGNATURE);
+			
+			// Use self authorization
+			((Stub)factory)._setProperty(
+					org.globus.wsrf.security.Constants.AUTHORIZATION,
+					org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
 			
 			// Create the site
 			siteEPR = factory.createSite(site);
@@ -329,6 +325,11 @@ public class CreateSiteCommand extends Command
 			((Stub)instance)._setProperty(
 					org.globus.axis.gsi.GSIConstants.GSI_MODE, 
 					org.globus.axis.gsi.GSIConstants.GSI_MODE_FULL_DELEG);
+			
+			// Use self authorization
+			((Stub)instance)._setProperty(
+					org.globus.wsrf.security.Constants.AUTHORIZATION,
+					org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
 			
 			// Create the site
 			instance.submit(new EmptyObject());

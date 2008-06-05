@@ -2,6 +2,8 @@ package edu.usc.glidein.client.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collection;
 
 import javax.xml.rpc.Stub;
@@ -15,8 +17,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 
-import edu.usc.glidein.GlideinConfiguration;
-import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.stubs.GlideinFactoryPortType;
 import edu.usc.glidein.stubs.service.GlideinFactoryServiceAddressingLocator;
 import edu.usc.glidein.stubs.types.Glidein;
@@ -27,7 +27,7 @@ import edu.usc.glidein.util.IOUtil;
 public class CreateGlideinCommand extends Command
 {
 	private Options options = null;
-	private EndpointReferenceType glideinFactoryEPR = null;
+	private URL factoryURL = null;
 	
 	@SuppressWarnings("static-access")
 	public CreateGlideinCommand()
@@ -50,7 +50,7 @@ public class CreateGlideinCommand extends Command
 		options.addOption(
 				OptionBuilder.withLongOpt("host-count")
 							 .hasArg()
-							 .withDescription("-hc [--host-count] <n>           : " +
+							 .withDescription("-hc [--host-count] <n>          : " +
 							 		"Number of hosts (default: 1)")
 							 .create("hc")
 		);
@@ -104,11 +104,11 @@ public class CreateGlideinCommand extends Command
 							 .create("cc")
 		);
 		options.addOption(
-				OptionBuilder.withLongOpt("host")
+				OptionBuilder.withLongOpt("factory")
 							 .hasArg()
-							 .withDescription("-h [--host] <name:port>         : " +
-							 		"The host:port where the service is running (default: localhost:8443)")
-							 .create("h")
+							 .withDescription("-F [--factory] <contact>        : " +
+							 		"The factory URL (default: "+AddressingUtil.GLIDEIN_FACTORY_SERVICE_URL+")")
+							 .create("F")
 		);
 	}
 	
@@ -214,30 +214,21 @@ public class CreateGlideinCommand extends Command
 		String gcbBroker = cmdln.getOptionValue("gcb-broker", null);
 		g.setGcbBroker(gcbBroker);
 		
-		/* Host */
-		String host = null;
-		if (cmdln.hasOption("h")) {
-			/* User-provided */
-			host = cmdln.getOptionValue("host");
-		} else {
-			/* From config file */
-			try {
-				GlideinConfiguration config = GlideinConfiguration.getInstance();
-				host = config.getProperty("glidein.host", "localhost:8443");
-			} catch (GlideinException ge) {
-				throw new CommandException("Error reading config file: "+ge.getMessage(), ge);
-			}
-		}
-		if (isDebug()) System.out.println("Host: "+host);
-			
-		/* Create EPR */
+		/* Factory URL */
 		try {
-			glideinFactoryEPR = AddressingUtil.getGlideinFactoryEPR(host);
-		} catch(GlideinException ge) {
-			throw new CommandException("Error creating factory EPR: "+ge.getMessage(),ge);
+			if (cmdln.hasOption("F")) {
+				factoryURL = new URL(cmdln.getOptionValue("factory"));
+			} else {
+				factoryURL = new URL(AddressingUtil.GLIDEIN_FACTORY_SERVICE_URL);
+			}
+			if (isDebug()) System.out.println("GlideinFactoryService: "+factoryURL);
+		} catch (MalformedURLException e) {
+			throw new CommandException("Invalid factory URL: "+e.getMessage(),e);
 		}
 		
 		try {
+			EndpointReferenceType glideinFactoryEPR = 
+				AddressingUtil.getGlideinFactoryEPR(factoryURL);
 			GlideinFactoryServiceAddressingLocator locator = 
 				new GlideinFactoryServiceAddressingLocator();
 			GlideinFactoryPortType factory = 
@@ -249,6 +240,9 @@ public class CreateGlideinCommand extends Command
 			((Stub)factory)._setProperty(
 					org.globus.axis.gsi.GSIConstants.GSI_MODE,
 					org.globus.axis.gsi.GSIConstants.GSI_MODE_FULL_DELEG);
+			((Stub)factory)._setProperty(
+					org.globus.wsrf.security.Constants.AUTHORIZATION,
+					org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
 			
 			factory.createGlidein(g);
 		} catch (Exception e) {
