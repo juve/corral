@@ -1,6 +1,5 @@
 package edu.usc.glidein.util;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.apache.axis.message.MessageElement;
@@ -16,6 +15,12 @@ import edu.usc.glidein.service.impl.SiteNames;
 
 public class AddressingUtil
 {
+	private static String BASE_URL = "http://localhost:8080/wsrf/services/glidein/";
+	public static String SITE_FACTORY_SERVICE_URL    = BASE_URL + "SiteFactoryService";
+	public static String SITE_SERVICE_URL            = BASE_URL + "SiteService";
+	public static String GLIDEIN_FACTORY_SERVICE_URL = BASE_URL + "GlideinFactoryService";
+	public static String GLIDEIN_SERVICE_URL         = BASE_URL + "GlideinService";
+	
 	public static EndpointReferenceType createEPR(URL address)
 	throws Exception
 	{ 
@@ -39,18 +44,11 @@ public class AddressingUtil
 	    return reference;
 	}
 	
-	public static URL getBaseURL(String host) throws MalformedURLException
-	{
-		return new URL("http://"+host+"/wsrf/services/");
-	}
-	
-	public static EndpointReferenceType getSiteFactoryEPR(String host)
+	public static EndpointReferenceType getSiteFactoryEPR(URL factoryURL)
 	throws GlideinException
 	{
 		try {
-			URL baseURL = getBaseURL(host);
-			URL instanceURL = new URL(baseURL, SiteNames.SITE_FACTORY_SERVICE);
-			return createEPR(instanceURL);
+			return createEPR(factoryURL);
 		} catch(Exception e) {
 			throw new GlideinException(
 					"Unable to create endpoint reference: "+
@@ -63,13 +61,11 @@ public class AddressingUtil
 		return new SimpleResourceKey(SiteNames.RESOURCE_KEY, new Integer(id));
 	}
 	
-	public static EndpointReferenceType getSiteEPR(String host, int id)
+	public static EndpointReferenceType getSiteEPR(URL serviceURL, int id)
 	throws GlideinException
 	{
 		try {
 			ResourceKey key = getSiteKey(id);
-			URL baseURL = getBaseURL(host);
-			URL serviceURL = new URL(baseURL, SiteNames.SITE_SERVICE);
 			return createEPR(serviceURL, key);
 		} catch(Exception e) {
 			throw new GlideinException(
@@ -78,13 +74,11 @@ public class AddressingUtil
 		}
 	}
 	
-	public static EndpointReferenceType getGlideinFactoryEPR(String host)
+	public static EndpointReferenceType getGlideinFactoryEPR(URL factoryURL)
 	throws GlideinException
 	{
 		try {
-			URL baseURL = getBaseURL(host);
-			URL serviceURL = new URL(baseURL, GlideinNames.GLIDEIN_FACTORY_SERVICE);
-			return createEPR(serviceURL);
+			return createEPR(factoryURL);
 		} catch(Exception e) {
 			throw new GlideinException(
 					"Unable to create endpoint reference: "+
@@ -97,30 +91,16 @@ public class AddressingUtil
 		return new SimpleResourceKey(GlideinNames.RESOURCE_KEY, new Integer(id));
 	}
 	
-	public static EndpointReferenceType getGlideinEPR(String host, int id)
+	public static EndpointReferenceType getGlideinEPR(URL serviceURL, int id)
 	throws GlideinException
 	{
 		try {
 			ResourceKey key = getGlideinKey(id);
-			URL baseURL = getBaseURL(host);
-			URL serviceURL = new URL(baseURL, GlideinNames.GLIDEIN_SERVICE);
 			return createEPR(serviceURL, key);
 		} catch(Exception e) {
 			throw new GlideinException(
 					"Unable to create endpoint reference: "+
 					e.getMessage(),e);
-		}
-	}
-	
-	public static void main(String[] args)
-	{
-		try {
-			AddressingUtil.getSiteEPR("juve.usc.edu:8080", 1);
-			AddressingUtil.getSiteFactoryEPR("juve.usc.edu:8080");
-			AddressingUtil.getGlideinEPR("juve.usc.edu:8080",1);
-			AddressingUtil.getGlideinFactoryEPR("juve.usc.edu:8080");
-		} catch(Exception e){
-			e.printStackTrace();
 		}
 	}
 }
