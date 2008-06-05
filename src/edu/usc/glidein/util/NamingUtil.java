@@ -17,7 +17,7 @@ public class NamingUtil
 {
 	public static String getHomeLocation(String service)
 	{
-		return "java:comp/env//services/" + service + "/home";
+		return "java:comp/env/services/" + service + "/home";
 	}
 	
 	public static SiteResourceHome getSiteResourceHome()
