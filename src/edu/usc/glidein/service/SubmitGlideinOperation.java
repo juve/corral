@@ -6,7 +6,6 @@ import java.io.IOException;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 
-import edu.usc.glidein.GlideinConfiguration;
 import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.service.exec.Condor;
 import edu.usc.glidein.service.exec.CondorEvent;
@@ -104,7 +103,7 @@ public class SubmitGlideinOperation implements CondorEventListener
 	{
 		logger.debug("Submitting glidein job for site '"+site.getName()+"'");
 		
-		GlideinConfiguration config = GlideinConfiguration.getInstance();
+		ServiceConfiguration config = ServiceConfiguration.getInstance();
 		
 		// Create working directory
 		File siteDirectory = new File(site.getSubmitPath());
@@ -125,7 +124,7 @@ public class SubmitGlideinOperation implements CondorEventListener
 		job.setQueue(glideinService.getQueue());
 		
 		// Set glidein executable
-		String run = config.getProperty("glidein.run");
+		String run = config.getRun();
 		job.setExecutable(run);
 		job.setLocalExecutable(true);
 		
@@ -163,7 +162,7 @@ public class SubmitGlideinOperation implements CondorEventListener
 		String configFile = null;
 		if (glidein.getCondorConfigBase64()==null)
 		{
-			configFile = config.getProperty("glidein.condor.config");
+			configFile = config.getGlideinCondorConfig();
 		}
 		else
 		{
@@ -188,7 +187,7 @@ public class SubmitGlideinOperation implements CondorEventListener
 		// Submit job
 		try
 		{
-			Condor condor = new Condor();
+			Condor condor = Condor.getInstance();
 			condor.submitJob(job);
 		}
 		catch(CondorException ce)
@@ -218,7 +217,7 @@ public class SubmitGlideinOperation implements CondorEventListener
 				// aborted
 				try
 				{
-					Condor condor = new Condor();
+					Condor condor = Condor.getInstance();
 					condor.cancelJob(event.getJob().getCondorId());
 				} 
 				catch(CondorException ce)

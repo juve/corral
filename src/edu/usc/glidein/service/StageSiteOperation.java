@@ -8,7 +8,6 @@ import org.apache.log4j.Logger;
 import org.globus.gsi.GlobusCredential;
 import org.globus.wsrf.ResourceException;
 
-import edu.usc.glidein.GlideinConfiguration;
 import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.service.exec.Condor;
 import edu.usc.glidein.service.exec.CondorEvent;
@@ -44,13 +43,10 @@ public class StageSiteOperation implements CondorEventListener
 	{
 		logger.debug("Submitting staging job for site '"+site.getName()+"'");
 		
-		GlideinConfiguration config = GlideinConfiguration.getInstance();
+		ServiceConfiguration config = ServiceConfiguration.getInstance();
 		
-		// TODO: How to do the job directory?
 		// Create working directory
-		File jobDirectory = new File(site.getSubmitPath());
-		//File varDirectory = new File(config.getProperty("glidein.var"));
-		//File jobDirectory = new File(varDirectory,"site-"+site.getId());
+		File jobDirectory = new File(config.getTempDir(),"site-"+site.getId());
 		
 		// Create a job description
 		CondorJob job = new CondorJob(jobDirectory);
@@ -68,7 +64,7 @@ public class StageSiteOperation implements CondorEventListener
 		job.setQueue(stagingService.getQueue());
 		
 		// Set glidein_install executable
-		String install = config.getProperty("glidein.install");
+		String install = config.getInstall();
 		job.setExecutable(install);
 		job.setLocalExecutable(true);
 		job.setMaxTime(300); // Not longer than 5 mins
@@ -88,8 +84,7 @@ public class StageSiteOperation implements CondorEventListener
 		} else {
 			job.addArgument("-condorPackage "+site.getCondorPackage());
 		}
-		String urlstr = config.getProperty("glidein.staging.urls");
-		String[] urls = urlstr.split("[ ,;\t]+");
+		String[] urls = config.getStagingURLs();
 		for(String url : urls) job.addArgument("-url "+url);
 		
 		// Add a listener
@@ -98,7 +93,7 @@ public class StageSiteOperation implements CondorEventListener
 		// Submit job
 		try
 		{
-			Condor condor = new Condor();
+			Condor condor = Condor.getInstance();
 			condor.submitJob(job);
 		}
 		catch(CondorException ce)
@@ -192,7 +187,7 @@ public class StageSiteOperation implements CondorEventListener
 			case JOB_HELD:
 				// Kill job if it is held, job will become aborted
 				try {
-					Condor condor = new Condor();
+					Condor condor = Condor.getInstance();
 					condor.cancelJob(event.getJob().getCondorId());
 				} catch(CondorException ce) {
 					failed("Unable to cancel held staging job", ce);
