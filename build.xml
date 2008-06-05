@@ -18,7 +18,7 @@
 	<property name="share.dir" location="share"/>
 	<property name="classes.dir" location="${build.dir}/classes"/>
 	<property name="jars.dir" location="${build.dir}/jars"/>
-	
+	<property name="bin.dir" location="bin"/>
 	<property name="lib.dir" location="lib"/>
 	<property name="service.dir" location="src"/>
 	<property name="stubs.dir" location="${build.dir}/stubs"/>
@@ -55,6 +55,18 @@
 	</fileset>
 	<property name="garetc.id" value="garetc" />
 	
+	<!-- Share files -->
+	<fileset dir="${share.dir}" id="garshare">
+		<include name="**/*"/>
+	</fileset>
+	<property name="garshare.id" value="garshare" />
+	
+	<!-- Binary files -->
+	<fileset dir="${bin.dir}" id="garbin">
+		<include name="**/*"/>
+	</fileset>
+	<property name="garbin.id" value="garbin" />
+		
     <target name="clean">
     	<delete dir="tmp"/>
         <delete file="${gar.name}"/>
@@ -234,6 +246,8 @@
 			<reference refid="${garjars.id}" />
 			<reference refid="${garschema.id}" />
 			<reference refid="${garetc.id}" />
+			<reference refid="${garbin.id}" />
+			<reference refid="${garshare.id}" />
 		</ant>
 	</target>
 	
