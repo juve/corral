@@ -1,4 +1,4 @@
-package edu.usc.glidein.service;
+package edu.usc.glidein.service.ops;
 
 import org.globus.gsi.GlobusCredential;
 import org.globus.wsrf.ResourceKey;

@@ -14,11 +14,11 @@ import org.globus.wsrf.impl.ReflectionResourceProperty;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
 
 import edu.usc.glidein.GlideinException;
-import edu.usc.glidein.service.RemoveSiteOperation;
-import edu.usc.glidein.service.StageSiteOperation;
 import edu.usc.glidein.service.db.Database;
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.SiteDAO;
+import edu.usc.glidein.service.ops.RemoveSiteOperation;
+import edu.usc.glidein.service.ops.StageSiteOperation;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteStatus;
 import edu.usc.glidein.util.ProxyUtil;

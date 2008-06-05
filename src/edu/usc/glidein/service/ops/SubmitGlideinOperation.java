@@ -1,4 +1,4 @@
-package edu.usc.glidein.service;
+package edu.usc.glidein.service.ops;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,6 +7,7 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 
 import edu.usc.glidein.GlideinException;
+import edu.usc.glidein.service.ServiceConfiguration;
 import edu.usc.glidein.service.exec.Condor;
 import edu.usc.glidein.service.exec.CondorEvent;
 import edu.usc.glidein.service.exec.CondorEventListener;
