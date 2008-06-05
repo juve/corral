@@ -4,14 +4,14 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-import edu.usc.glidein.GlideinConfiguration;
-import edu.usc.glidein.GlideinException;
+import org.globus.wsrf.jndi.Initializable;
+
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.GlideinDAO;
 import edu.usc.glidein.service.db.Database;
 import edu.usc.glidein.service.db.SiteDAO;
 
-public class MySQLDatabase extends Database
+public class MySQLDatabase extends Database implements Initializable
 {
 	public static final String DB_DRIVER = "com.mysql.jdbc.Driver";
 	
@@ -21,26 +21,49 @@ public class MySQLDatabase extends Database
 	
 	public MySQLDatabase() { }
 	
-	public void initialize() throws DatabaseException
+	public MySQLDatabase(String url, String user, String password)
 	{
-		// Get configuration
-		try {
-			GlideinConfiguration config = GlideinConfiguration.getInstance();
-			url = config.getProperty(URL);
-			user = config.getProperty(USER);
-			password = config.getProperty(PASSWORD);
-		} catch(GlideinException ge) {
-			throw new DatabaseException("Unable to load database configuration",ge);
-		}
-		
-		// Load database driver
-		try {
-			Class.forName(DB_DRIVER).newInstance();
-		} catch(Exception e) {
-			throw new DatabaseException("Unable to load MySQL driver",e);
-		}
+		this.url = url;
+		this.user = user;
+		this.password = password;
 	}
 	
+	public void initialize() throws Exception
+	{
+		// Load database driver
+		Class.forName(DB_DRIVER).newInstance();
+	}
+	
+	public String getUrl()
+	{
+		return url;
+	}
+
+	public void setUrl(String url)
+	{
+		this.url = url;
+	}
+
+	public String getUser()
+	{
+		return user;
+	}
+
+	public void setUser(String user)
+	{
+		this.user = user;
+	}
+
+	public String getPassword()
+	{
+		return password;
+	}
+
+	public void setPassword(String password)
+	{
+		this.password = password;
+	}
+
 	public SiteDAO getSiteDAO()
 	{
 		return new MySQLSiteDAO(this);
