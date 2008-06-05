@@ -106,8 +106,7 @@ public class SubmitGlideinOperation implements CondorEventListener
 		ServiceConfiguration config = ServiceConfiguration.getInstance();
 		
 		// Create working directory
-		File siteDirectory = new File(site.getSubmitPath());
-		File jobDirectory = new File(siteDirectory,"glidein-"+glidein.getId());
+		File jobDirectory = new File(config.getTempDir(),"glidein-"+glidein.getId());
 		
 		// Create a job description
 		CondorJob job = new CondorJob(jobDirectory);

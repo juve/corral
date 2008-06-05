@@ -3,7 +3,6 @@ CREATE TABLE site (
 	name			VARCHAR(255) NOT NULL,
 	installPath 	TEXT NOT NULL,
 	localPath		TEXT NOT NULL,
-	submitPath		TEXT NOT NULL,
 	condorPackage	VARCHAR(1024),
 	condorVersion	VARCHAR(16),
 	status			VARCHAR(16) NOT NULL,

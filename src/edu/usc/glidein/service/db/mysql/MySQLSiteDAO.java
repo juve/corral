@@ -61,12 +61,11 @@ public class MySQLSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, submitPath, condorPackage, condorVersion, status, statusMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,?,NOW(),NOW())");
+			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, status, statusMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,NOW(),NOW())");
 			int i = 1;
 			stmt.setString(i++, site.getName());
 			stmt.setString(i++, site.getInstallPath());
 			stmt.setString(i++, site.getLocalPath());
-			stmt.setString(i++, site.getSubmitPath());
 			stmt.setString(i++, site.getCondorPackage());
 			stmt.setString(i++, site.getCondorVersion());
 			stmt.setString(i++, site.getStatus().toString());
@@ -342,7 +341,6 @@ public class MySQLSiteDAO implements SiteDAO
 			site.setName(rs.getString("name"));
 			site.setInstallPath(rs.getString("installPath"));
 			site.setLocalPath(rs.getString("localPath"));
-			site.setSubmitPath(rs.getString("submitPath"));
 			site.setCondorPackage(rs.getString("condorPackage"));
 			site.setCondorVersion(rs.getString("condorVersion"));
 			

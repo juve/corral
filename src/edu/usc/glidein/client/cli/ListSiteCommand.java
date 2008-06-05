@@ -207,7 +207,6 @@ public class ListSiteCommand extends Command
 				System.out.printf("statusMessage = %s\n", site.getStatusMessage());
 				System.out.printf("installPath = %s\n", site.getInstallPath());
 				System.out.printf("localPath = %s\n", site.getLocalPath());
-				System.out.printf("submitPath = %s\n", site.getSubmitPath());
 				System.out.printf("condorVersion = %s\n", site.getCondorVersion());
 				System.out.printf("condorPackage = %s\n", site.getCondorPackage());
 				

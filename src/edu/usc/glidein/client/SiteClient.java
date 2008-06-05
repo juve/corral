@@ -59,7 +59,6 @@ public class SiteClient
 			site.setCondorPackage(condorPackage);
 			site.setInstallPath(installPath);
 			site.setLocalPath(localPath);
-			site.setSubmitPath("/submit");
 			site.setStagingService(stagingService);
 			site.setGlideinService(glideinService);
 			site.setEnvironment(env);
