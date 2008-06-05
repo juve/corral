@@ -1,6 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jndiConfig xmlns="http://wsrf.globus.org/jndi/config">
 
+	<global>
+		<resource name="glidein/Database" type="edu.usc.glidein.service.db.mysql.MySQLDatabase">
+            <resourceParams>
+                <parameter>
+                    <name>factory</name>
+                    <value>org.globus.wsrf.jndi.BeanFactory</value>
+                </parameter>
+                <parameter>
+                    <name>url</name>
+                    <value>jdbc:mysql://localhost:3306/glidein</value>
+                </parameter>
+                <parameter>
+                	<name>user</name>
+                	<value>juve</value>
+                </parameter>
+                <parameter>
+                	<name>password</name>
+                	<value>Mini14</value>
+                </parameter>
+            </resourceParams>
+        </resource>
+        <resource name="glidein/Condor" type="edu.usc.glidein.service.exec.Condor">
+            <resourceParams>
+                <parameter>
+                    <name>factory</name>
+                    <value>org.globus.wsrf.jndi.BeanFactory</value>
+                </parameter>
+                <parameter>
+                    <name>condorHome</name>
+                    <value>/opt/condor/7.0.0</value>
+                </parameter>
+                <parameter>
+                	<name>condorConfig</name>
+                	<value>/etc/condor/condor_config</value>
+                </parameter>
+            </resourceParams>
+        </resource>
+        <resource name="glidein/ServiceConfiguration" type="edu.usc.glidein.service.ServiceConfiguration">
+            <resourceParams>
+                <parameter>
+                    <name>factory</name>
+                    <value>org.globus.wsrf.jndi.BeanFactory</value>
+                </parameter>
+                <parameter>
+                    <name>install</name>
+                    <value>share/glidein_service/glidein_install</value>
+                </parameter>
+                <parameter>
+                	<name>uninstall</name>
+                	<value>share/glidein_service/glidein_uninstall</value>
+                </parameter>
+                <parameter>
+                	<name>run</name>
+                	<value>share/glidein_service/glidein_run</value>
+                </parameter>
+                <parameter>
+                	<name>stagingURLs</name>
+                	<value>http://scecit02.usc.edu/glidein/binaries,http://www.cs.wisc.edu/condor/glidein/binaries,gsiftp://gridftp.cs.wisc.edu/p/condor/public/binaries/glidein</value>
+                </parameter>
+                <parameter>
+                	<name>glideinCondorConfig</name>
+                	<value>etc/glidein_service/glidein_condor_config</value>
+                </parameter>
+                <parameter>
+                	<name>tempDir</name>
+                	<value>tmp/glidein_service</value>
+                </parameter>
+            </resourceParams>
+        </resource>
+	</global>
+
 	<!-- GlideinService -->
 	<service name="glidein/GlideinService">
 		<resource name="home" type="edu.usc.glidein.service.impl.GlideinResourceHome">
