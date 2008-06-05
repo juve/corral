@@ -1,4 +1,4 @@
-package edu.usc.glidein.client.cli;
+package edu.usc.glidein.cli;
 
 import java.net.MalformedURLException;
 import java.net.URL;

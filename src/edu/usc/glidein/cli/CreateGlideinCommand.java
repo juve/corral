@@ -1,4 +1,4 @@
-package edu.usc.glidein.client.cli;
+package edu.usc.glidein.cli;
 
 import java.io.File;
 import java.io.IOException;

@@ -28,4 +28,4 @@ done
 export CLASSPATH
 
 # Run CommandLineClient
-${JAVA_HOME}/bin/java edu.usc.glidein.client.cli.CommandLineClient "$@"
+${JAVA_HOME}/bin/java edu.usc.glidein.cli.CommandLineClient "$@"

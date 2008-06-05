@@ -1,4 +1,4 @@
-package edu.usc.glidein.client.cli;
+package edu.usc.glidein.cli;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -12,27 +12,27 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.ParseException;
 
-import edu.usc.glidein.stubs.GlideinPortType;
-import edu.usc.glidein.stubs.service.GlideinServiceAddressingLocator;
+import edu.usc.glidein.stubs.SitePortType;
+import edu.usc.glidein.stubs.service.SiteServiceAddressingLocator;
 import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.util.AddressingUtil;
 
-public class RemoveGlideinCommand extends Command
-{
+public class RemoveSiteCommand extends Command
+{	
 	private Options options = null;
-	private URL glideinURL = null;
+	private URL siteURL = null;
 	
 	@SuppressWarnings("static-access")
-	public RemoveGlideinCommand()
+	public RemoveSiteCommand()
 	{
 		options = new Options();
 		options.addOption(
 			OptionBuilder.withLongOpt("service")
-						 .withDescription("-S [--service] <contact>          : " +
-						 		"The service URL (default: "+AddressingUtil.GLIDEIN_SERVICE_URL+")")
+						 .withDescription("-S [--service] <url>          : " +
+						 		"The service URL (default: "+AddressingUtil.SITE_SERVICE_URL+")")
 						 .hasArg()
 						 .create("S")
 		);
@@ -58,71 +58,69 @@ public class RemoveGlideinCommand extends Command
 		/* Service URL */
 		try {
 			if (cmdln.hasOption("S")) {
-				glideinURL = new URL(cmdln.getOptionValue("service"));
+				siteURL = new URL(cmdln.getOptionValue("service"));
 			} else {
-				glideinURL = new URL(AddressingUtil.GLIDEIN_SERVICE_URL);
+				siteURL = new URL(AddressingUtil.SITE_SERVICE_URL);
 			}
-			if (isDebug()) System.out.println("GlideinService: "+glideinURL);
+			if (isDebug()) System.out.println("SiteService: "+siteURL);
 		} catch (MalformedURLException e) {
-			throw new CommandException("Invalid glidein service URL: "+e.getMessage(),e);
+			throw new CommandException("Invalid site service URL: "+e.getMessage(),e);
 		}
-		
 		/* Delete all the sites */
-		GlideinServiceAddressingLocator glideinInstanceLocator = 
-			new GlideinServiceAddressingLocator();
+		SiteServiceAddressingLocator siteInstanceLocator = new SiteServiceAddressingLocator();
 		for (String arg : args) {
 			if (arg.matches("[1-9][0-9]*")) {
 				try {
 					int id = Integer.parseInt(arg);
-					EndpointReferenceType glideinEPR = 
-						AddressingUtil.getGlideinEPR(glideinURL,id);
-					GlideinPortType glidein = 
-						glideinInstanceLocator.getGlideinPortTypePort(glideinEPR);
+					EndpointReferenceType siteEPR = 
+						AddressingUtil.getSiteEPR(siteURL,id);
+					SitePortType site = 
+						siteInstanceLocator.getSitePortTypePort(siteEPR);
 						
 					// Use GSI Secure Conversation so that the service can
 					// retrieve the user's subject name
-					((Stub)glidein)._setProperty(
+					((Stub)site)._setProperty(
 							org.globus.wsrf.security.Constants.GSI_SEC_CONV, 
 							org.globus.wsrf.security.Constants.SIGNATURE);
 					
 					// Use full delegation so the service can submit the job
-					((Stub)glidein)._setProperty(
+					((Stub)site)._setProperty(
 							org.globus.axis.gsi.GSIConstants.GSI_MODE, 
 							org.globus.axis.gsi.GSIConstants.GSI_MODE_FULL_DELEG);
 					
 					// Use self authorization
-					((Stub)glidein)._setProperty(
+					((Stub)site)._setProperty(
 							org.globus.wsrf.security.Constants.AUTHORIZATION,
 							org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
 					
-					if (isDebug()) System.out.print("Removing glidein "+id+"... ");
-					glidein.remove(new EmptyObject());
+					if (isDebug()) System.out.print("Removing site "+id+"... ");
+					site.remove(new EmptyObject());
 					if (isDebug()) System.out.println("done.");
 				} catch (Exception e) {
-					System.out.println("Unable to remove glidein '"+arg+"': "+e.getMessage());
+					System.out.println("Unable to remove site '"+arg+"': "+e.getMessage());
 					if (isDebug()) e.printStackTrace();
 				}
 			} else {
-				System.out.println("Invalid glidein id: "+arg);
+				System.out.println("Invalid site id: "+arg);
 			}
 		}
 	}
 	
 	public String getName()
 	{
-		return "remove-glidein";
+		return "remove-site";
 	}
 	
 	public String[] getAliases()
 	{
-		return new String[]{"rg"};
+		return new String[]{"rs"};
 	}
 	
 	public String getHelp()
 	{
 		StringBuffer buff = new StringBuffer();
-		buff.append("remove-glidein (rg): Remove an existing glidein\n");
-		buff.append("usage: remove-glidein ID...\n");
+		buff.append("remove-site (rs): Remove an existing site\n");
+		buff.append("usage: remove-site ID...\n");
 		buff.append("\n");
 		buff.append("Valid options:\n");
 		@SuppressWarnings("unchecked")
