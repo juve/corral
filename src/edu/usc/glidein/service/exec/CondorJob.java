@@ -428,7 +428,8 @@ public class CondorJob
 			job.setLocalExecutable(false);
 			
 			CharArrayWriter out = new CharArrayWriter();
-			new Condor().writeSubmitScript(job,out);
+			Condor condor = new Condor("/opt/condor/7.0.0","/etc/condor/condor_config");
+			condor.writeSubmitScript(job,out);
 			System.out.println(out.toString());
 		}
 		catch(Exception ioe)

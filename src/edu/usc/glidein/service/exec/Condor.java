@@ -9,9 +9,11 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+
 import org.globus.gsi.GlobusCredential;
 
-import edu.usc.glidein.GlideinConfiguration;
 import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.util.CommandLine;
 import edu.usc.glidein.util.ProxyUtil;
@@ -23,95 +25,46 @@ import edu.usc.glidein.util.ProxyUtil;
  */
 public class Condor
 {
-	public static final String HOME_KEY = "condor.home";
-	public static final String CONFIG_KEY = "condor.config";
-	public static final String BIN_KEY = "condor.bin";
+	private String condorHome;
+	private String condorConfig;
 	
-	/**
-	 * Path to the condor home directory
-	 */
-	private File condorHome;
+	private Condor() { }
 	
-	/**
-	 * Path to the condor bin directory
-	 */
-	private File condorBin;
-	
-	/**
-	 * Path to the condor client configuration file
-	 */
-	private File condorConfiguration;
-	
-	public Condor() throws CondorException
+	public Condor(String condorHome, String condorConfig)
 	{
-		try 
-		{
-			GlideinConfiguration config = GlideinConfiguration.getInstance();
-			setCondorHome(new File(config.getProperty(HOME_KEY)));
-			setCondorConfiguration(new File(config.getProperty(CONFIG_KEY)));
-			setCondorBin(new File(config.getProperty(BIN_KEY)));
-		}
-		catch(GlideinException se)
-		{
-			throw new CondorException("Unable to configure Condor",se);
-		}
-	}
-	
-	public File getCondorHome()
-	{
-		return condorHome.getAbsoluteFile();
-	}
-
-	public void setCondorHome(File condorHome) 
-	throws CondorException
-	{
-		if(condorHome == null)
-			throw new CondorException("null");
-		if(!condorHome.exists())
-			throw new CondorException(
-				condorHome.getAbsolutePath()+" does not exist");
-		if(!condorHome.isDirectory())
-			throw new CondorException(
-				condorHome.getAbsolutePath()+" is not a directory");
 		this.condorHome = condorHome;
+		this.condorConfig = condorConfig;
 	}
 	
-	public File getCondorConfiguration()
+	public static Condor getInstance() throws CondorException
 	{
-		return condorConfiguration.getAbsoluteFile();
-	}
-
-	public void setCondorConfiguration(File condorConfiguration)
-	throws CondorException
-	{
-		if(condorConfiguration == null)
-			throw new CondorException("null");
-		if(!condorConfiguration.exists())
-			throw new CondorException(
-				condorConfiguration.getAbsolutePath()+" does not exist");
-		if(!condorConfiguration.isFile())
-			throw new CondorException(
-				condorConfiguration.getAbsolutePath()+" is not a file");
-		this.condorConfiguration = condorConfiguration;
+		String location = "java:comp/env/glidein/Condor";
+		try {
+			Context initialContext = new InitialContext();
+	    	return (Condor)initialContext.lookup(location);
+		} catch (Exception e) {
+			throw new CondorException("Unable to load condor: "+location,e);
+		}
 	}
 	
-	public File getCondorBin()
+	public void setCondorConfig(String condorConfig)
 	{
-		return condorBin.getAbsoluteFile();
+		this.condorConfig = condorConfig;
 	}
 	
-	public void setCondorBin(File condorBin)
-	throws CondorException
+	public String getCondorConfig()
 	{
-		if(condorBin == null)
-			throw new CondorException("null");
-		if(!condorBin.exists())
-			throw new CondorException(
-				condorBin.getAbsolutePath()+" does not exist");
-		if(!condorBin.isDirectory())
-			throw new CondorException(
-				condorBin.getAbsolutePath()+" is not a directory");
-		this.condorBin = condorBin;
+		return condorConfig;
+	}
+	
+	public String getCondorHome()
+	{
+		return condorHome;
+	}
+	
+	public void setCondorHome(String condorHome)
+	{
+		this.condorHome = condorHome;
 	}
 	
 	/**
@@ -147,7 +100,8 @@ public class Condor
 		try 
 		{
 			// Find condor_submit executable
-			File condorSubmit = new File(this.condorBin,"condor_submit");
+			File condorBin = new File(condorHome,"bin");
+			File condorSubmit = new File(condorBin,"condor_submit");
 			
 			submit.setExecutable(condorSubmit);
 			submit.setWorkingDirectory(job.getJobDirectory());
@@ -158,9 +112,9 @@ public class Condor
 			
 			// Set environment
 			submit.addEnvironmentVariable(
-					"CONDOR_HOME",condorHome.getAbsolutePath());
+					"CONDOR_HOME",condorHome);
 			submit.addEnvironmentVariable(
-					"CONDOR_CONFIG",condorConfiguration.getAbsolutePath());
+					"CONDOR_CONFIG",condorConfig);
 			
 			// Run condor_submit
 			submit.execute();
@@ -213,7 +167,8 @@ public class Condor
 		try 
 		{
 			// Find condor_rm executable
-			File condorRm = new File(this.condorBin,"condor_rm");
+			File condorBin = new File(condorHome,"bin");
+			File condorRm = new File(condorBin,"condor_rm");
 			
 			cancel.setExecutable(condorRm);
 			
@@ -222,9 +177,9 @@ public class Condor
 			
 			// Set environment
 			cancel.addEnvironmentVariable("CONDOR_HOME",
-					this.condorHome.getAbsolutePath());
+					this.condorHome);
 			cancel.addEnvironmentVariable("CONDOR_CONFIG",
-					this.condorConfiguration.getAbsolutePath());
+					this.condorConfig);
 			
 			// Run condor_rm
 			cancel.execute();
