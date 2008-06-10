@@ -18,7 +18,6 @@ import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinStatus;
 import edu.usc.glidein.stubs.types.Glideins;
 import edu.usc.glidein.util.AddressingUtil;
-import edu.usc.glidein.util.NamingUtil;
 
 public class GlideinFactoryService
 {
@@ -35,7 +34,7 @@ public class GlideinFactoryService
 		
 		// Get site or fail
 		try {
-			SiteResourceHome siteHome = NamingUtil.getSiteResourceHome();
+			SiteResourceHome siteHome = SiteResourceHome.getInstance();
 			siteHome.find(AddressingUtil.getSiteKey(glidein.getSiteId()));
 		} catch(NamingException ne) {
 			throw new ResourceException("Unable to locate site",ne);
