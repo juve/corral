@@ -3,6 +3,7 @@ package edu.usc.glidein.util;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.MissingResourceException;
 
 import javax.security.auth.Subject;
 
@@ -118,15 +119,15 @@ public class ProxyUtil
 	 * @see org.globus.axis.gsi.GSIConstants.GSI_MODE
 	 * @return The delegated credential.
 	 */
-	public static GlobusCredential getCallerCredential() throws GlideinException
+	public static GlobusCredential getCallerCredential() throws MissingResourceException
 	{
-		
 		MessageContext msgCtx = MessageContext.getCurrentContext();
 		Subject subject = (Subject) msgCtx.getProperty(Constants.PEER_SUBJECT);
 		if (subject == null) {
-			throw new GlideinException("Delegated credential not found: " +
+			throw new MissingResourceException("Delegated credential not found: " +
 					"peer Subject not found: " +
-					"make sure you set GSI_MODE to GSI_MODE_FULL_DELEG");
+					"make sure you set GSI_MODE to GSI_MODE_FULL_DELEG",
+					Subject.class.getName(),null);
 		} else {
 			GlobusCredential cred = null;
 			for (Object o : subject.getPrivateCredentials()) {
@@ -135,9 +136,10 @@ public class ProxyUtil
 				}
 			}
 			if (cred == null) {
-				throw new GlideinException("Delegated credential not found: " +
+				throw new MissingResourceException("Delegated credential not found: " +
 						"Subject did not contain delegated credential: " +
-						"make sure you set GSI_MODE to GSI_MODE_FULL_DELEG");
+						"make sure you set GSI_MODE to GSI_MODE_FULL_DELEG",
+						GlobusCredential.class.getName(),null);
 			}
 			return cred;
 		}
