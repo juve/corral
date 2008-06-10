@@ -4,7 +4,6 @@ import java.rmi.RemoteException;
 
 import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceContext;
-import org.globus.wsrf.ResourceKey;
 
 import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.Glidein;
@@ -12,19 +11,6 @@ import edu.usc.glidein.stubs.types.Glidein;
 public class GlideinService
 {
 	private Logger logger = Logger.getLogger(GlideinService.class);
-	
-	private GlideinResourceHome getResourceHome() throws RemoteException
-	{
-		try {
-			Object resourceHome = ResourceContext.getResourceContext().getResourceHome();
-			GlideinResourceHome glideinResourceHome = (GlideinResourceHome) resourceHome;
-			return glideinResourceHome;
-		} catch (Exception e) {
-			String message = "Unable to find glidein resource home";
-			logger.error(message,e);
-			throw new RemoteException(message, e);
-		}
-	}
 	
 	private GlideinResource getResource() throws RemoteException
 	{
@@ -34,17 +20,6 @@ public class GlideinService
 			return glideinResource;
 		} catch (Exception e) {
 			String message = "Unable to find glidein resource";
-			logger.error(message,e);
-			throw new RemoteException(message, e);
-		}
-	}
-	
-	private ResourceKey getResourceKey() throws RemoteException 
-	{
-		try {
-			return ResourceContext.getResourceContext().getResourceKey();
-		} catch (Exception e) {
-			String message = "Unable to find glidein resource key";
 			logger.error(message,e);
 			throw new RemoteException(message, e);
 		}
@@ -61,9 +36,9 @@ public class GlideinService
 		return new EmptyObject();
 	}
 	
-	public EmptyObject remove(EmptyObject empty) throws RemoteException
+	public EmptyObject remove(boolean force) throws RemoteException
 	{
-		getResourceHome().remove(getResourceKey());
+		getResource().remove(force);
 		return new EmptyObject();
 	}
 }
