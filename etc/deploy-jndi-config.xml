@@ -9,14 +9,17 @@
                     <value>org.globus.wsrf.jndi.BeanFactory</value>
                 </parameter>
                 <parameter>
+                	<!-- The MySQL Database URL -->
                     <name>url</name>
                     <value>jdbc:mysql://localhost:3306/glidein</value>
                 </parameter>
                 <parameter>
+                	<!-- The MySQL Databse user -->
                 	<name>user</name>
                 	<value>juve</value>
                 </parameter>
                 <parameter>
+                	<!-- The MySQL User's Password -->
                 	<name>password</name>
                 	<value>Mini14</value>
                 </parameter>
@@ -29,10 +32,12 @@
                     <value>org.globus.wsrf.jndi.BeanFactory</value>
                 </parameter>
                 <parameter>
+                	<!-- Path to where condor is installed -->
                     <name>condorHome</name>
                     <value>/opt/condor/7.0.0</value>
                 </parameter>
                 <parameter>
+                	<!-- Path to the condor configuration file -->
                 	<name>condorConfig</name>
                 	<value>/etc/condor/condor_config</value>
                 </parameter>
@@ -45,28 +50,47 @@
                     <value>org.globus.wsrf.jndi.BeanFactory</value>
                 </parameter>
                 <parameter>
+                	<!-- Path to the glidein installation shell script -->
                     <name>install</name>
                     <value>share/glidein_service/glidein_install</value>
                 </parameter>
                 <parameter>
+                	<!-- Path to the glidein uninstallation shell script -->
                 	<name>uninstall</name>
                 	<value>share/glidein_service/glidein_uninstall</value>
                 </parameter>
                 <parameter>
+                	<!-- Path to the glidein run shell script -->
                 	<name>run</name>
                 	<value>share/glidein_service/glidein_run</value>
                 </parameter>
                 <parameter>
-                	<name>stagingURLs</name>
+                	<!-- List of urls to retrieve glidein binaries from -->
+                	<name>glideinServerURLs</name>
                 	<value>http://scecit02.usc.edu/glidein/binaries,http://www.cs.wisc.edu/condor/glidein/binaries,gsiftp://gridftp.cs.wisc.edu/p/condor/public/binaries/glidein</value>
                 </parameter>
                 <parameter>
+                	<!-- Default configuration file for glideins -->
                 	<name>glideinCondorConfig</name>
                 	<value>etc/glidein_service/glidein_condor_config</value>
                 </parameter>
                 <parameter>
+                	<!-- Temporary directory (default: /tmp) -->
                 	<name>tempDir</name>
                 	<value>tmp/glidein_service</value>
+                </parameter>
+            </resourceParams>
+        </resource>
+        <resource name="glidein/ReadyQueue" type="edu.usc.glidein.service.state.ReadyQueue">
+            <resourceParams>
+                <parameter>
+                    <name>factory</name>
+                    <value>org.globus.wsrf.jndi.BeanFactory</value>
+                </parameter>
+                <parameter>
+                	<!-- Number of threads in the thread pool -->
+                	<name>poolSize</name>
+                	<value>1</value>
                 </parameter>
             </resourceParams>
         </resource>
