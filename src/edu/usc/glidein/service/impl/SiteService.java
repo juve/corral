@@ -34,9 +34,9 @@ public class SiteService
 		return new EmptyObject();
 	}
 	
-	public EmptyObject remove(EmptyObject empty) throws RemoteException
+	public EmptyObject remove(boolean force) throws RemoteException
 	{
-		getResource().remove();
+		getResource().remove(force);
 		return new EmptyObject();
 	}
 }
