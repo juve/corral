@@ -10,6 +10,7 @@ import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.ResourceProperties;
 import org.globus.wsrf.ResourcePropertySet;
 import org.globus.wsrf.impl.ReflectionResourceProperty;
+import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
 
 import edu.usc.glidein.service.db.Database;
@@ -42,8 +43,15 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	public Object getID()
 	{
+		return getKey();
+	}
+	
+	public ResourceKey getKey()
+	{
 		if (glidein == null) return null;
-		return new Integer(glidein.getId());
+		return new SimpleResourceKey(
+				GlideinNames.RESOURCE_KEY,
+				new Integer(glidein.getId()));
 	}
 	
 	public ResourcePropertySet getResourcePropertySet()
@@ -101,7 +109,12 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 	}
 	
-	public synchronized void remove() throws ResourceException 
+	public synchronized void remove() throws ResourceException
+	{
+		remove(false);
+	}
+	
+	public synchronized void remove(boolean force) throws ResourceException 
 	{
 		logger.debug("Removing "+getGlidein().getId());
 		
