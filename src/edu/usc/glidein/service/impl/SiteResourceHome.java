@@ -1,5 +1,9 @@
 package edu.usc.glidein.service.impl;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+
 import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceKey;
@@ -21,6 +25,13 @@ public class SiteResourceHome extends ResourceHomeImpl
 		super.initialize();
 		
 		// TODO: Recover site state
+	}
+	
+	public static SiteResourceHome getInstance() throws NamingException
+	{
+		String location = "java:comp/env/services/SiteService/home";
+		Context initialContext = new InitialContext();
+    	return (SiteResourceHome)initialContext.lookup(location);
 	}
 	
 	public ResourceKey create(Site site)
