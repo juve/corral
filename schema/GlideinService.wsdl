@@ -25,7 +25,7 @@
 				namespace="http://www.usc.edu/glidein/GlideinTypes"
 				schemaLocation="GlideinTypes.xsd" />
 			
-			<xsd:element name="removeRequest" type="glidein:EmptyObject"/>
+			<xsd:element name="removeRequest" type="xsd:boolean" default="false"/>
 			<xsd:element name="removeResponse" type="glidein:EmptyObject"/>
 			
 			<xsd:element name="submitRequest" type="glidein:EmptyObject"/>
@@ -40,7 +40,7 @@
 							MESSAGES
 	============================================================-->
 	<message name="removeInputMessage">
-		<part name="request" element="tns:removeRequest"/>
+		<part name="force" element="tns:removeRequest"/>
 	</message>
 	<message name="removeOutputMessage">
 		<part name="response" element="tns:removeResponse"/>
