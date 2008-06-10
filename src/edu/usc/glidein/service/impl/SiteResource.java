@@ -1,5 +1,7 @@
 package edu.usc.glidein.service.impl;
 
+import javax.naming.NamingException;
+
 import org.apache.log4j.Logger;
 import org.globus.gsi.GlobusCredential;
 import org.globus.wsrf.PersistenceCallback;
@@ -11,14 +13,14 @@ import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.ResourceProperties;
 import org.globus.wsrf.ResourcePropertySet;
 import org.globus.wsrf.impl.ReflectionResourceProperty;
+import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
 
-import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.service.db.Database;
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.SiteDAO;
-import edu.usc.glidein.service.ops.RemoveSiteOperation;
-import edu.usc.glidein.service.ops.StageSiteOperation;
+import edu.usc.glidein.service.state.ReadyQueue;
+import edu.usc.glidein.service.state.SiteStateChange;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteStatus;
 import edu.usc.glidein.util.ProxyUtil;
@@ -47,8 +49,15 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	public Object getID()
 	{
+		return getKey();
+	}
+	
+	public ResourceKey getKey()
+	{
 		if (site==null) return null;
-		return new Integer(site.getId());
+		return new SimpleResourceKey(
+				SiteNames.RESOURCE_KEY,
+				new Integer(site.getId()));
 	}
 	
 	public ResourcePropertySet getResourcePropertySet()
@@ -114,6 +123,11 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	public synchronized void remove() throws ResourceException
 	{
+		remove(false);
+	}
+	
+	public synchronized void remove(boolean force) throws ResourceException
+	{
 		logger.debug("Removing site resource "+getSite().getId());
 		
 		// If we are already removing, then just return
@@ -121,16 +135,13 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			return;
 		}
 		
-		// Update status to prevent others from updating
-		updateStatus(SiteStatus.REMOVING, "Removing site");
-		
-		// Start a remove operation
+		// TODO: Start a remove operation
 		try {
 			GlobusCredential cred = ProxyUtil.getCallerCredential();
-			RemoveSiteOperation op = new RemoveSiteOperation(this,cred); 
-			op.invoke();
-		} catch (GlideinException ge) {
-			throw new ResourceException("Unable to remove site: "+ge.getMessage(),ge);
+			ReadyQueue queue = ReadyQueue.getInstance();
+			queue.add(new SiteStateChange(getKey()));
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to remove site: "+ne.getMessage(),ne);
 		}
 	}
 	
@@ -143,15 +154,13 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			throw new ResourceException("Can only submit sites with NEW status");
 		}
 		
+		// TODO: Submit the staging job
 		try {
-			// Get delegated credential
 			GlobusCredential cred = ProxyUtil.getCallerCredential();
-		
-			// Submit the staging job
-			StageSiteOperation operation = new StageSiteOperation(this, cred);
-			operation.invoke();
-		} catch (GlideinException ge) {
-			throw new ResourceException("Unable to submit site: "+ge.getMessage(),ge);
+			ReadyQueue queue = ReadyQueue.getInstance();
+			queue.add(new SiteStateChange(getKey()));
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to schedule site: "+ne.getMessage(),ne);
 		}
 	}
 	
@@ -171,6 +180,12 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	throws ResourceException
 	{
 		logger.debug("Changing status of site "+getSite().getId()+" to "+status+": "+statusMessage);
+		
+		// If status is already failed, don't change it
+		if (status.equals(site.getStatus())) {
+			logger.info("Status of site "+getSite().getId()+" is already FAILED");
+			return;
+		}
 		
 		// Update object
 		site.setStatus(status);
