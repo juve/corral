@@ -25,15 +25,19 @@ import edu.usc.glidein.util.ProxyUtil;
  */
 public class Condor
 {
-	private String condorHome;
-	private String condorConfig;
+	private File condorHome;
+	private File condorConfig;
 	
-	private Condor() { }
+	public Condor()
+	{
+		condorHome = null;
+		condorConfig = null;
+	}
 	
 	public Condor(String condorHome, String condorConfig)
 	{
-		this.condorHome = condorHome;
-		this.condorConfig = condorConfig;
+		setCondorConfig(condorConfig);
+		setCondorHome(condorHome);
 	}
 	
 	public static Condor getInstance() throws CondorException
@@ -49,22 +53,22 @@ public class Condor
 	
 	public void setCondorConfig(String condorConfig)
 	{
-		this.condorConfig = condorConfig;
+		this.condorConfig = new File(condorConfig);
 	}
 	
 	public String getCondorConfig()
 	{
-		return condorConfig;
+		return condorConfig.getAbsolutePath();
 	}
 	
 	public String getCondorHome()
 	{
-		return condorHome;
+		return condorHome.getAbsolutePath();
 	}
 	
 	public void setCondorHome(String condorHome)
 	{
-		this.condorHome = condorHome;
+		this.condorHome = new File(condorHome);
 	}
 	
 	/**
@@ -112,9 +116,9 @@ public class Condor
 			
 			// Set environment
 			submit.addEnvironmentVariable(
-					"CONDOR_HOME",condorHome);
+					"CONDOR_HOME",getCondorHome());
 			submit.addEnvironmentVariable(
-					"CONDOR_CONFIG",condorConfig);
+					"CONDOR_CONFIG",getCondorConfig());
 			
 			// Run condor_submit
 			submit.execute();
@@ -177,9 +181,9 @@ public class Condor
 			
 			// Set environment
 			cancel.addEnvironmentVariable("CONDOR_HOME",
-					this.condorHome);
+					getCondorHome());
 			cancel.addEnvironmentVariable("CONDOR_CONFIG",
-					this.condorConfig);
+					getCondorConfig());
 			
 			// Run condor_rm
 			cancel.execute();
