@@ -17,7 +17,6 @@ import org.apache.commons.cli.PosixParser;
 
 import edu.usc.glidein.stubs.GlideinPortType;
 import edu.usc.glidein.stubs.service.GlideinServiceAddressingLocator;
-import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.util.AddressingUtil;
 
 public class RemoveGlideinCommand extends Command
@@ -96,7 +95,8 @@ public class RemoveGlideinCommand extends Command
 							org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
 					
 					if (isDebug()) System.out.print("Removing glidein "+id+"... ");
-					glidein.remove(new EmptyObject());
+					// TODO: Add force argument
+					glidein.remove(false);
 					if (isDebug()) System.out.println("done.");
 				} catch (Exception e) {
 					System.out.println("Unable to remove glidein '"+arg+"': "+e.getMessage());

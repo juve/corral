@@ -17,7 +17,6 @@ import org.apache.commons.cli.ParseException;
 
 import edu.usc.glidein.stubs.SitePortType;
 import edu.usc.glidein.stubs.service.SiteServiceAddressingLocator;
-import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.util.AddressingUtil;
 
 public class RemoveSiteCommand extends Command
@@ -94,7 +93,8 @@ public class RemoveSiteCommand extends Command
 							org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
 					
 					if (isDebug()) System.out.print("Removing site "+id+"... ");
-					site.remove(new EmptyObject());
+					// TODO: Add force argument
+					site.remove(false);
 					if (isDebug()) System.out.println("done.");
 				} catch (Exception e) {
 					System.out.println("Unable to remove site '"+arg+"': "+e.getMessage());
