@@ -1,6 +1,9 @@
 package edu.usc.glidein.service.impl;
 
 import java.io.File;
+import java.io.IOException;
+
+import javax.naming.NamingException;
 
 import org.apache.log4j.Logger;
 import org.globus.wsrf.PersistenceCallback;
@@ -20,16 +23,25 @@ import edu.usc.glidein.service.db.Database;
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.GlideinDAO;
 import edu.usc.glidein.service.exec.Condor;
+import edu.usc.glidein.service.exec.CondorException;
 import edu.usc.glidein.service.exec.CondorGridType;
 import edu.usc.glidein.service.exec.CondorJob;
 import edu.usc.glidein.service.exec.CondorUniverse;
+import edu.usc.glidein.service.state.Event;
+import edu.usc.glidein.service.state.EventQueue;
+import edu.usc.glidein.service.state.GlideinEvent;
+import edu.usc.glidein.service.state.GlideinEventCode;
 import edu.usc.glidein.service.state.GlideinListener;
+import edu.usc.glidein.service.state.SiteEvent;
+import edu.usc.glidein.service.state.SiteEventCode;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinState;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
+import edu.usc.glidein.stubs.types.SiteState;
+import edu.usc.glidein.util.AddressingUtil;
 import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.IOUtil;
 
@@ -43,8 +55,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	 * Default constructor required
 	 */
 	public GlideinResource() { }
-	
-	public GlideinResource(Glidein glidein) throws ResourceException
+
+	public void setGlidein(Glidein glidein) throws ResourceException
 	{
 		this.glidein = glidein;
 		setResourceProperties();
@@ -84,36 +96,47 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 	}
 	
-	public synchronized void create() throws ResourceException
+	public void create(Glidein glidein) throws ResourceException
 	{
 		logger.debug("Creating glidein");
+		
+		// Initialize glidein
+		glidein.setState(GlideinState.NEW);
+		glidein.setShortMessage("Created");
+		
+		// Save in the database
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.create(glidein);
-			setResourceProperties();
 		} catch (DatabaseException dbe) {
 			throw new ResourceException(dbe);
 		}
+		
+		// Set glidein
+		setGlidein(glidein);
 	}
 
-	public synchronized void load(ResourceKey key) throws ResourceException
+	public void load(ResourceKey key) throws ResourceException
 	{
 		logger.debug("Loading "+key.getValue());
 		int id = ((Integer)key.getValue()).intValue();
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
-			glidein = dao.load(id);
-			setResourceProperties();
+			setGlidein(dao.load(id));
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
 		}
 	}
 	
-	public synchronized void store() throws ResourceException 
+	public void store() throws ResourceException 
 	{
 		logger.debug("Storing "+getGlidein().getId());
+		
+		throw new ResourceException("Tried to store GlideinResource");
+		
+		/*
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
@@ -121,44 +144,40 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
 		}
+		*/
 	}
 	
-	public synchronized void remove() throws ResourceException
+	public void remove() throws ResourceException
 	{
 		remove(false);
 	}
 	
-	public synchronized void remove(boolean force) throws ResourceException 
+	public void remove(boolean force) throws ResourceException 
 	{
 		logger.debug("Removing "+getGlidein().getId());
-		
-		// TODO: Remove glideins correctly
-		delete();
+		// TODO: Do I need force?
+		try {
+			Event event = new GlideinEvent(GlideinEventCode.REMOVE,getKey());
+			EventQueue queue = EventQueue.getInstance(); 
+			queue.add(event);
+		} catch(NamingException ne) {
+			throw new ResourceException("Unable to remove glidein",ne);
+		}
 	}
 
-	public synchronized void submit() throws ResourceException
+	public void submit() throws ResourceException
 	{
-		logger.debug("Submitting "+getGlidein().getId());
-		
-		// TODO: Get delegated credential
-		// TODO: Check to make sure site is ready before submitting
-		// TODO: Submit glidein
-	}
-	
-	public synchronized void delete() throws ResourceException
-	{
+		logger.debug("Submitting "+glidein.getId());
 		try {
-			Database db = Database.getDatabase();
-			GlideinDAO dao = db.getGlideinDAO();
-			dao.delete(glidein.getId());
-			glidein = null;
-			resourceProperties = null;
-		} catch(DatabaseException de) {
-			throw new ResourceException(de);
+			Event event = new GlideinEvent(GlideinEventCode.SUBMIT,getKey());
+			EventQueue queue = EventQueue.getInstance(); 
+			queue.add(event);
+		} catch(NamingException ne) {
+			throw new ResourceException("Unable to submit glidein",ne);
 		}
 	}
 	
-	public synchronized void updateState(GlideinState state, String shortMessage, String longMessage) 
+	private void updateState(GlideinState state, String shortMessage, String longMessage) 
 	throws ResourceException
 	{
 		logger.debug("Changing state of glidein "+getGlidein().getId()+" to "+state+": "+shortMessage);
@@ -178,18 +197,21 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 	}
 	
-	public synchronized void processStateChange(GlideinState newState)
+	private void submitGlideinJob() throws ResourceException
 	{
-		// TODO: Implement processStateChange
-	}
-	
-	public void submitGlideinJob() throws Exception
-	{
-		// TODO: Get SiteResource, Site from SiteResourceHome
-		Site site = null;
-		ServiceConfiguration config = ServiceConfiguration.getInstance();
-
-		logger.debug("Submitting glidein job for site '"+site.getName()+"'");
+		logger.debug("Submitting glidein job "+glidein.getId());
+		
+		SiteResource siteResource = getSiteResource();
+		Site site = siteResource.getSite();
+		
+		// Get configuration
+		ServiceConfiguration config;
+		try {
+			config = ServiceConfiguration.getInstance();
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to submit glideing job: " +
+					"Unable to get configuration",ne);
+		}
 		
 		// Create working directory
 		File jobDirectory = new File(config.getTempDir(),"glidein-"+glidein.getId());
@@ -251,20 +273,143 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 		else
 		{
-			// Save config to a file in the submit directory
-			configFile = "glidein_condor_config";
-			String cfg = Base64.fromBase64(glidein.getCondorConfigBase64());
-			IOUtil.write(cfg, new File(job.getJobDirectory(),configFile));
+			try {
+				// Save config to a file in the submit directory
+				configFile = "glidein_condor_config";
+				String cfg = Base64.fromBase64(glidein.getCondorConfigBase64());
+				IOUtil.write(cfg, new File(job.getJobDirectory(),configFile));
+			} catch (IOException ioe) {
+				throw new ResourceException("Unable to submit glidein job: " +
+						"Error writing glidein_condor_config",ioe);
+			}
 		}
 		job.addInputFile(configFile);
+		
+		// TODO: Get credential
+		//job.setCredential(credential);
 		
 		// Add a listener
 		job.addListener(new GlideinListener());
 		
 		// Submit job
-		Condor condor = Condor.getInstance();
-		condor.submitJob(job);
+		try {
+			Condor condor = Condor.getInstance();
+			condor.submitJob(job);
+		} catch (CondorException ce) {
+			throw new ResourceException("Unable to submit glidein job: " +
+					"Submit failed",ce);
+		}
 		
-		logger.debug("Submitted glidein job for site '"+site.getName()+"'");
+		logger.debug("Submitted glidein job '"+glidein.getId()+"'");
+	}
+	
+	private boolean siteReady() throws ResourceException
+	{
+		SiteResource resource = getSiteResource();
+		SiteState state = resource.getSite().getState();
+		return SiteState.READY.equals(state);
+	}
+	
+	private SiteResource getSiteResource() throws ResourceException
+	{
+		try {
+			ResourceKey key = AddressingUtil.getSiteKey(glidein.getSiteId());
+			SiteResourceHome home = SiteResourceHome.getInstance();
+			SiteResource resource = (SiteResource)home.find(key);
+			return resource;
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to get SiteResourceHome",ne);
+		}
+	}
+	
+	private void cancelGlideinJob() throws ResourceException
+	{
+		// TODO: Cancel glidein job
+	}
+	
+	private void delete() throws ResourceException
+	{
+		try {
+			Database db = Database.getDatabase();
+			GlideinDAO dao = db.getGlideinDAO();
+			dao.delete(glidein.getId());
+			glidein = null;
+			resourceProperties = null;
+		} catch(DatabaseException de) {
+			throw new ResourceException(de);
+		}
+	}
+	
+	public synchronized void handleEvent(GlideinEventCode event)
+	{
+		/* TODO: Implement handleEvent
+		GlideinState state = glidein.getState();
+		
+		switch (event) {
+			
+			case SUBMIT:
+				// Only NEW glideins can be submitted
+				if (GlideinState.NEW.equals(state)) { 
+					if (siteReady()) {
+						submitGlideinJob();
+						updateState(GlideinState.SUBMITTED,"Local job submitted",null);
+					} else {
+						updateState(GlideinState.WAITING,"Waiting for Site to be READY",null);
+					}
+				}
+			break;
+			
+			case SITE_READY:
+				// If we are waiting, then queue a SUBMIT event
+				if (GlideinState.WAITING.equals(state)) {
+					submitGlideinJob();
+					updateState(GlideinState.SUBMITTED,"Local job submitted",null);
+				}
+			break;
+			
+			case QUEUED:
+				// A SUBMITTED job has been QUEUED remotely
+				if (GlideinState.SUBMITTED.equals(state)) {
+					updateState(GlideinState.QUEUED,"Glidein queued remotely",null);
+				}
+			break;
+			
+			case RUNNING:
+				if (GlideinState.QUEUED.equals(state)) {
+					updateState(GlideinState.RUNNING,"Glidein job running",null);
+				}
+			break;
+				
+			case REMOVE:
+				cancelGlideinJob();
+				updateState(GlideinState.CANCELLED,"Local job cancelled",null);
+			break;
+			
+			case EXITED:
+			case DELETE:
+				ResourceKey siteKey = AddressingUtil.getSiteKey(glidein.getSiteId());
+				
+				// Delete the glidein after it has exited or if
+				// a force delete was requested
+				GlideinResourceHome home = GlideinResourceHome.getInstance();
+				home.remove(getKey());
+				// TODO: Figure out when Resource.remove gets called
+				delete();
+				
+				// Tell the Site About it
+				Event siteEvent = new SiteEvent(SiteEventCode.GLIDEIN_FINISHED, siteKey);
+				EventQueue queue = EventQueue.getInstance();
+				queue.add(siteEvent);
+			break;
+			
+			case FAILED:
+				// TODO: Fail job
+			break;
+			
+			default:
+				logger.warn("Unhandled event: "+event);
+			break;
+		}
+		*/
 	}
 }
