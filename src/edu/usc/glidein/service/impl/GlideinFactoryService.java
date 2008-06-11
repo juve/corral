@@ -7,7 +7,6 @@ import javax.naming.NamingException;
 
 import org.apache.axis.MessageContext;
 import org.apache.axis.message.addressing.EndpointReferenceType;
-import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceContext;
 import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceKey;
@@ -15,23 +14,14 @@ import org.globus.wsrf.container.ServiceHost;
 import org.globus.wsrf.utils.AddressingUtils;
 
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinState;
 import edu.usc.glidein.stubs.types.Glideins;
 import edu.usc.glidein.util.AddressingUtil;
 
 public class GlideinFactoryService
 {
-	private Logger logger = Logger.getLogger(GlideinFactoryService.class);
-	
-	public GlideinFactoryService() { }	
-	
 	public EndpointReferenceType createGlidein(Glidein glidein)
 	throws RemoteException
 	{
-		// Initialize glidein
-		glidein.setState(GlideinState.NEW);
-		glidein.setShortMessage("Created");
-		
 		// Get site or fail
 		try {
 			SiteResourceHome siteHome = SiteResourceHome.getInstance();
@@ -40,17 +30,16 @@ public class GlideinFactoryService
 			throw new ResourceException("Unable to locate site",ne);
 		}
 		
-		// Create a new resource
-		ResourceKey key = null;
+		// Get resource home
+		GlideinResourceHome home = null;
 		try {
-			ResourceContext rctx = ResourceContext.getResourceContext();
-			GlideinResourceHome home = (GlideinResourceHome) rctx.getResourceHome();
-			key = home.create(glidein);
-		} catch (Exception e) {
-			String message = "Unable to create glidein resource";
-			logger.error(message,e);
-			throw new RemoteException(message, e);
+			home = GlideinResourceHome.getInstance();
+		} catch (NamingException e) {
+			throw new ResourceException("Unable to get GlideinResourceHome", e);
 		}
+		
+		// Create glidein
+		ResourceKey key = home.create(glidein);
 		
 		// Create an endpoint reference for the new resource
 		EndpointReferenceType epr = null;
@@ -61,9 +50,7 @@ public class GlideinFactoryService
 			String instanceURI = baseURL.toString() + svc;
 			epr = AddressingUtils.createEndpointReference(instanceURI, key);
 		} catch (Exception e) {
-			String message = "Unable to create endpoint reference";
-			logger.error(message,e);
-			throw new RemoteException(message, e);
+			throw new RemoteException("Unable to create endpoint reference", e);
 		}
 		
 		// Return the endpoint reference to the client
@@ -79,9 +66,7 @@ public class GlideinFactoryService
 			Glidein[] glideins = home.list(longFormat);
 			return new Glideins(glideins);
 		} catch (Exception e) {
-			String message = "Unable to list sites";
-			logger.error(message,e);
-			throw new RemoteException(message, e);
+			throw new ResourceException("Unable to list sites", e);
 		}
 	}
 }
