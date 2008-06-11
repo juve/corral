@@ -203,8 +203,10 @@ public class ListSiteCommand extends Command
 				lastUpdate.setTimeZone(TimeZone.getDefault());
 				System.out.printf("lastUpdate = %tc\n", lastUpdate);
 				
-				System.out.printf("status = %s\n", site.getStatus().toString());
-				System.out.printf("statusMessage = %s\n", site.getStatusMessage());
+				System.out.printf("state = %s\n", site.getState().toString());
+				System.out.printf("shortMessage = %s\n", site.getShortMessage());
+				System.out.printf("longMessage = %s\n", site.getLongMessage());
+				
 				System.out.printf("installPath = %s\n", site.getInstallPath());
 				System.out.printf("localPath = %s\n", site.getLocalPath());
 				System.out.printf("condorVersion = %s\n", site.getCondorVersion());
@@ -250,7 +252,7 @@ public class ListSiteCommand extends Command
 			System.out.printf("%-20s","NAME");
 			System.out.printf("%-15s","SUBMITTED");
 			System.out.printf("%-15s","LAST UPDATE");
-			System.out.printf("%-10s","STATUS");
+			System.out.printf("%-10s","STATE");
 			System.out.printf("%s","MESSAGE");
 			System.out.printf("\n");
 			for (Site site : sites) {
@@ -265,8 +267,8 @@ public class ListSiteCommand extends Command
 				lastUpdate.setTimeZone(TimeZone.getDefault());
 				System.out.printf("%1$tm-%1$td %1$TR    ",lastUpdate);
 				
-				System.out.printf("%-10s",site.getStatus().toString());
-				System.out.printf("%s",site.getStatusMessage());
+				System.out.printf("%-10s",site.getState().toString());
+				System.out.printf("%s",site.getShortMessage());
 				System.out.printf("\n");
 			}
 		}

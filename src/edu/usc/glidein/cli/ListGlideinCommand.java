@@ -215,8 +215,9 @@ public class ListGlideinCommand extends Command
 				lastUpdate.setTimeZone(TimeZone.getDefault());
 				System.out.printf("lastUpdate = %tc\n",lastUpdate);
 				
-				System.out.printf("status = %s\n",g.getStatus().toString());
-				System.out.printf("statusMessage = %s\n",g.getStatusMessage());
+				System.out.printf("state = %s\n",g.getState().toString());
+				System.out.printf("shortMessage = %s\n",g.getShortMessage());
+				System.out.printf("longMessage = %s\n",g.getLongMessage());
 				
 				System.out.printf("condorDebug = %s\n", g.getCondorDebug());
 				System.out.printf("gcbBroker = %s\n", g.getGcbBroker());
@@ -232,7 +233,7 @@ public class ListGlideinCommand extends Command
 			System.out.printf("%-8s", "TIME");
 			System.out.printf("%-15s", "SUBMITTED");
 			System.out.printf("%-15s", "LAST UPDATE");
-			System.out.printf("%-10s", "STATUS");
+			System.out.printf("%-10s", "STATE");
 			System.out.printf("%s", "MESSAGE");
 			System.out.printf("\n");
 			for (Glidein g : glideins) {
@@ -251,8 +252,8 @@ public class ListGlideinCommand extends Command
 				lastUpdate.setTimeZone(TimeZone.getDefault());
 				System.out.printf("%1$tm-%1$td %1$TR    ",lastUpdate);
 				
-				System.out.printf("%-10s",g.getStatus().toString());
-				System.out.printf("%s",g.getStatusMessage());
+				System.out.printf("%-10s",g.getState().toString());
+				System.out.printf("%s",g.getShortMessage());
 				System.out.printf("\n");
 			}
 		}
