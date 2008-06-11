@@ -5,7 +5,6 @@ import java.io.File;
 import javax.naming.NamingException;
 
 import org.apache.log4j.Logger;
-import org.globus.gsi.GlobusCredential;
 import org.globus.wsrf.PersistenceCallback;
 import org.globus.wsrf.RemoveCallback;
 import org.globus.wsrf.Resource;
@@ -27,15 +26,16 @@ import edu.usc.glidein.service.exec.CondorException;
 import edu.usc.glidein.service.exec.CondorGridType;
 import edu.usc.glidein.service.exec.CondorJob;
 import edu.usc.glidein.service.exec.CondorUniverse;
-import edu.usc.glidein.service.state.ReadyQueue;
-import edu.usc.glidein.service.state.SiteStateChange;
+import edu.usc.glidein.service.state.Event;
+import edu.usc.glidein.service.state.EventQueue;
+import edu.usc.glidein.service.state.SiteEvent;
+import edu.usc.glidein.service.state.SiteEventCode;
 import edu.usc.glidein.service.state.StageSiteListener;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteState;
-import edu.usc.glidein.util.ProxyUtil;
 
 public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, RemoveCallback, ResourceProperties
 {
@@ -48,7 +48,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	 */
 	public SiteResource() { }
 	
-	public SiteResource(Site site) throws ResourceException
+	public void setSite(Site site) throws ResourceException
 	{
 		this.site = site;
 		setResourceProperties();
@@ -83,15 +83,30 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			resourceProperties = new SimpleResourcePropertySet(SiteNames.RESOURCE_PROPERTIES);
 			resourceProperties.add(new ReflectionResourceProperty(
 					SiteNames.RP_SITE_ID,"Id",site));
-			// TODO: Set the rest of the resource properties, or don't, they seem kinda useless to me
+			// TODO: Set the rest of the resource properties, or don't
 		} catch(Exception e) {
 			throw new ResourceException("Unable to set site resource properties",e);
 		}
 	}
 
-	public synchronized void create() throws ResourceException
+	public void create(Site site) throws ResourceException
 	{
 		logger.debug("Creating site resource "+getSite().getId());
+		
+		// Set state
+		site.setState(SiteState.NEW);
+		site.setShortMessage("Created");
+			
+		// Check for Condor version and set reasonable default
+		String ver = site.getCondorVersion();
+		ver = "".equalsIgnoreCase(ver) ? null : ver;
+		String pkg = site.getCondorPackage();
+		pkg = "".equalsIgnoreCase(pkg) ? null : pkg;
+		if (ver==null && pkg==null) {
+			site.setCondorVersion("7.0.0");
+		}
+		
+		// Save site in database
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
@@ -99,31 +114,31 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		} catch (DatabaseException de) {
 			throw new ResourceException(de);
 		}
+		
+		// Set site
+		setSite(site);
 	}
 
-	public synchronized void load(ResourceKey key) throws ResourceException
+	public void load(ResourceKey key) throws ResourceException
 	{
 		logger.debug("Loading site resource "+key.getValue());
 		int id = ((Integer)key.getValue()).intValue();
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
-			site = dao.load(id);
-			setResourceProperties();
+			setSite(dao.load(id));
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
 		}
 	}
 	
-	public synchronized void store() throws ResourceException
+	public void store() throws ResourceException
 	{
 		logger.debug("Storing site resource "+getSite().getId());
 		
-		// If we are removing, then don't store
-		if (SiteState.REMOVING.equals(site.getState())) {
-			throw new ResourceException("Site is being removed");
-		}
+		throw new ResourceException("Tried to store SiteResource");
 		
+		/*
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
@@ -131,75 +146,53 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
 		}
-	}
-	
-	public synchronized void remove() throws ResourceException
-	{
-		remove(false);
-	}
-	
-	public synchronized void remove(boolean force) throws ResourceException
-	{
-		logger.debug("Removing site resource "+getSite().getId());
-		
-		// TODO: Submit remove request
-		try {
-			GlobusCredential cred = ProxyUtil.getCallerCredential();
-			ReadyQueue queue = ReadyQueue.getInstance();
-			queue.add(new SiteStateChange(getKey(),SiteState.REMOVE));
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to remove site: "+ne.getMessage(),ne);
-		}
-		
-		// TODO: Cancel staging operations
-		
-		// TODO: Cancel running glideins
-		
-		// TODO: Submit uninstall job
-		
-		// TODO: Delete the site
-		//resource.delete();
-		
-		// TODO: Remove the site from the resource home
-		/*
-		ResourceKey key = AddressingUtil.getSiteKey(site.getId());
-		SiteResourceHome resourceHome = SiteResourceHome.getInstance();
-		resourceHome.remove(key);
 		*/
 	}
 	
-	public synchronized void submit() throws ResourceException 
+	public void remove() throws ResourceException
+	{
+		remove(false);
+	}
+
+	public void remove(boolean force) throws ResourceException
+	{
+		logger.debug("Removing site resource "+getSite().getId());
+		
+		// Choose new state. If force, then just delete the record from
+		// the database and remove the resource, otherwise go through the
+		// removal process.
+		SiteEventCode code;
+		if (force) {
+			code = SiteEventCode.DELETE;
+		} else {
+			code = SiteEventCode.REMOVE;
+		}
+		
+		// Schedule remove event
+		try {
+			Event event = new SiteEvent(code,getKey());
+			EventQueue queue = EventQueue.getInstance();
+			queue.add(event);
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to get queue: "+ne.getMessage(),ne);
+		}
+	}
+	
+	public void submit() throws ResourceException 
 	{
 		logger.debug("Submitting site "+getSite().getId());
 		
-		// If we are not new, then don't submit
-		if (!SiteState.NEW.equals(site.getState())) {
-			throw new ResourceException("Can only submit sites in NEW state");
-		}
-		
-		// TODO: Submit the staging job
+		// Schedule submit event
 		try {
-			GlobusCredential cred = ProxyUtil.getCallerCredential();
-			ReadyQueue queue = ReadyQueue.getInstance();
-			queue.add(new SiteStateChange(getKey(),SiteState.SUBMIT));
+			Event event = new SiteEvent(SiteEventCode.SUBMIT,getKey());
+			EventQueue queue = EventQueue.getInstance();
+			queue.add(event);
 		} catch (NamingException ne) {
-			throw new ResourceException("Unable to schedule site: "+ne.getMessage(),ne);
+			throw new ResourceException(ne.getMessage(),ne);
 		}
 	}
 	
-	public synchronized void delete() throws ResourceException
-	{
-		// Remove the site from the database
-		try {
-			Database db = Database.getDatabase();
-			SiteDAO dao = db.getSiteDAO();
-			dao.delete(site.getId());
-		} catch(DatabaseException de) {
-			throw new ResourceException(de);
-		}
-	}
-	
-	public synchronized void updateState(SiteState state, String shortMessage, String longMessage)
+	private void updateState(SiteState state, String shortMessage, String longMessage)
 	throws ResourceException
 	{
 		logger.debug("Changing state of site "+getSite().getId()+" to "+state+": "+shortMessage);
@@ -218,16 +211,10 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			throw new ResourceException(de);
 		}
 	}
-
-	public synchronized void processStateChange(SiteState newState)
-	{
-		// TODO: Implement processStateChange
-		
-	}
 	
-	public void submitStagingJob() throws ResourceException
+	private void submitInstallJob() throws ResourceException
 	{
-		logger.debug("Submitting staging job for site '"+site.getName()+"'");
+		logger.debug("Submitting install job for site '"+site.getName()+"'");
 		
 		ServiceConfiguration config = null;
 		try {
@@ -290,5 +277,118 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 			
 		logger.debug("Submitted staging job for site '"+site.getName()+"'");
+	}
+	
+	private boolean hasGlideins() throws ResourceException
+	{
+		// TODO: Implement hasGlideins
+		return false;
+	}
+	
+	private void cancelGlideins() throws ResourceException
+	{
+		// TODO: Cancel glideins
+	}
+	
+	private void cancelInstallJob() throws ResourceException
+	{
+		// TODO: Find submit dir
+		// TODO: Determine job ID
+		// TODO: condor_rm job
+	}
+	
+	private void submitUninstallJob() throws ResourceException
+	{
+		// TODO: Submit uninstall job
+	}
+	
+	private void delete() throws ResourceException
+	{
+		// Remove the site from the database
+		try {
+			Database db = Database.getDatabase();
+			SiteDAO dao = db.getSiteDAO();
+			dao.delete(site.getId());
+			site = null;
+		} catch(DatabaseException de) {
+			throw new ResourceException(de);
+		}
+	}
+	
+	public synchronized void handleEvent(SiteEventCode event)
+	{
+		/* TODO: Implement handleEvent
+		SiteState state = site.getState();
+		
+		switch (event) {
+			
+			case SUBMIT:
+				if (SiteState.NEW.equals(state)) {
+					try {
+						submitInstallJob();
+					} catch (ResourceException re) {
+						//TODO: handleException(re);
+					}
+				} else {
+					//TODO: Site must be in NEW state to be submitted
+				}
+			break;
+				
+			case INSTALLED:
+				// TODO: Change status to READY
+				// updateState(SiteState.READY, "Installed", null);
+				// TODO: Trigger any ready glideins for this site
+			break;
+				
+			case REMOVE:
+			
+				// If we are currently staging, then we need to cancel the install job
+				if (SiteState.STAGING.equals(state)) {
+					cancelInstallJob();
+				}
+				
+				// If there are some glideins for this site
+				if (hasGlideins()) { 
+					// Cancel running glideins
+					cancelGlideins();
+					
+					// Change state to EXITING
+					updateState(SiteState.EXITING, "Waiting for glideins", null);
+				} else {
+					// TODO: Submit uninstall job
+					submitUninstallJob();
+				}
+			break;
+				
+			case GLIDEIN_FINISHED:
+				// If exiting then check for last glidein
+				if (SiteState.EXITING.equals(state)) {
+					// TODO: If last glidein, then submit REMOVE event
+				}
+			break;
+			
+			case UNINSTALLED:
+			case DELETE:
+				// TODO: Delete the Resource
+				ResourceKey key = AddressingUtil.getSiteKey(site.getId());
+				SiteResourceHome resourceHome = SiteResourceHome.getInstance();
+				resourceHome.remove(key);
+				// TODO: Find out when Resource.remove gets called
+				delete();
+			break;
+			
+			case FAILED:
+				// TODO: Fail site
+			break;
+			
+			default:
+				try {
+					throw new IllegalStateException();
+				} catch (IllegalStateException e) {
+					logger.error("Unhandled event: "+event,e);
+				}
+			break;
+		}
+		*/
 	}
 }
