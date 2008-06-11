@@ -8,32 +8,27 @@ import org.globus.wsrf.ResourceKey;
 
 import edu.usc.glidein.service.impl.SiteResource;
 import edu.usc.glidein.service.impl.SiteResourceHome;
-import edu.usc.glidein.stubs.types.SiteState;
 
-public class SiteStateChange implements StateChange
+public class SiteEvent extends Event
 {
 	private Logger logger;
-	private ResourceKey key;
-	private SiteState newState;
 	
-	public SiteStateChange(ResourceKey key, SiteState newState)
+	public SiteEvent(EventCode code, ResourceKey key)
 	{
-		this.logger = Logger.getLogger(SiteStateChange.class);
-		this.key = key;
-		this.newState = newState;
+		super(code,key);
+		this.logger = Logger.getLogger(SiteEvent.class);
 	}
 
 	public void run()
 	{
 		try {
 			SiteResourceHome home = SiteResourceHome.getInstance();
-			SiteResource resource = (SiteResource)home.find(key);
-			resource.processStateChange(newState);
+			SiteResource resource = (SiteResource)home.find(getKey());
+			resource.handleEvent((SiteEventCode)getCode());
 		} catch (NamingException ne) {
 			logger.error("Unable to get SiteResourceHome",ne);
 		} catch (ResourceException re) {
-			logger.error("Unable to find SiteResource: "+key,re);
+			logger.error("Unable to find SiteResource: "+getKey(),re);
 		}
 	}
-
 }
