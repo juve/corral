@@ -31,13 +31,12 @@
 	
 	<xsd:simpleType name="SiteState">
 		<xsd:restriction base="xsd:string">
-			<xsd:enumeration value="NEW"/>
-			<xsd:enumeration value="SUBMIT"/>
-			<xsd:enumeration value="STAGING"/>
-			<xsd:enumeration value="READY"/>
-			<xsd:enumeration value="REMOVE"/>
-			<xsd:enumeration value="REMOVING"/>
-			<xsd:enumeration value="FAILED"/>
+			<xsd:enumeration value="NEW"/>			<!-- Resource created -->
+			<xsd:enumeration value="STAGING"/>		<!-- Install job running -->
+			<xsd:enumeration value="READY"/>		<!-- Ready for glideins -->
+			<xsd:enumeration value="EXITING"/>		<!-- Waiting for glideins to exit -->
+			<xsd:enumeration value="REMOVING"/>		<!-- Uninstall job running -->
+			<xsd:enumeration value="FAILED"/>		<!-- Failure occurred -->
 		</xsd:restriction>
 	</xsd:simpleType>
 	
@@ -69,11 +68,13 @@
 	
 	<xsd:simpleType name="GlideinState">
 		<xsd:restriction base="xsd:string">
-			<xsd:enumeration value="NEW"/>
-			<xsd:enumeration value="SUBMITTED"/>
-			<xsd:enumeration value="RUNNING"/>
-			<xsd:enumeration value="TERMINATED"/>
-			<xsd:enumeration value="FAILED"/>
+			<xsd:enumeration value="NEW"/>			<!-- Created -->
+			<xsd:enumeration value="WAITING"/>		<!-- Waiting for site to be READY -->
+			<xsd:enumeration value="SUBMITTED"/>	<!-- Submitted locally -->
+			<xsd:enumeration value="QUEUED"/>		<!-- Queued remotely -->
+			<xsd:enumeration value="RUNNING"/>		<!-- Running remotely -->
+			<xsd:enumeration value="CANCELLED"/>	<!-- Cancelled -->
+			<xsd:enumeration value="FAILED"/>		<!-- Failed -->
 		</xsd:restriction>
 	</xsd:simpleType>
 	
