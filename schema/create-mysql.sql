@@ -34,7 +34,7 @@ CREATE TABLE execution_service (
 
 CREATE TABLE glidein (
 	id					BIGINT NOT NULL AUTO_INCREMENT,
-	site				BIGINT NOT NULL,
+	site				BIGINT,
 	condorHost			VARCHAR(256) NOT NULL,
 	count				INTEGER NOT NULL,
 	hostCount			INTEGER NOT NULL,
@@ -50,5 +50,5 @@ CREATE TABLE glidein (
 	submitted			DATETIME NOT NULL,
 	lastUpdate			DATETIME NOT NULL,
 	CONSTRAINT pk_glidein PRIMARY KEY (id),
-	CONSTRAINT fk_glidein_01 FOREIGN KEY (site) REFERENCES site(id) ON DELETE CASCADE
+	CONSTRAINT fk_glidein_01 FOREIGN KEY (site) REFERENCES site(id) ON DELETE SET NULL
 ) type=InnoDB;
