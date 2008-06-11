@@ -13,7 +13,7 @@ import org.globus.wsrf.utils.AddressingUtils;
 
 import edu.usc.glidein.stubs.types.Sites;
 import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteStatus;
+import edu.usc.glidein.stubs.types.SiteState;
 
 public class SiteFactoryService
 {
@@ -24,9 +24,9 @@ public class SiteFactoryService
 	public EndpointReferenceType createSite(Site site)
 	throws RemoteException
 	{
-		// Set status
-		site.setStatus(SiteStatus.NEW);
-		site.setStatusMessage("Created");
+		// Set state
+		site.setState(SiteState.NEW);
+		site.setShortMessage("Created");
 			
 		// Check for Condor version and set reasonable default
 		String ver = site.getCondorVersion();

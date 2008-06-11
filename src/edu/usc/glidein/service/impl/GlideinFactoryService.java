@@ -15,7 +15,7 @@ import org.globus.wsrf.container.ServiceHost;
 import org.globus.wsrf.utils.AddressingUtils;
 
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinStatus;
+import edu.usc.glidein.stubs.types.GlideinState;
 import edu.usc.glidein.stubs.types.Glideins;
 import edu.usc.glidein.util.AddressingUtil;
 
@@ -29,8 +29,8 @@ public class GlideinFactoryService
 	throws RemoteException
 	{
 		// Initialize glidein
-		glidein.setStatus(GlideinStatus.NEW);
-		glidein.setStatusMessage("Created");
+		glidein.setState(GlideinState.NEW);
+		glidein.setShortMessage("Created");
 		
 		// Get site or fail
 		try {
