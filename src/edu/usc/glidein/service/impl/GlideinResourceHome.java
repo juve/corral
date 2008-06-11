@@ -37,8 +37,8 @@ public class GlideinResourceHome extends ResourceHomeImpl
 	public ResourceKey create(Glidein glidein)
 	throws ResourceException
 	{
-		GlideinResource resource = new GlideinResource(glidein);
-		resource.create();
+		GlideinResource resource = new GlideinResource();
+		resource.create(glidein);
 		ResourceKey key = new SimpleResourceKey(
 				getKeyTypeName(), new Integer(glidein.getId()));
 		this.add(key, resource);
