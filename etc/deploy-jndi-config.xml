@@ -81,7 +81,7 @@
                 </parameter>
             </resourceParams>
         </resource>
-        <resource name="glidein/ReadyQueue" type="edu.usc.glidein.service.state.ReadyQueue">
+        <resource name="glidein/EventQueue" type="edu.usc.glidein.service.state.EventQueue">
             <resourceParams>
                 <parameter>
                     <name>factory</name>
@@ -89,7 +89,7 @@
                 </parameter>
                 <parameter>
                 	<!-- Number of threads in the thread pool -->
-                	<name>poolSize</name>
+                	<name>numThreads</name>
                 	<value>1</value>
                 </parameter>
             </resourceParams>
