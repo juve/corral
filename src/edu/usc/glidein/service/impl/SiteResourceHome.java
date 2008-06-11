@@ -37,8 +37,8 @@ public class SiteResourceHome extends ResourceHomeImpl
 	public ResourceKey create(Site site)
 	throws ResourceException
 	{
-		SiteResource resource = new SiteResource(site);
-		resource.create();
+		SiteResource resource = new SiteResource();
+		resource.create(site);
 		ResourceKey key = new SimpleResourceKey(
 				getKeyTypeName(), new Integer(site.getId()));
 		this.add(key, resource);
