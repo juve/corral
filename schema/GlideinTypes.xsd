@@ -29,11 +29,13 @@
 		</xsd:sequence>
 	</xsd:complexType>
 	
-	<xsd:simpleType name="SiteStatus">
+	<xsd:simpleType name="SiteState">
 		<xsd:restriction base="xsd:string">
 			<xsd:enumeration value="NEW"/>
+			<xsd:enumeration value="SUBMIT"/>
 			<xsd:enumeration value="STAGING"/>
 			<xsd:enumeration value="READY"/>
+			<xsd:enumeration value="REMOVE"/>
 			<xsd:enumeration value="REMOVING"/>
 			<xsd:enumeration value="FAILED"/>
 		</xsd:restriction>
@@ -51,8 +53,9 @@
 			<xsd:element name="condorPackage" type="xsd:string" nillable="true"/>
 			<xsd:element name="environment" type="glidein:EnvironmentVariable" 
 				minOccurs="0" maxOccurs="0" nillable="true"/>
-			<xsd:element name="status" type="glidein:SiteStatus" default="NEW"/>
-			<xsd:element name="statusMessage" type="xsd:string" nillable="true"/>
+			<xsd:element name="state" type="glidein:SiteState" default="NEW"/>
+			<xsd:element name="shortMessage" type="xsd:string" nillable="true"/>
+			<xsd:element name="longMessage" type="xsd:string" nillable="true"/>
 			<xsd:element name="submitted" type="xsd:dateTime" nillable="true"/>
 			<xsd:element name="lastUpdate" type="xsd:dateTime" nillable="true"/>
 		</xsd:sequence>
@@ -64,7 +67,7 @@
 		</xsd:sequence>
 	</xsd:complexType>
 	
-	<xsd:simpleType name="GlideinStatus">
+	<xsd:simpleType name="GlideinState">
 		<xsd:restriction base="xsd:string">
 			<xsd:enumeration value="NEW"/>
 			<xsd:enumeration value="SUBMITTED"/>
@@ -88,8 +91,9 @@
 			<xsd:element name="gcbBroker" type="xsd:string" nillable="true"/>
 			<xsd:element name="idleTime" type="xsd:int" default="0"/>
 			<xsd:element name="condorDebug" type="xsd:string" nillable="true"/>
-			<xsd:element name="status" type="glidein:GlideinStatus" default="NEW"/>
-			<xsd:element name="statusMessage" type="xsd:string" nillable="true"/>
+			<xsd:element name="state" type="glidein:GlideinState" default="NEW"/>
+			<xsd:element name="shortMessage" type="xsd:string" nillable="true"/>
+			<xsd:element name="longMessage" type="xsd:string" nillable="true"/>
 			<xsd:element name="submitted" type="xsd:dateTime" nillable="true"/>
 			<xsd:element name="lastUpdate" type="xsd:dateTime" nillable="true"/>
 		</xsd:sequence>
