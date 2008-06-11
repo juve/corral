@@ -1,5 +1,7 @@
 package edu.usc.glidein.service.impl;
 
+import java.io.File;
+
 import javax.naming.NamingException;
 
 import org.apache.log4j.Logger;
@@ -16,13 +18,23 @@ import org.globus.wsrf.impl.ReflectionResourceProperty;
 import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
 
+import edu.usc.glidein.service.ServiceConfiguration;
 import edu.usc.glidein.service.db.Database;
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.SiteDAO;
+import edu.usc.glidein.service.exec.Condor;
+import edu.usc.glidein.service.exec.CondorException;
+import edu.usc.glidein.service.exec.CondorGridType;
+import edu.usc.glidein.service.exec.CondorJob;
+import edu.usc.glidein.service.exec.CondorUniverse;
 import edu.usc.glidein.service.state.ReadyQueue;
 import edu.usc.glidein.service.state.SiteStateChange;
+import edu.usc.glidein.service.state.StageSiteListener;
+import edu.usc.glidein.stubs.types.EnvironmentVariable;
+import edu.usc.glidein.stubs.types.ExecutionService;
+import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteStatus;
+import edu.usc.glidein.stubs.types.SiteState;
 import edu.usc.glidein.util.ProxyUtil;
 
 public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, RemoveCallback, ResourceProperties
@@ -108,7 +120,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		logger.debug("Storing site resource "+getSite().getId());
 		
 		// If we are removing, then don't store
-		if (SiteStatus.REMOVING.equals(site.getStatus())) {
+		if (SiteState.REMOVING.equals(site.getState())) {
 			throw new ResourceException("Site is being removed");
 		}
 		
@@ -130,19 +142,30 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	{
 		logger.debug("Removing site resource "+getSite().getId());
 		
-		// If we are already removing, then just return
-		if (SiteStatus.REMOVING.equals(site.getStatus())) {
-			return;
-		}
-		
-		// TODO: Start a remove operation
+		// TODO: Submit remove request
 		try {
 			GlobusCredential cred = ProxyUtil.getCallerCredential();
 			ReadyQueue queue = ReadyQueue.getInstance();
-			queue.add(new SiteStateChange(getKey()));
+			queue.add(new SiteStateChange(getKey(),SiteState.REMOVE));
 		} catch (NamingException ne) {
 			throw new ResourceException("Unable to remove site: "+ne.getMessage(),ne);
 		}
+		
+		// TODO: Cancel staging operations
+		
+		// TODO: Cancel running glideins
+		
+		// TODO: Submit uninstall job
+		
+		// TODO: Delete the site
+		//resource.delete();
+		
+		// TODO: Remove the site from the resource home
+		/*
+		ResourceKey key = AddressingUtil.getSiteKey(site.getId());
+		SiteResourceHome resourceHome = SiteResourceHome.getInstance();
+		resourceHome.remove(key);
+		*/
 	}
 	
 	public synchronized void submit() throws ResourceException 
@@ -150,15 +173,15 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		logger.debug("Submitting site "+getSite().getId());
 		
 		// If we are not new, then don't submit
-		if (!SiteStatus.NEW.equals(site.getStatus())) {
-			throw new ResourceException("Can only submit sites with NEW status");
+		if (!SiteState.NEW.equals(site.getState())) {
+			throw new ResourceException("Can only submit sites in NEW state");
 		}
 		
 		// TODO: Submit the staging job
 		try {
 			GlobusCredential cred = ProxyUtil.getCallerCredential();
 			ReadyQueue queue = ReadyQueue.getInstance();
-			queue.add(new SiteStateChange(getKey()));
+			queue.add(new SiteStateChange(getKey(),SiteState.SUBMIT));
 		} catch (NamingException ne) {
 			throw new ResourceException("Unable to schedule site: "+ne.getMessage(),ne);
 		}
@@ -176,28 +199,96 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	public synchronized void updateStatus(SiteStatus status, String statusMessage)
+	public synchronized void updateState(SiteState state, String shortMessage, String longMessage)
 	throws ResourceException
 	{
-		logger.debug("Changing status of site "+getSite().getId()+" to "+status+": "+statusMessage);
-		
-		// If status is already failed, don't change it
-		if (status.equals(site.getStatus())) {
-			logger.info("Status of site "+getSite().getId()+" is already FAILED");
-			return;
-		}
+		logger.debug("Changing state of site "+getSite().getId()+" to "+state+": "+shortMessage);
 		
 		// Update object
-		site.setStatus(status);
-		site.setStatusMessage(statusMessage);
+		site.setState(state);
+		site.setShortMessage(shortMessage);
+		site.setLongMessage(longMessage);
 		
 		// Update database
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
-			dao.updateStatus(site.getId(), status, statusMessage);
+			dao.updateState(site.getId(), state, shortMessage, longMessage);
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
 		}
+	}
+
+	public synchronized void processStateChange(SiteState newState)
+	{
+		// TODO: Implement processStateChange
+		
+	}
+	
+	public void submitStagingJob() throws ResourceException
+	{
+		logger.debug("Submitting staging job for site '"+site.getName()+"'");
+		
+		ServiceConfiguration config = null;
+		try {
+			config = ServiceConfiguration.getInstance();
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to get service configuration",ne);
+		}
+		
+		// Create working directory
+		File jobDirectory = new File(config.getTempDir(),"site-"+site.getId());
+		
+		// Create a job description
+		CondorJob job = new CondorJob(jobDirectory);
+		job.setUniverse(CondorUniverse.GRID);
+		
+		// Set jobmanager info
+		ExecutionService stagingService = site.getStagingService();
+		if(ServiceType.GT2.equals(stagingService.getServiceType())) {
+			job.setGridType(CondorGridType.GT2);
+		} else {
+			job.setGridType(CondorGridType.GT4);
+		}
+		job.setGridContact(stagingService.getServiceContact());
+		job.setProject(stagingService.getProject());
+		job.setQueue(stagingService.getQueue());
+		
+		// Set glidein_install executable
+		String install = config.getInstall();
+		job.setExecutable(install);
+		job.setLocalExecutable(true);
+		job.setMaxTime(300); // Not longer than 5 mins
+		// TODO: job.setCredential(cred);
+		
+		// Add environment
+		EnvironmentVariable env[] = site.getEnvironment();
+		if (env!=null) {
+			for (EnvironmentVariable var : env)
+				job.addEnvironment(var.getVariable(), var.getValue());
+		}
+		
+		// Add arguments
+		job.addArgument("-installPath "+site.getInstallPath());
+		if (site.getCondorPackage()==null) {
+			job.addArgument("-condorVersion "+site.getCondorVersion());
+		} else {
+			job.addArgument("-condorPackage "+site.getCondorPackage());
+		}
+		String[] urls = config.getStagingURLs();
+		for(String url : urls) job.addArgument("-url "+url);
+		
+		// Add a listener
+		job.addListener(new StageSiteListener(getKey()));
+		
+		// Submit job
+		try {
+			Condor condor = Condor.getInstance();
+			condor.submitJob(job);
+		} catch (CondorException ce) {
+			throw new ResourceException("Unable to submit staging job: "+ce.getMessage(),ce);
+		}
+			
+		logger.debug("Submitted staging job for site '"+site.getName()+"'");
 	}
 }
