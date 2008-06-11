@@ -2,7 +2,6 @@ package edu.usc.glidein.service.impl;
 
 import java.rmi.RemoteException;
 
-import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceContext;
 
 import edu.usc.glidein.stubs.types.EmptyObject;
@@ -10,8 +9,6 @@ import edu.usc.glidein.stubs.types.Glidein;
 
 public class GlideinService
 {
-	private Logger logger = Logger.getLogger(GlideinService.class);
-	
 	private GlideinResource getResource() throws RemoteException
 	{
 		try {
@@ -19,9 +16,7 @@ public class GlideinService
 			GlideinResource glideinResource = (GlideinResource) resource;
 			return glideinResource;
 		} catch (Exception e) {
-			String message = "Unable to find glidein resource";
-			logger.error(message,e);
-			throw new RemoteException(message, e);
+			throw new RemoteException("Unable to find glidein resource", e);
 		}
 	}
 	
