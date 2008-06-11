@@ -13,7 +13,7 @@ import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.GlideinDAO;
 import edu.usc.glidein.service.db.JDBCUtil;
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinStatus;
+import edu.usc.glidein.stubs.types.GlideinState;
 
 public class MySQLGlideinDAO implements GlideinDAO
 {
@@ -50,7 +50,7 @@ public class MySQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfigBase64, gcbBroker, idleTime, condorDebug, status, statusMessage, submitted, lastUpdate, condorHost) VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfigBase64, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
@@ -61,8 +61,9 @@ public class MySQLGlideinDAO implements GlideinDAO
 			stmt.setString(i++, glidein.getGcbBroker());
 			stmt.setInt(i++, glidein.getIdleTime());
 			stmt.setString(i++, glidein.getCondorDebug());
-			stmt.setString(i++, glidein.getStatus().toString());
-			stmt.setString(i++, glidein.getStatusMessage());
+			stmt.setString(i++, glidein.getState().toString());
+			stmt.setString(i++, glidein.getShortMessage());
+			stmt.setString(i++, glidein.getLongMessage());
 			stmt.setString(i++, glidein.getCondorHost());
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create glidein: wrong number of db updates");
@@ -119,7 +120,7 @@ public class MySQLGlideinDAO implements GlideinDAO
 	
 	public void store(Glidein glidein) throws DatabaseException
 	{
-		updateStatus(glidein.getId(), glidein.getStatus(), glidein.getStatusMessage());
+		updateState(glidein.getId(), glidein.getState(), glidein.getShortMessage(), glidein.getLongMessage());
 	}
 	
 	public void delete(int glideinId) throws DatabaseException
@@ -147,19 +148,21 @@ public class MySQLGlideinDAO implements GlideinDAO
 		}
 	}
 	
-	public void updateStatus(int glideinId, GlideinStatus status, String statusMessage)
+	public void updateState(int glideinId, GlideinState state, String shortMessage, String longMessage)
 	throws DatabaseException
 	{
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
 			conn = database.getConnection();
-			stmt = conn.prepareStatement("UPDATE glidein SET status=?, statusMessage=? WHERE id=?");
-			stmt.setString(1, status.toString());
-			stmt.setString(2, statusMessage);
-			stmt.setInt(3, glideinId);
+			stmt = conn.prepareStatement("UPDATE glidein SET state=?, shortMessage=?, longMessage=?, lastUpdate=NOW() WHERE id=?");
+			int i = 1;
+			stmt.setString(i++, state.toString());
+			stmt.setString(i++, shortMessage);
+			stmt.setString(i++, longMessage);
+			stmt.setInt(i++, glideinId);
 			if (stmt.executeUpdate()!=1) {
-				throw new DatabaseException("Unable to update glidein status: wrong number of db updates");
+				throw new DatabaseException("Unable to update glidein state: wrong number of db updates");
 			}
 			conn.commit();
 		} catch (DatabaseException dbe) {
@@ -224,8 +227,9 @@ public class MySQLGlideinDAO implements GlideinDAO
 			glidein.setCondorDebug(rs.getString("condorDebug"));
 			glidein.setCondorHost(rs.getString("condorHost"));
 			
-			glidein.setStatus(GlideinStatus.fromString(rs.getString("status")));
-			glidein.setStatusMessage(rs.getString("statusMessage"));
+			glidein.setState(GlideinState.fromString(rs.getString("state")));
+			glidein.setShortMessage(rs.getString("shortMessage"));
+			glidein.setLongMessage(rs.getString("longMessage"));
 			
 			Calendar submitted = Calendar.getInstance(TimeZone.getDefault());
 			Timestamp submit = rs.getTimestamp("submitted",submitted);

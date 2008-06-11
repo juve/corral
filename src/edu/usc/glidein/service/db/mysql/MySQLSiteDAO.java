@@ -16,7 +16,7 @@ import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteStatus;
+import edu.usc.glidein.stubs.types.SiteState;
 
 public class MySQLSiteDAO implements SiteDAO
 {
@@ -61,15 +61,16 @@ public class MySQLSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, status, statusMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,NOW(),NOW())");
+			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,?,NOW(),NOW())");
 			int i = 1;
 			stmt.setString(i++, site.getName());
 			stmt.setString(i++, site.getInstallPath());
 			stmt.setString(i++, site.getLocalPath());
 			stmt.setString(i++, site.getCondorPackage());
 			stmt.setString(i++, site.getCondorVersion());
-			stmt.setString(i++, site.getStatus().toString());
-			stmt.setString(i++, site.getStatusMessage());
+			stmt.setString(i++, site.getState().toString());
+			stmt.setString(i++, site.getShortMessage());
+			stmt.setString(i++, site.getLongMessage());
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create site: wrong number of db updates");
 			}
@@ -235,7 +236,7 @@ public class MySQLSiteDAO implements SiteDAO
 
 	public void store(Site site) throws DatabaseException 
 	{
-		updateStatus(site.getId(),site.getStatus(),site.getStatusMessage());
+		updateState(site.getId(),site.getState(),site.getShortMessage(),site.getLongMessage());
 	}
 	
 	public void delete(int siteId) throws DatabaseException
@@ -263,17 +264,19 @@ public class MySQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	public void updateStatus(int siteId, SiteStatus status, String statusMessage)
+	public void updateState(int siteId, SiteState state, String shortMessage, String longMessage)
 	throws DatabaseException
 	{
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
 			conn = database.getConnection();
-			stmt = conn.prepareStatement("UPDATE site SET status=?, statusMessage=?, lastUpdate=NOW() WHERE id=?");
-			stmt.setString(1, status.toString());
-			stmt.setString(2, statusMessage);
-			stmt.setInt(3, siteId);
+			stmt = conn.prepareStatement("UPDATE site SET state=?, shortMessage=?, longMessage=?, lastUpdate=NOW() WHERE id=?");
+			int i = 1;
+			stmt.setString(i++, state.toString());
+			stmt.setString(i++, shortMessage);
+			stmt.setString(i++, longMessage);
+			stmt.setInt(i++, siteId);
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to update site status: wrong number of db updates");
 			}
@@ -283,7 +286,7 @@ public class MySQLSiteDAO implements SiteDAO
 			throw dbe;
 		} catch (SQLException sqle) {
 			JDBCUtil.rollbackQuietly(conn);
-			throw new DatabaseException("Unable to update site status: update failed",sqle);
+			throw new DatabaseException("Unable to update site state: update failed",sqle);
 		} finally {
 			JDBCUtil.closeQuietly(stmt);
 			JDBCUtil.closeQuietly(conn);
@@ -344,8 +347,9 @@ public class MySQLSiteDAO implements SiteDAO
 			site.setCondorPackage(rs.getString("condorPackage"));
 			site.setCondorVersion(rs.getString("condorVersion"));
 			
-			site.setStatus(SiteStatus.fromString(rs.getString("status")));
-			site.setStatusMessage(rs.getString("statusMessage"));
+			site.setState(SiteState.fromString(rs.getString("state")));
+			site.setShortMessage(rs.getString("shortMessage"));
+			site.setLongMessage(rs.getString("longMessage"));
 			
 			Calendar submitted = Calendar.getInstance(TimeZone.getDefault());
 			Timestamp submit = rs.getTimestamp("submitted",submitted);

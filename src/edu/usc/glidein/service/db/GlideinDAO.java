@@ -1,7 +1,7 @@
 package edu.usc.glidein.service.db;
 
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinStatus;
+import edu.usc.glidein.stubs.types.GlideinState;
 
 public interface GlideinDAO
 {
@@ -9,6 +9,6 @@ public interface GlideinDAO
 	public void store(Glidein glidein) throws DatabaseException;
 	public Glidein load(int glideinId) throws DatabaseException;
 	public void delete(int glideinId) throws DatabaseException;
-	public void updateStatus(int glideinId, GlideinStatus status, String statusMessage) throws DatabaseException;
+	public void updateState(int glideinId, GlideinState state, String shortMessage, String longMessage) throws DatabaseException;
 	public Glidein[] list(boolean longFormat) throws DatabaseException;
 }
