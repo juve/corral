@@ -1,6 +1,7 @@
 package edu.usc.glidein.service.exec;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
@@ -16,7 +17,6 @@ import org.globus.gsi.GlobusCredential;
 
 import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.util.CommandLine;
-import edu.usc.glidein.util.ProxyUtil;
 
 /**
  * This class is an interface for managing condor jobs.
@@ -299,14 +299,30 @@ public class Condor
 			{
 				File proxyFile = new File(job.getJobDirectory(),"proxy");
 				try {
-					ProxyUtil.writeProxy(cred, proxyFile);
-				} catch(GlideinException ge) {
-					throw new CondorException("Unable to write proxy file",ge);
+					// Save the credential to a file
+					FileOutputStream pstream = new FileOutputStream(proxyFile);
+					cred.save(pstream);
+					pstream.close();
+					
+					// Change file permissions
+					CommandLine chmod = new CommandLine();
+					chmod.setExecutable(new File("/bin/chmod"));
+					chmod.addArgument("600");
+					chmod.addArgument(proxyFile.getAbsolutePath());
+					chmod.execute();
+					int exitCode = chmod.getExitCode();
+					if(exitCode != 0){
+						throw new CondorException(
+								"Unable to change proxy permissions\n\n"+
+								"Stdout:\n"+chmod.getOutput()+
+								"Stderr:\n"+chmod.getError());
+					}
+				} catch(Exception e) {
+					throw new CondorException("Unable to write proxy file",e);
 				}
 				out.write("x509userproxy = ");
 				out.write(proxyFile.getAbsolutePath());
 				out.write("\n");
-				
 			}
 		}
 		
