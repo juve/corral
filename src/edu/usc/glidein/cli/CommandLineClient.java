@@ -13,21 +13,12 @@ public class CommandLineClient
 	
 	public static void main(String[] args)
 	{
-		boolean debug = false;
 		if (args.length==0) {
 			fail();
-		}
-		else {
+		} else {
 			// Handle arguments
 			List<String> arguments = new LinkedList<String>();
-			for (String arg:args) arguments.add(arg);
-			if (arguments.contains("--debug")) {
-				arguments.remove("--debug");
-				debug = true;
-			}
-			if (arguments.size()==0) {
-				fail();
-			}
+			for (String arg : args) arguments.add(arg);
 			String name = arguments.remove(0);
 			String[] ops = arguments.toArray(new String[0]); 
 			
@@ -38,13 +29,12 @@ public class CommandLineClient
 				fail();
 			} else {
 				try {
-					command.setDebug(debug);
 					command.invoke(ops);
 				} catch (CommandException e) {
 					if (e.getMessage() != null) {
 						System.out.println(e.getMessage());
 					}
-					if (debug && e.getCause() != null) {
+					if (command.isDebug() && e.getCause() != null) {
 						e.getCause().printStackTrace();
 					}
 					System.exit(1);

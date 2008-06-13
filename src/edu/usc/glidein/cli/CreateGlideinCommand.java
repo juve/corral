@@ -2,139 +2,129 @@ package edu.usc.glidein.cli;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collection;
-
-import javax.xml.rpc.Stub;
+import java.util.List;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
+import org.globus.gsi.GlobusCredential;
+import org.globus.gsi.GlobusCredentialException;
 
 import edu.usc.glidein.stubs.GlideinFactoryPortType;
-import edu.usc.glidein.stubs.service.GlideinFactoryServiceAddressingLocator;
+import edu.usc.glidein.stubs.GlideinPortType;
+import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.util.AddressingUtil;
 import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.IOUtil;
 
 public class CreateGlideinCommand extends Command
 {
-	private Options options = null;
-	private URL factoryURL = null;
+	private Glidein glidein = null;
+	private GlobusCredential credential = null;
 	
-	@SuppressWarnings("static-access")
-	public CreateGlideinCommand()
+	public void addOptions(List<Option> options)
 	{
-		options = new Options();
-		options.addOption(
-				OptionBuilder.withLongOpt("site")
-							 .hasArg()
-							 .withDescription("-s [--site] <id>                : " +
-							 		"Site to submit glidein to")
-							 .create("s")
+		options.add(
+			Option.create()
+				  .setOption("s")
+				  .setLongOption("site")
+				  .setUsage("-s [--site] <id>")
+				  .setDescription("Site to submit glidein to")
+				  .hasArgument()
 		);
-		options.addOption(
-				OptionBuilder.withLongOpt("count")
-							 .hasArg()
-							 .withDescription("-c [--count] <n>                : " +
-							 		"Number of processors (default: 1)")
-							 .create("c")
+		options.add(
+			Option.create()
+				  .setOption("c")
+				  .setLongOption("count")
+				  .setUsage("-c [--count] <n>")
+				  .setDescription("Number of processors (default: 1)")
+				  .hasArgument()
 		);
-		options.addOption(
-				OptionBuilder.withLongOpt("host-count")
-							 .hasArg()
-							 .withDescription("-hc [--host-count] <n>          : " +
-							 		"Number of hosts (default: 1)")
-							 .create("hc")
+		options.add(
+			Option.create()
+				  .setOption("hc")
+				  .setLongOption("host-count")
+				  .setUsage("-hc [--host-count] <n>")
+				  .setDescription("Number of hosts (default: 1)")
+				  .hasArgument()
+							 
 		);
-		options.addOption(
-				OptionBuilder.withLongOpt("wall-time")
-							 .hasArg()
-							 .withDescription("-w [--wall-time] <t>            : " +
-							 		"Wall time for job in minutes (default: 60)")
-							 .create("w")
+		options.add(
+			Option.create()
+				  .setOption("w")
+				  .setLongOption("wall-time")
+				  .setUsage("-w [--wall-time] <t>")
+				  .setDescription("Wall time for job in minutes (default: 60)")		 
+				  .hasArgument()
 		);
-		options.addOption(
-				OptionBuilder.withLongOpt("idle-time")
-							 .hasArg()
-							 .withDescription("-i [--idle-time] <t>            : " +
-							 		"Glidein max idle time in minutes (default: wallTime)")
-							 .create("i")
+		options.add(
+			Option.create()
+				  .setOption("i")
+				  .setLongOption("idle-time")
+				  .setUsage("-i [--idle-time] <t>")
+				  .setDescription("Glidein max idle time in minutes (default: wallTime)")
+				  .hasArgument()
 		);
-		options.addOption(
-				OptionBuilder.withLongOpt("num-cpus")
-							 .hasArg()
-							 .withDescription("-n [--num-cpus] <n>             : " +
-							 		"Number of cpus for condor to report")
-							 .create("n")
+		options.add(
+			Option.create()
+				  .setOption("n")
+				  .setLongOption("num-cpus")
+				  .setUsage("-n [--num-cpus] <n>")
+				  .setDescription("Number of cpus for condor to report")
+				  .hasArgument()
 		);
-		options.addOption(
-				OptionBuilder.withLongOpt("condor-host")
-							 .hasArg()
-							 .withDescription("-ch [--condor-host] <name:port> : " +
-							 		"Condor central manager to report to")
-							 .create("ch")
+		options.add(
+			Option.create()
+				  .setOption("ch")
+				  .setLongOption("condor-host")
+				  .setUsage("-ch [--condor-host] <name:port>")
+				  .setDescription("Condor central manager to report to")
+				  .hasArgument()
+							 
 		);
-		options.addOption(
-				OptionBuilder.withLongOpt("condor-debug")
-							 .hasArg()
-							 .withDescription("-cd [--condor-debug] <ops>      : " +
-							 		"Condor DaemonCore debugging options (csv)")
-							 .create("cd")
+		options.add(
+			Option.create()
+				  .setOption("cd")	
+				  .setLongOption("condor-debug")
+				  .setUsage("-cd [--condor-debug] <ops>")
+				  .setDescription("Condor DaemonCore debugging options (csv)")
+				  .hasArgument()
+				
 		);
-		options.addOption(
-				OptionBuilder.withLongOpt("gcb-broker")
-							 .hasArg()
-							 .withDescription("-b [--gcb-broker] <ip>          : " +
-							 		"GCB Broker IP address")
-							 .create("b")
+		options.add(
+			Option.create()
+				  .setOption("b")
+				  .setLongOption("gcb-broker")
+				  .setUsage("-b [--gcb-broker] <ip>")
+				  .setDescription("GCB Broker IP address")
+				  .hasArgument()
 		);
-		options.addOption(
-				OptionBuilder.withLongOpt("condor-config")
-							 .hasArg()
-							 .withDescription("-cc [--condor-config] <file>    : " +
-							 		"Condor config file for glidein")
-							 .create("cc")
+		options.add(
+			Option.create()
+				  .setOption("cc")
+				  .setLongOption("condor-config")
+				  .setUsage("-cc [--condor-config] <file>")
+				  .setDescription("Condor config file for glidein")
+				  .hasArgument()
 		);
-		options.addOption(
-				OptionBuilder.withLongOpt("factory")
-							 .hasArg()
-							 .withDescription("-F [--factory] <contact>        : " +
-							 		"The factory URL (default: "+AddressingUtil.GLIDEIN_FACTORY_SERVICE_URL+")")
-							 .create("F")
+		options.add(
+			Option.create()
+				  .setOption("C")
+				  .setLongOption("credential")
+				  .setUsage("-C [--credential] <file>")
+				  .setDescription("The user's credential as a proxy file. If not specified the Globus default is used.")
+				  .hasArgument()
 		);
 	}
 	
-	public void invoke(String[] args) throws CommandException
-	{	
-		Glidein g = new Glidein();
-		
-		if (args.length == 0) {
-			throw new CommandException(getHelp());
-		}
-		
-		/* Parse args */
-		CommandLine cmdln = null;
-		try {
-			CommandLineParser parser = new PosixParser();
-			cmdln = parser.parse(options, args);
-		} catch (ParseException pe) {
-			throw new CommandException("Invalid argument: "+pe.getMessage());
-		}
-		
+	public void setArguments(CommandLine cmdln) throws CommandException
+	{
 		/* Check for extra arguments */
-		args = cmdln.getArgs();
+		String[] args = cmdln.getArgs();
 		if (args.length > 0) {
 			throw new CommandException("Unrecognized argument: "+args[0]);
 		}
 		
+		glidein = new Glidein();
 		
 		/* Required params ***************************************************/
 		//site s
@@ -142,55 +132,55 @@ public class CreateGlideinCommand extends Command
 			throw new CommandException("Missing required argument: site");
 		}
 		int siteId = Integer.parseInt(cmdln.getOptionValue("site"));
-		g.setSiteId(siteId);
+		glidein.setSiteId(siteId);
 		
 		//condor-host ch
 		if (!cmdln.hasOption("ch")) {
 			throw new CommandException("Missing required argument: condor-host");
 		}
 		String condorHost = cmdln.getOptionValue("condor-host");
-		g.setCondorHost(condorHost);
+		glidein.setCondorHost(condorHost);
 		
 		
 		/* Options ***********************************************************/
 		//count c
 		if (cmdln.hasOption("c")) {
 			int count = Integer.parseInt(cmdln.getOptionValue("count"));
-			g.setCount(count);
+			glidein.setCount(count);
 		} else {
-			g.setCount(1);
+			glidein.setCount(1);
 		}
 		
 		//host-count hc
 		if (cmdln.hasOption("hc")) {
 			int hostCount = Integer.parseInt(cmdln.getOptionValue("host-count"));
-			g.setHostCount(hostCount);
+			glidein.setHostCount(hostCount);
 		} else {
-			g.setHostCount(1);
+			glidein.setHostCount(1);
 		}
 		
 		//num-cpus n
 		if (cmdln.hasOption("n")) {
 			int numCpus = Integer.parseInt(cmdln.getOptionValue("num-cpus"));
-			g.setNumCpus(numCpus);
+			glidein.setNumCpus(numCpus);
 		} else {
-			g.setNumCpus(1);
+			glidein.setNumCpus(1);
 		}
 		
 		//wall-time w
 		if (cmdln.hasOption("w")) {
 			int wallTime = Integer.parseInt(cmdln.getOptionValue("wall-time"));
-			g.setWallTime(wallTime);
+			glidein.setWallTime(wallTime);
 		} else {
-			g.setWallTime(60);
+			glidein.setWallTime(60);
 		}
 		
 		//idle-time i
 		if (cmdln.hasOption("i")) {
 			int idleTime = Integer.parseInt(cmdln.getOptionValue("idle-time"));
-			g.setIdleTime(idleTime);
+			glidein.setIdleTime(idleTime);
 		} else {
-			g.setIdleTime(g.getWallTime());
+			glidein.setIdleTime(glidein.getWallTime());
 		}
 		
 		//condor-config cc
@@ -200,7 +190,7 @@ public class CreateGlideinCommand extends Command
 			try {
 				String condorConfig = IOUtil.read(file);
 				String condorConfigBase64 = Base64.toBase64(condorConfig);
-				g.setCondorConfigBase64(condorConfigBase64);
+				glidein.setCondorConfigBase64(condorConfigBase64);
 			} catch (IOException ioe) {
 				throw new CommandException("Unable to read config file: "+fileName,ioe);
 			}
@@ -208,46 +198,48 @@ public class CreateGlideinCommand extends Command
 		
 		//condor-debug cd
 		String condorDebug = cmdln.getOptionValue("condor-debug",null);
-		g.setCondorDebug(condorDebug);
+		glidein.setCondorDebug(condorDebug);
 		
 		//gcb-broker b
 		String gcbBroker = cmdln.getOptionValue("gcb-broker", null);
-		g.setGcbBroker(gcbBroker);
+		glidein.setGcbBroker(gcbBroker);
 		
-		/* Factory URL */
-		try {
-			if (cmdln.hasOption("F")) {
-				factoryURL = new URL(cmdln.getOptionValue("factory"));
-			} else {
-				factoryURL = new URL(AddressingUtil.GLIDEIN_FACTORY_SERVICE_URL);
+		/* Get proxy credential */
+		if (cmdln.hasOption("C")) {
+			String proxy = cmdln.getOptionValue("C");
+			try {
+				credential = new GlobusCredential(proxy);
+			} catch (GlobusCredentialException ce) {
+				throw new CommandException("Unable to read proxy " +
+						"credential: "+proxy+": "+ce.getMessage(),ce);
 			}
-			if (isDebug()) System.out.println("GlideinFactoryService: "+factoryURL);
-		} catch (MalformedURLException e) {
-			throw new CommandException("Invalid factory URL: "+e.getMessage(),e);
+		} else {
+			try {
+				credential = GlobusCredential.getDefaultCredential();
+			} catch (GlobusCredentialException ce) {
+				throw new CommandException("Unable to read default proxy " +
+						"credential: "+ce.getMessage(),ce);
+			}
 		}
+	}
+	 
+	public void execute() throws CommandException
+	{	
+		if (isDebug()) System.out.println("Creating glidein...");
+		
+		// TODO: Delegate credential 
+		// (see org.globus.delegation.DelegationUtil, org.globus.delegation.client.Delegate)
 		
 		try {
-			EndpointReferenceType glideinFactoryEPR = 
-				AddressingUtil.getGlideinFactoryEPR(factoryURL);
-			GlideinFactoryServiceAddressingLocator locator = 
-				new GlideinFactoryServiceAddressingLocator();
-			GlideinFactoryPortType factory = 
-				locator.getGlideinFactoryPortTypePort(glideinFactoryEPR);
-		
-			((Stub)factory)._setProperty(
-					org.globus.wsrf.security.Constants.GSI_SEC_CONV, 
-					org.globus.wsrf.security.Constants.SIGNATURE);
-			((Stub)factory)._setProperty(
-					org.globus.axis.gsi.GSIConstants.GSI_MODE,
-					org.globus.axis.gsi.GSIConstants.GSI_MODE_FULL_DELEG);
-			((Stub)factory)._setProperty(
-					org.globus.wsrf.security.Constants.AUTHORIZATION,
-					org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance());
-			
-			factory.createGlidein(g);
+			GlideinFactoryPortType factory = getGlideinFactoryPortType();	
+			EndpointReferenceType epr = factory.createGlidein(glidein);
+			GlideinPortType instance = getGlideinPortType(epr);
+			instance.submit(new EmptyObject());
 		} catch (Exception e) {
 			throw new CommandException("Unable to create glidein: "+e.getMessage(),e);
 		}
+		
+		if (isDebug()) System.out.println("Glidein created.");
 	}
 
 	public String getName()
@@ -260,21 +252,13 @@ public class CreateGlideinCommand extends Command
 		return new String[]{"cg"};
 	}
 	
-	public String getHelp()
+	public String getDescription()
 	{
-		StringBuffer buff = new StringBuffer();
-		buff.append("create-glidein (cg): Add a new glidein\n");
-		buff.append("usage: create-glidein --site <site> --condor-host <host>\n");
-		buff.append("\n");
-		buff.append("Valid options:\n");
-		@SuppressWarnings("unchecked")
-		Collection<Option> collection = options.getOptions();
-		Option[] ops = collection.toArray(new Option[0]);
-		for (Option op : ops) {
-			buff.append("   ");
-			buff.append(op.getDescription());
-			buff.append("\n");
-		}
-		return buff.toString();
+		return "create-glidein (cg): Add a new glidein";
+	}
+	
+	public String getUsage()
+	{
+		return "Usage: create-glidein --site <site> --condor-host <host>";
 	}
 }

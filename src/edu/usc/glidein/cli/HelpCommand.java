@@ -1,15 +1,40 @@
 package edu.usc.glidein.cli;
 
+import java.util.List;
+
+import org.apache.commons.cli.CommandLine;
+
 public class HelpCommand extends Command
 {
-	public void invoke(String[] args) throws CommandException
+	private String[] commands;
+	
+	protected void addOptions(List<Option> options)
 	{
-		if (args.length==0) {
+		// Remove options not used by this command
+		for (int i=0; i<options.size(); )
+		{
+			Option option = options.get(i);
+			if ("d".equals(option.getOption())) {
+				// Keep debug option
+				i++;
+			} else {
+				// Remove everything else
+				options.remove(i);
+			}
+		}
+	}
+	
+	public void setArguments(CommandLine cmdln)
+	{
+		commands = cmdln.getArgs();	
+	}
+	
+	public void execute() throws CommandException
+	{
+		if (commands.length==0) {
 			StringBuffer buff = new StringBuffer();
 			buff.append("Usage: "+COMMAND_NAME+" <subcommand> [options] [args]\n");
 			buff.append("Type '"+COMMAND_NAME+" help <subcommand>' for help on a specific subcommand.\n\n");
-			buff.append("Valid options:\n");
-			buff.append("   --debug                     : Turn on useful debugging messages\n\n");
 			buff.append("Available subcommands:\n");
 			for (Class clazz : SUBCOMMANDS) {
 				Command subcommand = null;
@@ -31,12 +56,16 @@ public class HelpCommand extends Command
 			}
 			System.out.println(buff.toString());
 		} else {
-			for (String command : args) {
+			for (String command : commands) {
 				Command cmd = getCommand(command);
 				if (cmd == null) {
 					System.out.println("Unknown command: '"+command+"'");
 				} else {
-					System.out.println(cmd.getHelp());
+					System.out.println(cmd.getDescription());
+					System.out.println(cmd.getUsage());
+					System.out.println();
+					System.out.println("Valid options:");
+					System.out.println(cmd.getOptionString());
 				}
 			}
 		}
@@ -52,10 +81,13 @@ public class HelpCommand extends Command
 		return new String[]{"h"};
 	}
 	
-	public String getHelp()
+	public String getDescription()
 	{
-		return 
-			"help (h): Describe the usage of this program or its subcommands.\n"+
-			"usage: help [SUBCOMMAND...]";
+		return "help (h): Describe the usage of this program or its subcommands.";
+	}
+	
+	public String getUsage()
+	{
+		return "Usage: help [SUBCOMMAND...]";
 	}
 }
