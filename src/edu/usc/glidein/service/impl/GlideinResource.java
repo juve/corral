@@ -155,7 +155,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	public void remove(boolean force) throws ResourceException 
 	{
 		logger.debug("Removing "+getGlidein().getId());
-		// TODO: Do I need force?
+		// TODO: Implement force 
 		try {
 			Event event = new GlideinEvent(GlideinEventCode.REMOVE,getKey());
 			EventQueue queue = EventQueue.getInstance(); 

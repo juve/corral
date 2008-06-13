@@ -355,7 +355,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 					// Change state to EXITING
 					updateState(SiteState.EXITING, "Waiting for glideins", null);
 				} else {
-					// TODO: Submit uninstall job
+					// Submit uninstall job
 					submitUninstallJob();
 				}
 			break;
