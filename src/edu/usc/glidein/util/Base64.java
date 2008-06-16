@@ -18,34 +18,30 @@ public class Base64
 	 * @param string The string to encode
 	 * @return The base64 encoding of the string
 	 */
-	public static String toBase64(String string)
+	public static byte[] toBase64(String string)
 	{
 		if(string==null) return null;
 		byte[] buff = string.getBytes();
-		return new BASE64Encoder().encode(buff);
+		String s = new BASE64Encoder().encode(buff);
+		return s.getBytes();
 	}
 	
 	/**
 	 * Decode a base64-encoded string
-	 * @param base64 Base64-encoded string
+	 * @param base64 Base64-encoded binary
 	 * @return The decoded string
 	 */
-	public static String fromBase64(String base64)
+	public static String fromBase64(byte[] base64)
 	{
 		if(base64==null) return null;
 		
 		try {
-			byte[] output = new BASE64Decoder().decodeBuffer(base64);
+			String s = new String(base64);
+			byte[] output = new BASE64Decoder().decodeBuffer(s);
 			return new String(output);
 		} 
 		catch(IOException ioe) {
 			return null; /* I don't think this will actually happen */
 		}
-	}
-
-	public static void main(String[] args)
-	{
-		System.out.println(new String(Base64.toBase64("Hello, World!")));
-		System.out.println(Base64.fromBase64("SGVsbG8sIFdvcmxkIQ=="));
 	}
 }
