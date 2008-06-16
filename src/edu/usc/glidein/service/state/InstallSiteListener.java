@@ -13,13 +13,13 @@ import edu.usc.glidein.service.exec.CondorException;
 import edu.usc.glidein.service.exec.CondorJob;
 import edu.usc.glidein.util.IOUtil;
 
-public class StageSiteListener implements CondorEventListener
+public class InstallSiteListener implements CondorEventListener
 {
-	private Logger logger = Logger.getLogger(StageSiteListener.class);
+	private Logger logger = Logger.getLogger(InstallSiteListener.class);
 	
 	public ResourceKey key = null;
 	
-	public StageSiteListener(ResourceKey key)
+	public InstallSiteListener(ResourceKey key)
 	{
 		this.key = key;
 	}
