@@ -32,6 +32,8 @@ public class MySQLDatabase extends Database implements Initializable
 	{
 		// Load database driver
 		Class.forName(DB_DRIVER).newInstance();
+		
+		// TODO: Install tables if they don't exist already
 	}
 	
 	public String getUrl()
