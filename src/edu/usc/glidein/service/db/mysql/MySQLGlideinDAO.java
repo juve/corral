@@ -50,14 +50,14 @@ public class MySQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfigBase64, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
 			stmt.setInt(i++, glidein.getHostCount());
 			stmt.setInt(i++, glidein.getWallTime());
 			stmt.setInt(i++, glidein.getNumCpus());
-			stmt.setString(i++, glidein.getCondorConfigBase64());
+			stmt.setBytes(i++, glidein.getCondorConfig());
 			stmt.setString(i++, glidein.getGcbBroker());
 			stmt.setInt(i++, glidein.getIdleTime());
 			stmt.setString(i++, glidein.getCondorDebug());
@@ -221,7 +221,7 @@ public class MySQLGlideinDAO implements GlideinDAO
 			glidein.setHostCount(rs.getInt("hostCount"));
 			glidein.setWallTime(rs.getInt("wallTime"));
 			glidein.setNumCpus(rs.getInt("numCpus"));
-			glidein.setCondorConfigBase64(rs.getString("condorConfigBase64"));
+			glidein.setCondorConfig(rs.getBytes("condorConfig"));
 			glidein.setGcbBroker(rs.getString("gcbBroker"));
 			glidein.setIdleTime(rs.getInt("idleTime"));
 			glidein.setCondorDebug(rs.getString("condorDebug"));

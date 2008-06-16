@@ -189,8 +189,8 @@ public class CreateGlideinCommand extends Command
 			File file = new File(fileName);
 			try {
 				String condorConfig = IOUtil.read(file);
-				String condorConfigBase64 = Base64.toBase64(condorConfig);
-				glidein.setCondorConfigBase64(condorConfigBase64);
+				byte[] condorConfigBytes = Base64.toBase64(condorConfig);
+				glidein.setCondorConfig(condorConfigBytes);
 			} catch (IOException ioe) {
 				throw new CommandException("Unable to read config file: "+fileName,ioe);
 			}

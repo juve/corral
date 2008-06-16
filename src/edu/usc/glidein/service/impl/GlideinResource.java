@@ -267,7 +267,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		
 		// If there is a special config file, use it
 		String configFile = null;
-		if (glidein.getCondorConfigBase64()==null)
+		if (glidein.getCondorConfig()==null)
 		{
 			configFile = config.getGlideinCondorConfig();
 		}
@@ -276,7 +276,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			try {
 				// Save config to a file in the submit directory
 				configFile = "glidein_condor_config";
-				String cfg = Base64.fromBase64(glidein.getCondorConfigBase64());
+				String cfg = Base64.fromBase64(glidein.getCondorConfig());
 				IOUtil.write(cfg, new File(job.getJobDirectory(),configFile));
 			} catch (IOException ioe) {
 				throw new ResourceException("Unable to submit glidein job: " +
