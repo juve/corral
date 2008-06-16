@@ -8,7 +8,8 @@
 	xmlns:wsrp="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
 	xmlns:wsrpw="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
 	xmlns:wsdlpp="http://www.globus.org/namespaces/2004/10/WSDLPreprocessor"
-	xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing">
 	
 	<wsdl:import namespace="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
 		location="../wsrf/properties/WS-ResourceProperties.wsdl" />
@@ -22,13 +23,17 @@
 			xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 			
 			<xsd:import
+				namespace="http://schemas.xmlsoap.org/ws/2004/03/addressing"
+				schemaLocation="../ws/addressing/WS-Addressing.xsd" />
+				
+			<xsd:import
 				namespace="http://www.usc.edu/glidein/GlideinTypes"
 				schemaLocation="GlideinTypes.xsd" />
 			
 			<xsd:element name="removeRequest" type="xsd:boolean" default="false"/>
 			<xsd:element name="removeResponse" type="glidein:EmptyObject"/>
 			
-			<xsd:element name="submitRequest" type="glidein:EmptyObject"/>
+			<xsd:element name="submitRequest" type="wsa:EndpointReferenceType"/>
 			<xsd:element name="submitResponse" type="glidein:EmptyObject"/>
 			
 			<xsd:element name="getGlideinRequest" type="glidein:EmptyObject"/>
@@ -47,7 +52,7 @@
 	</message>
 	
 	<message name="submitInputMessage">
-		<part name="request" element="tns:submitRequest"/>
+		<part name="credential" element="tns:submitRequest"/>
 	</message>
 	<message name="submitOutputMessage">
 		<part name="response" element="tns:submitResponse"/>
