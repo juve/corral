@@ -101,6 +101,7 @@ public class StageSiteListener implements CondorEventListener
 				failed("Error parsing staging job log", 
 						event.getException());
 				break;
+			case GLOBUS_SUBMIT_FAILED:
 			case GLOBUS_RESOURCE_DOWN:
 			case GRID_RESOURCE_DOWN:
 			case JOB_HELD:
