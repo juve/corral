@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import javax.naming.NamingException;
 
+import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
 import org.globus.wsrf.PersistenceCallback;
 import org.globus.wsrf.RemoveCallback;
@@ -165,11 +166,12 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 	}
 
-	public void submit() throws ResourceException
+	public void submit(EndpointReferenceType credential) throws ResourceException
 	{
 		logger.debug("Submitting "+glidein.getId());
 		try {
 			Event event = new GlideinEvent(GlideinEventCode.SUBMIT,getKey());
+			event.setProperty("credential", credential);
 			EventQueue queue = EventQueue.getInstance(); 
 			queue.add(event);
 		} catch(NamingException ne) {

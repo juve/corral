@@ -2,6 +2,7 @@ package edu.usc.glidein.service.impl;
 
 import java.rmi.RemoteException;
 
+import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.globus.wsrf.ResourceContext;
 
 import edu.usc.glidein.stubs.types.EmptyObject;
@@ -23,9 +24,9 @@ public class SiteService
 		return getResource().getSite();
 	}
 	
-	public EmptyObject submit(EmptyObject empty) throws RemoteException
+	public EmptyObject submit(EndpointReferenceType credential) throws RemoteException
 	{
-		getResource().submit();
+		getResource().submit(credential);
 		return new EmptyObject();
 	}
 	

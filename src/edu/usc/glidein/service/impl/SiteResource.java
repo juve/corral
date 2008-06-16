@@ -4,6 +4,7 @@ import java.io.File;
 
 import javax.naming.NamingException;
 
+import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
 import org.globus.wsrf.PersistenceCallback;
 import org.globus.wsrf.RemoveCallback;
@@ -178,13 +179,14 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	public void submit() throws ResourceException 
+	public void submit(EndpointReferenceType credential) throws ResourceException 
 	{
 		logger.debug("Submitting site "+getSite().getId());
 		
 		// Schedule submit event
 		try {
 			Event event = new SiteEvent(SiteEventCode.SUBMIT,getKey());
+			event.setProperty("credential", credential);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {
