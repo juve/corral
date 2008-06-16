@@ -10,9 +10,9 @@ import org.globus.wsrf.ResourceKey;
 import edu.usc.glidein.service.exec.CondorJob;
 import edu.usc.glidein.util.IOUtil;
 
-public class InstallSiteListener extends BaseListener
-{	
-	public InstallSiteListener(ResourceKey key)
+public class UninstallSiteListener extends BaseListener
+{
+	public UninstallSiteListener(ResourceKey key)
 	{
 		super(key);
 	}
@@ -21,7 +21,7 @@ public class InstallSiteListener extends BaseListener
 	{
 		// Generate failed event
 		try {
-			Event event = new SiteEvent(SiteEventCode.INSTALL_FAILED,getKey());
+			Event event = new SiteEvent(SiteEventCode.UNINSTALL_FAILED,getKey());
 			event.setProperty("message", message);
 			event.setProperty("exception", e);
 			EventQueue queue = EventQueue.getInstance();
@@ -42,13 +42,13 @@ public class InstallSiteListener extends BaseListener
 			{
 				String stderr = IOUtil.read(error);
 				if(stderr.length()>0)
-					failed("Install job failed: "+stderr);
+					failed("Uninstall job failed: "+stderr);
 				else
 					success(job);
 			}
 			catch(IOException ioe)
 			{
-				failed("Unable to read install error file",ioe);
+				failed("Unable to read uninstall error file",ioe);
 			}
 		}
 		else
@@ -67,7 +67,7 @@ public class InstallSiteListener extends BaseListener
 		
 		// Generate success event
 		try {
-			Event event = new SiteEvent(SiteEventCode.INSTALL_SUCCESS,getKey());
+			Event event = new SiteEvent(SiteEventCode.UNINSTALL_SUCCESS,getKey());
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {

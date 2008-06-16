@@ -3,10 +3,11 @@ package edu.usc.glidein.service.state;
 public enum SiteEventCode implements EventCode
 {
 	SUBMIT,				/* User requested submit */
-	INSTALLED,			/* Condor installed */
+	INSTALL_SUCCESS,	/* Condor installed successfully */
+	INSTALL_FAILED,		/* Condor installation failed */
 	REMOVE,				/* User requested remove */
-	UNINSTALLED,		/* Condor uninstalled */
+	UNINSTALL_SUCCESS,	/* Condor uninstalled successfully */
+	UNINSTALL_FAILED,	/* Condor uninstall failed */
 	GLIDEIN_FINISHED,	/* Glidein finished */
-	DELETE,				/* User requested delete */
-	FAILED				/* Site failed */
+	DELETE				/* User requested delete */
 }
