@@ -7,6 +7,10 @@ import javax.naming.NamingException;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
+import org.globus.delegation.DelegationException;
+import org.globus.delegation.DelegationUtil;
+import org.globus.delegation.service.DelegationResource;
+import org.globus.gsi.GlobusCredential;
 import org.globus.wsrf.PersistenceCallback;
 import org.globus.wsrf.RemoveCallback;
 import org.globus.wsrf.Resource;
@@ -33,8 +37,6 @@ import edu.usc.glidein.service.state.EventQueue;
 import edu.usc.glidein.service.state.GlideinEvent;
 import edu.usc.glidein.service.state.GlideinEventCode;
 import edu.usc.glidein.service.state.GlideinListener;
-import edu.usc.glidein.service.state.SiteEvent;
-import edu.usc.glidein.service.state.SiteEventCode;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.Glidein;
@@ -99,7 +101,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	public void create(Glidein glidein) throws ResourceException
 	{
-		logger.debug("Creating glidein");
+		logger.debug("Creating glidein for site "+glidein.getSiteId());
 		
 		// Initialize glidein
 		glidein.setState(GlideinState.NEW);
@@ -166,16 +168,26 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 	}
 
-	public void submit(EndpointReferenceType credential) throws ResourceException
+	public void submit(EndpointReferenceType credentialEPR) throws ResourceException
 	{
 		logger.debug("Submitting "+glidein.getId());
 		try {
+			
+			// Get delegated credential
+			DelegationResource delegationResource = 
+				DelegationUtil.getDelegationResource(credentialEPR);
+			GlobusCredential credential = 
+				delegationResource.getCredential();
+			
+			// Create submit event
 			Event event = new GlideinEvent(GlideinEventCode.SUBMIT,getKey());
 			event.setProperty("credential", credential);
 			EventQueue queue = EventQueue.getInstance(); 
 			queue.add(event);
-		} catch(NamingException ne) {
-			throw new ResourceException("Unable to submit glidein",ne);
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to submit glidein: "+ne.getMessage(),ne);
+		} catch (DelegationException de) {
+			throw new ResourceException("Unable to submit glidein: "+de.getMessage(),de);
 		}
 	}
 	
@@ -199,7 +211,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 	}
 	
-	private void submitGlideinJob() throws ResourceException
+	private void submitGlideinJob(GlobusCredential credential) throws ResourceException
 	{
 		logger.debug("Submitting glidein job "+glidein.getId());
 		
@@ -287,11 +299,10 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 		job.addInputFile(configFile);
 		
-		// TODO: Get credential
-		//job.setCredential(credential);
+		job.setCredential(credential);
 		
 		// Add a listener
-		job.addListener(new GlideinListener());
+		job.addListener(new GlideinListener(getKey()));
 		
 		// Submit job
 		try {
@@ -342,18 +353,20 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 	}
 	
-	public synchronized void handleEvent(GlideinEventCode event)
+	public synchronized void handleEvent(GlideinEvent event)
 	{
 		/* TODO: Implement handleEvent
 		GlideinState state = glidein.getState();
+		GlideinEventCode code = (GlideinEventCode) event.getCode();
 		
-		switch (event) {
+		switch (code) {
 			
 			case SUBMIT:
 				// Only NEW glideins can be submitted
 				if (GlideinState.NEW.equals(state)) { 
 					if (siteReady()) {
-						submitGlideinJob();
+						GlobusCredential event.getProperty("credential");
+						submitGlideinJob(credential);
 						updateState(GlideinState.SUBMITTED,"Local job submitted",null);
 					} else {
 						updateState(GlideinState.WAITING,"Waiting for Site to be READY",null);
