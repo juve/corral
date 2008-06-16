@@ -29,7 +29,7 @@ public class GlideinResourceHome extends ResourceHomeImpl
 	
 	public static GlideinResourceHome getInstance() throws NamingException
 	{
-		String location = "java:comp/env/services/GlideinService/home";
+		String location = "java:comp/env/services/glidein/GlideinService/home";
 		Context initialContext = new InitialContext();
     	return (GlideinResourceHome)initialContext.lookup(location);
 	}
