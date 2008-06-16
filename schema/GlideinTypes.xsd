@@ -88,7 +88,7 @@
 			<xsd:element name="hostCount" type="xsd:int"/>
 			<xsd:element name="wallTime" type="xsd:int"/>
 			<xsd:element name="numCpus" type="xsd:int" default="0"/>
-			<xsd:element name="condorConfigBase64" type="xsd:string" nillable="true"/>
+			<xsd:element name="condorConfig" type="xsd:base64Binary" nillable="true"/>
 			<xsd:element name="gcbBroker" type="xsd:string" nillable="true"/>
 			<xsd:element name="idleTime" type="xsd:int" default="0"/>
 			<xsd:element name="condorDebug" type="xsd:string" nillable="true"/>
