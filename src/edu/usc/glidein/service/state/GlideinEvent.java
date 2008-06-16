@@ -24,7 +24,7 @@ public class GlideinEvent extends Event
 		try {
 			GlideinResourceHome home = GlideinResourceHome.getInstance();
 			GlideinResource resource = (GlideinResource) home.find(getKey());
-			resource.handleEvent((GlideinEventCode)getCode());
+			resource.handleEvent(this);
 		} catch (NamingException ne) {
 			logger.error("Unable to get GlideinResourceHome",ne);
 		} catch (ResourceException re) {

@@ -24,7 +24,7 @@ public class SiteEvent extends Event
 		try {
 			SiteResourceHome home = SiteResourceHome.getInstance();
 			SiteResource resource = (SiteResource)home.find(getKey());
-			resource.handleEvent((SiteEventCode)getCode());
+			resource.handleEvent(this);
 		} catch (NamingException ne) {
 			logger.error("Unable to get SiteResourceHome",ne);
 		} catch (ResourceException re) {
