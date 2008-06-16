@@ -571,7 +571,7 @@ public abstract class Command
 		}
 		
 		// Construct url
-		String url = protocol+"://"+host+":"+port+"/wsrf/services/glidein/"+service;
+		String url = protocol+"://"+host+":"+port+"/wsrf/services/"+service;
 		try {
 			return new URL(url);
 		} catch(MalformedURLException e) {
