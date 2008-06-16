@@ -1,6 +1,7 @@
 package edu.usc.glidein.cli;
 
 import java.io.File;
+import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,12 +10,14 @@ import java.util.regex.Pattern;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.commons.cli.CommandLine;
+import org.globus.delegation.DelegationException;
+import org.globus.delegation.DelegationUtil;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
+import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
 import edu.usc.glidein.stubs.SiteFactoryPortType;
 import edu.usc.glidein.stubs.SitePortType;
-import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
@@ -249,20 +252,38 @@ public class CreateSiteCommand extends Command
 		}
 		return value;
 	}
+	
+	private EndpointReferenceType delegateCredential() throws CommandException
+	{
+		// (see org.globus.delegation.DelegationUtil, org.globus.delegation.client.Delegate)
+		ClientSecurityDescriptor desc = getClientSecurityDescriptor();
+		boolean fullDelegation = true;
+		URL delegationServiceUrl = getServiceURL("DelegationFactoryService");
+		
+		try {
+			EndpointReferenceType credentialEPR = 
+				DelegationUtil.delegate(delegationServiceUrl.toString(), 
+					credential, credential.getIdentityCertificate(), fullDelegation, desc);
+			return credentialEPR;
+		} catch (DelegationException de) {
+			throw new CommandException("Unable to delegate credential: "+de.getMessage(),de);
+		}
+	}
 
 	public void createSites(List<Site> sites) throws CommandException
 	{
 		if (isDebug()) System.out.printf("Creating sites...\n");
 		
-		// TODO: Delegate credential 
-		// (see org.globus.delegation.DelegationUtil, org.globus.delegation.client.Delegate)
+		// Delegate credential
+		EndpointReferenceType credential = delegateCredential();
 		
+		// Create sites
 		for (Site site : sites) {
 			try {
 				SiteFactoryPortType factory = getSiteFactoryPortType();
 				EndpointReferenceType epr = factory.createSite(site);
 				SitePortType instance = getSitePortType(epr);
-				instance.submit(new EmptyObject());
+				instance.submit(credential);
 			} catch (RemoteException re) {
 				throw new CommandException("Unable to create site: "+
 						site.getName()+": "+re.getMessage(),re);

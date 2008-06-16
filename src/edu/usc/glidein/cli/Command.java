@@ -16,6 +16,10 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.globus.axis.util.Util;
+import org.globus.wsrf.impl.security.authorization.Authorization;
+import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
+import org.globus.wsrf.impl.security.util.AuthUtil;
+import org.globus.wsrf.security.Constants;
 
 import edu.usc.glidein.service.impl.GlideinNames;
 import edu.usc.glidein.service.impl.SiteNames;
@@ -65,10 +69,9 @@ public abstract class Command
 	private String host;
 	private int port;
 	private boolean debug;
-	private SecurityMode security;
-	private ProtectionType protection;
-	private AuthorizationMode authorization;
-	private String dn;
+	private String security;
+	private Integer protection;
+	private Authorization authorization;
 	
 	public Command() 
 	{
@@ -157,44 +160,34 @@ public abstract class Command
 		this.port = port;
 	}
 	
-	public void setSecurityMode(SecurityMode security)
+	public void setSecurity(String security)
 	{
 		this.security = security;
 	}
 	
-	public SecurityMode getSecurityMode()
+	public String getSecurity()
 	{
 		return security;
 	}
 	
-	public void setProtectionType(ProtectionType protection)
+	public void setProtection(Integer protection)
 	{
 		this.protection = protection;
 	}
 	
-	public ProtectionType getProtectionType()
+	public Integer getProtection()
 	{
 		return protection;
 	}
 	
-	public AuthorizationMode getAuthorizationMode()
+	public Authorization getAuthorization()
 	{
 		return authorization;
 	}
 	
-	public void setAuthorizationMode(AuthorizationMode authz)
+	public void setAuthorization(Authorization authz)
 	{
 		this.authorization = authz;
-	}
-	
-	public String getDN()
-	{
-		return dn;
-	}
-
-	public void setDN(String dn)
-	{
-		this.dn = dn;
 	}
 
 	public void invoke(String[] args) throws CommandException
@@ -224,52 +217,58 @@ public abstract class Command
 		}
 		
 		// Security
+		String securityType = null;
 		if (cmdln.hasOption("sec")) {
-			String mode = cmdln.getOptionValue("sec");
-			try {
-				security = SecurityMode.fromString(mode);
-				if (debug) {
-					System.out.println("Using "+security+" security");
-				}
-			} catch (IllegalArgumentException ia) {
-				throw new CommandException("Invalid security mode: "+mode);
-			}
+			securityType = cmdln.getOptionValue("sec");
 		} else {
-			security = SecurityMode.TRANSPORT;
+			securityType = "transport";
+		}
+		if (securityType.matches("^(msg)|(message)$")) {
+			security = Constants.GSI_SEC_MSG;
+		} else if (securityType.matches("^conv(ersation)?$")) {
+			security = Constants.GSI_SEC_CONV;
+		} else if (securityType.matches("^trans(port)?$")) {
+			security = Constants.GSI_TRANSPORT;
+			// I don't know if this is necessary. I got it from
+			// org.globus.delegation.client.BaseClient
+			Util.registerTransport();
+		} else if (securityType.matches("^none$")) {
+			security = null;
+		} else {
+			throw new CommandException("Invalid security type: "+securityType);
+		}
+		if (debug) {
+			System.out.println("Using "+securityType+" security");
 		}
 		
 		// Protection
+		String protectionType = null;
 		if (cmdln.hasOption("P")) {
-			String type = cmdln.getOptionValue("P");
-			try {
-				protection = ProtectionType.fromString(type);
-				if (debug) {
-					System.out.println("Using "+protection+" protection");
-				}
-			} catch (IllegalArgumentException ia) {
-				throw new CommandException("Invalid protection type: "+type);
-			}
+			protectionType = cmdln.getOptionValue("P");
 		} else {
-			protection = ProtectionType.SIGNATURE;
+			protectionType = "signature";
+		}
+		if (protectionType.matches("^sig(nature)?$")) {
+			protection = Constants.SIGNATURE;
+		} else if (protectionType.matches("^enc(ryption)?$")) {
+			protection = Constants.ENCRYPTION;
+		} else {
+			throw new CommandException("Invalid protection type: "+protectionType);
+		}
+		if (debug) {
+			System.out.println("Using "+protectionType+" protection");
 		}
 		
 		// Authz
+		String authz = null;
 		if (cmdln.hasOption("authz")) {
-			String mode = cmdln.getOptionValue("authz");
-			try {
-				authorization = AuthorizationMode.fromString(mode);
-				if (debug) {
-					System.out.println("Using "+authorization+" authorization");
-				}
-			} catch (IllegalArgumentException ia) {
-				if (debug) {
-					System.out.println("Using DN authorization: "+mode);
-				}
-				authorization = AuthorizationMode.DN;
-				dn = mode;	
-			}
+			authz = cmdln.getOptionValue("authz");
 		} else {
-			authorization = AuthorizationMode.HOST;
+			authz = "host";
+		}
+		authorization = AuthUtil.getClientAuthorization(authz);
+		if (debug) {
+			System.out.println("Using "+authz+" authorization");
 		}
 		
 		// Host
@@ -289,7 +288,7 @@ public abstract class Command
 			}
 		} else {
 			// Default port depends on authentication mode
-			if (security == SecurityMode.TRANSPORT) {
+			if (Constants.GSI_TRANSPORT.equals(security)) {
 				port = 8443;
 			} else {
 				port = 8080;
@@ -309,7 +308,7 @@ public abstract class Command
 		try {
 			EndpointReferenceType epr = 
 				AddressingUtil.getGlideinFactoryEPR(
-						getURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
+						getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
 			return getGlideinFactoryPortType(epr);
 		} catch (Exception e) {
 			throw new CommandException("Unable to get GlideinFactoryPortType: "+
@@ -325,7 +324,8 @@ public abstract class Command
 				new GlideinFactoryServiceAddressingLocator();
 			GlideinFactoryPortType factory = 
 				locator.getGlideinFactoryPortTypePort(epr);
-			addSecurityProperties((Stub)factory);
+			((Stub)factory)._setProperty(
+					"clientDescriptor", getClientSecurityDescriptor());
 			return factory;
 		} catch (ServiceException se) {
 			throw new CommandException("Unable to get GlideinFactoryPortType: "+
@@ -339,7 +339,7 @@ public abstract class Command
 		try {
 			EndpointReferenceType epr = 
 				AddressingUtil.getGlideinEPR(
-						getURL(GlideinNames.GLIDEIN_SERVICE), id);
+						getServiceURL(GlideinNames.GLIDEIN_SERVICE), id);
 			return getGlideinPortType(epr);
 		} catch (Exception e) {
 			throw new CommandException("Unable to get GlideinPortType: "+
@@ -355,7 +355,8 @@ public abstract class Command
 				new GlideinServiceAddressingLocator();
 			GlideinPortType instance = 
 				locator.getGlideinPortTypePort(epr);
-			addSecurityProperties((Stub)instance);
+			((Stub)instance)._setProperty(
+					"clientDescriptor", getClientSecurityDescriptor());
 			return instance;
 		} catch (ServiceException se) {
 			throw new CommandException("Unable to get GlideinPortType: "+
@@ -369,7 +370,7 @@ public abstract class Command
 		try {
 			EndpointReferenceType epr = 
 				AddressingUtil.getSiteFactoryEPR(
-						getURL(SiteNames.SITE_FACTORY_SERVICE));
+						getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
 			return getSiteFactoryPortType(epr);
 		} catch (Exception e) {
 			throw new CommandException("Unable to get SiteFactoryPortType: "+
@@ -385,9 +386,8 @@ public abstract class Command
 				new SiteFactoryServiceAddressingLocator();
 			SiteFactoryPortType factory = 
 				locator.getSiteFactoryPortTypePort(epr);
-			
-			addSecurityProperties((Stub)factory);
-			
+			((Stub)factory)._setProperty(
+					"clientDescriptor", getClientSecurityDescriptor());
 			return factory;
 		} catch (ServiceException se) {
 			throw new CommandException("Unable to get SiteFactoryPortType: "+
@@ -401,7 +401,7 @@ public abstract class Command
 		try {
 			EndpointReferenceType epr = 
 				AddressingUtil.getSiteEPR(
-						getURL(SiteNames.SITE_SERVICE),id);
+						getServiceURL(SiteNames.SITE_SERVICE),id);
 		return getSitePortType(epr);
 		} catch (Exception e) {
 			throw new CommandException("Unable to get SitePortType: "+
@@ -417,7 +417,8 @@ public abstract class Command
 				new SiteServiceAddressingLocator();
 			SitePortType instance = 
 				locator.getSitePortTypePort(epr);
-			addSecurityProperties((Stub)instance);
+			((Stub)instance)._setProperty(
+					"clientDescriptor", getClientSecurityDescriptor());
 			return instance;
 		} catch (ServiceException se) {
 			throw new CommandException("Unable to get SitePortType: "+
@@ -425,146 +426,11 @@ public abstract class Command
 		}
 	}
 	
-	private void addSecurityProperties(Stub stub)
-	{
-		// TODO: Use org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor
-		// See org.globus.delegation.client.Delegate
-		//stub._setProperty("clientDescriptor", descriptor);
-		
-		// Determine protection value
-		Integer protectionProp = null;
-		switch (protection) {
-			case ENCRYPTION:
-				protectionProp = org.globus.wsrf.security.Constants.ENCRYPTION;
-			break;
-			case SIGNATURE:
-				protectionProp = org.globus.wsrf.security.Constants.SIGNATURE;
-			break;
-			default:
-				throw new IllegalStateException(
-						"Invalid protection type: "+protection);
-		}
-		
-		// Set security
-		switch (security) {
-			case CONVERSATION:
-				stub._setProperty(
-						org.globus.wsrf.security.Constants.GSI_SEC_CONV, 
-						protectionProp);
-			break;
-			case MESSAGE:
-				stub._setProperty(
-						org.globus.wsrf.security.Constants.GSI_SEC_CONV, 
-						protectionProp);
-			break;
-			case TRANSPORT:
-				stub._setProperty(
-						org.globus.wsrf.security.Constants.GSI_TRANSPORT, 
-						protectionProp);
-				// I don't know if this is necessary. I got it from
-				// org.globus.delegation.client.BaseClient
-				Util.registerTransport();
-			break;
-			case NONE:
-				/* Do nothing */
-			break;
-			default:
-				throw new IllegalStateException(
-						"Invalid security mode: "+security);
-		}
-		
-		// Set authorization
-		if (security == SecurityMode.TRANSPORT || security == SecurityMode.CONVERSATION) {
-			
-			/* If GSI Secure Transport or GSI Secure Conversation is used, the 
-			 * org.globus.axis.gsi.GSIConstants.GSI_AUTHORIZATION property must
-			 * be set on the stub. The value of this property must be an 
-			 * instance of an object that extends from 
-			 * org.globus.gsi.gssapi.auth.GSSAuthorization. All distributed 
-			 * authorization schemes have implementation in 
-			 * org.globus.gsi.gssapi.auth package.
-			 */
-			switch (authorization) {
-				case SELF:
-					stub._setProperty(
-						org.globus.axis.gsi.GSIConstants.GSI_AUTHORIZATION,
-						org.globus.gsi.gssapi.auth.SelfAuthorization.getInstance()
-					);
-				break;
-				case HOST:
-					stub._setProperty(
-						org.globus.axis.gsi.GSIConstants.GSI_AUTHORIZATION,
-						org.globus.gsi.gssapi.auth.HostAuthorization.getInstance()
-					);
-				break;
-				case NONE:
-					stub._setProperty(
-						org.globus.axis.gsi.GSIConstants.GSI_AUTHORIZATION,
-						org.globus.gsi.gssapi.auth.NoAuthorization.getInstance()
-					);
-				break;
-				case DN:
-					stub._setProperty(
-						org.globus.axis.gsi.GSIConstants.GSI_AUTHORIZATION,
-						new org.globus.gsi.gssapi.auth.IdentityAuthorization(dn)
-					);
-				break;
-				default:
-					throw new IllegalStateException(
-							"Unhandled authorization mode: "+authorization);
-			}
-		} else {
-			
-			/* For all other authentication schemes, the 
-			 * org.globus.wsrf.impl.security.Constants.AUTHORIZATION property 
-			 * must be set on the stub. The value of this property must be an 
-			 * instance of an object that implements the 
-			 * org.globus.wsrf.impl.security.authorization.Authorization 
-			 * interface.
-			 */
-			switch (authorization) {
-				case SELF:
-					stub._setProperty(
-						org.globus.wsrf.security.Constants.AUTHORIZATION,
-						org.globus.wsrf.impl.security.authorization.SelfAuthorization.getInstance()
-					);
-				break;
-				case HOST:
-					stub._setProperty(
-						org.globus.wsrf.security.Constants.AUTHORIZATION,
-						org.globus.wsrf.impl.security.authorization.HostAuthorization.getInstance()
-					);
-				break;
-				case NONE:
-					stub._setProperty(
-						org.globus.wsrf.security.Constants.AUTHORIZATION,
-						org.globus.wsrf.impl.security.authorization.NoAuthorization.getInstance()
-					);
-				break;
-				case DN:
-					stub._setProperty(
-						org.globus.wsrf.security.Constants.AUTHORIZATION,
-						new org.globus.wsrf.impl.security.authorization.IdentityAuthorization(dn)
-					);
-				break;
-				default:
-					throw new IllegalStateException(
-							"Unhandled authorization mode: "+authorization);
-			}
-		}
-		
-		// No longer using GSI delegation.
-		// Use the delegation service instead.
-		//stub._setProperty(
-		//		org.globus.axis.gsi.GSIConstants.GSI_MODE, 
-		//		org.globus.axis.gsi.GSIConstants.GSI_MODE_FULL_DELEG);
-	}
-	
-	private URL getURL(String service) throws CommandException
+	public URL getServiceURL(String service) throws CommandException
 	{
 		// Protocol depends on security setting
 		String protocol = null;
-		if (security == SecurityMode.TRANSPORT) {
+		if (Constants.GSI_TRANSPORT.equals(security)) {
 			protocol = "https";
 		} else {
 			protocol = "http";
@@ -604,6 +470,31 @@ public abstract class Command
 		return buff.toString();
 	}
 	
+	public ClientSecurityDescriptor getClientSecurityDescriptor()
+	{
+		// See org.globus.delegation.client.Delegate, 
+		// and org.globus.delegation.client.BaseClient
+		ClientSecurityDescriptor desc = new ClientSecurityDescriptor();
+		
+		// Set security
+		if (security==null) {
+			/* Do nothing for type 'none' */
+		} else if (Constants.GSI_SEC_MSG.equals(security)) {
+			desc.setGSISecureMsg(protection);
+		} else if (Constants.GSI_SEC_CONV.equals(security)) {
+			desc.setGSISecureConv(protection);
+		} else if (Constants.GSI_TRANSPORT.equals(security)) {
+			desc.setGSITransport(protection);
+		} else {
+			throw new IllegalStateException("Invalid security: "+security);
+		}
+        
+		// Set authorization
+        desc.setAuthz(authorization);
+        
+        return desc;
+	}
+	
 	abstract public String getUsage();
 	abstract public String getDescription();
 	abstract public String getName();
@@ -611,7 +502,7 @@ public abstract class Command
 	abstract protected void addOptions(List<Option> options);
 	abstract public void setArguments(CommandLine cmdln) throws CommandException;
 	abstract public void execute() throws CommandException;
-	
+
 	public static Command getCommand(String name)
 	{
 		Class clazz = LOOKUP.get(name);

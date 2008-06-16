@@ -2,16 +2,19 @@ package edu.usc.glidein.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.commons.cli.CommandLine;
+import org.globus.delegation.DelegationException;
+import org.globus.delegation.DelegationUtil;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
+import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
 import edu.usc.glidein.stubs.GlideinFactoryPortType;
 import edu.usc.glidein.stubs.GlideinPortType;
-import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.IOUtil;
@@ -222,19 +225,36 @@ public class CreateGlideinCommand extends Command
 			}
 		}
 	}
-	 
+	
+	private EndpointReferenceType delegateCredential() throws CommandException
+	{
+		// (see org.globus.delegation.DelegationUtil, org.globus.delegation.client.Delegate)
+		ClientSecurityDescriptor desc = getClientSecurityDescriptor();
+		boolean fullDelegation = true;
+		URL delegationServiceUrl = getServiceURL("DelegationFactoryService");
+		
+		try {
+			EndpointReferenceType credentialEPR = 
+				DelegationUtil.delegate(delegationServiceUrl.toString(), 
+					credential, credential.getIdentityCertificate(), fullDelegation, desc);
+			return credentialEPR;
+		} catch (DelegationException de) {
+			throw new CommandException("Unable to delegate credential: "+de.getMessage(),de);
+		}
+	}
+	
 	public void execute() throws CommandException
 	{	
 		if (isDebug()) System.out.println("Creating glidein...");
 		
-		// TODO: Delegate credential 
-		// (see org.globus.delegation.DelegationUtil, org.globus.delegation.client.Delegate)
+		// Delegate credential
+		EndpointReferenceType credential = delegateCredential();
 		
 		try {
 			GlideinFactoryPortType factory = getGlideinFactoryPortType();	
 			EndpointReferenceType epr = factory.createGlidein(glidein);
 			GlideinPortType instance = getGlideinPortType(epr);
-			instance.submit(new EmptyObject());
+			instance.submit(credential);
 		} catch (Exception e) {
 			throw new CommandException("Unable to create glidein: "+e.getMessage(),e);
 		}
