@@ -40,7 +40,7 @@ CREATE TABLE glidein (
 	hostCount			INTEGER NOT NULL,
 	wallTime			INTEGER NOT NULL,
 	numCpus				INTEGER NOT NULL,
-	condorConfigBase64	TEXT,
+	condorConfig		BLOB,
 	gcbBroker			VARCHAR(15),
 	idleTime			INTEGER,
 	condorDebug			TEXT,
