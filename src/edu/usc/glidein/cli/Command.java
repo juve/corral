@@ -33,6 +33,8 @@ import edu.usc.glidein.stubs.service.SiteFactoryServiceAddressingLocator;
 import edu.usc.glidein.stubs.service.SiteServiceAddressingLocator;
 import edu.usc.glidein.util.AddressingUtil;
 
+//TODO: Make a Facade for services
+
 public abstract class Command
 {
 	public static final String COMMAND_NAME = "glidein";
