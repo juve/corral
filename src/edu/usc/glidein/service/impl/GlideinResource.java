@@ -179,6 +179,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			GlobusCredential credential = 
 				delegationResource.getCredential();
 			
+			// TODO: Validate credential lifetime
+			
 			// Create submit event
 			Event event = new GlideinEvent(GlideinEventCode.SUBMIT,getKey());
 			event.setProperty("credential", credential);

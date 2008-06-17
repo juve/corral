@@ -45,6 +45,8 @@ import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteState;
 import edu.usc.glidein.util.AddressingUtil;
 
+//TODO: Improve dir hierarchy on remote
+
 public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, RemoveCallback, ResourceProperties
 {
 	private Logger logger = Logger.getLogger(SiteResource.class);
