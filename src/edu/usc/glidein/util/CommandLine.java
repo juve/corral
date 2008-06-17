@@ -9,8 +9,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import edu.usc.glidein.GlideinException;
-
 /**
  * This class provides a simple interface to the system command line.
  *
@@ -71,31 +69,31 @@ public class CommandLine
 	 * Add an environment variable
 	 * @param name The name of the variable
 	 * @param value The value for the variable
-	 * @throws GlideinException if the environment variable is not valid
 	 */
 	public void addEnvironmentVariable(String name, String value)
-	throws GlideinException
+	throws NullPointerException, IllegalArgumentException
 	{
 		if(name==null) 
-			throw new GlideinException("null variable");
+			throw new NullPointerException("null variable");
 		if(name.length()==0)
-			throw new GlideinException(
+			throw new IllegalArgumentException(
 					"Zero-length variable names not allowed");
 		if(value==null) 
-			throw new GlideinException("null value");
+			throw new NullPointerException("null value");
 		this.environment.put(name,value);
 	}
 	
 	/**
 	 * Replace the current environment
 	 * @param environment A map of environment variable name,value pairs
-	 * @throws GlideinException if the new environment is invalid
+	 * @throws NullPointerException if the new environment is invalid or one of the variables is invalid
+	 * @throws IllegalArgumentException If one of the variable names is invalid
 	 */
 	public void setEnvironment(Map<String,String> env)
-	throws GlideinException
+	throws NullPointerException, IllegalArgumentException
 	{
 		if(env == null)
-			throw new GlideinException("null environment");
+			throw new NullPointerException("null environment");
 		environment = new HashMap<String, String>();
 		for (String name : env.keySet()) {
 			addEnvironmentVariable(name, env.get(name));
@@ -114,21 +112,20 @@ public class CommandLine
 	/**
 	 * Set the path to the executable
 	 * @param executable The path to the executable
-	 * @throws GlideinException If the path is invalid
 	 */
 	public void setExecutable(File executable)
-	throws GlideinException
+	throws NullPointerException, IllegalArgumentException
 	{
 		if(executable==null) 
-			throw new GlideinException("null executable");
+			throw new NullPointerException("null executable");
 		if(!executable.isAbsolute())
-			throw new GlideinException(
+			throw new IllegalArgumentException(
 					"Path to executable must be absolute");
 		if(!executable.exists())
-			throw new GlideinException(
+			throw new IllegalArgumentException(
 					"Executable "+executable+" does not exist");
 		if(!executable.isFile())
-			throw new GlideinException(
+			throw new IllegalArgumentException(
 					"Executable must be a file");
 		this.executable = executable;
 	}
@@ -145,26 +142,24 @@ public class CommandLine
 	/**
 	 * Add an argument onto this command
 	 * @param argument The new argument
-	 * @throws GlideinException If the new argument is invalid
 	 */
 	public void addArgument(String argument)
-	throws GlideinException
+	throws NullPointerException
 	{
 		if(argument == null) 
-			throw new GlideinException("null argument");
+			throw new NullPointerException("null argument");
 		this.arguments.add(argument);
 	}
 	
 	/**
 	 * Replace the current list of arguments
 	 * @param arguments A new list of arguments
-	 * @throws GlideinException If the new list is invalid
 	 */
 	public void setArguments(List<String> arguments)
-	throws GlideinException
+	throws NullPointerException
 	{
 		if(arguments == null) 
-			throw new GlideinException("null arguments");
+			throw new NullPointerException("null arguments");
 		this.arguments = new LinkedList<String>();
 		for (String argument : arguments) {
 			addArgument(argument);
@@ -183,20 +178,19 @@ public class CommandLine
 	/**
 	 * Change the working directory for this command
 	 * @param workingDirectory The new working directory
-	 * @throws GlideinException If the new working directory is invalid
 	 */
 	public void setWorkingDirectory(File workingDirectory)
-	throws GlideinException
+	throws NullPointerException, IllegalArgumentException
 	{
 		if(workingDirectory==null) 
-			throw new GlideinException("null working directory");
+			throw new NullPointerException("null working directory");
 		if(!workingDirectory.exists())
-			throw new GlideinException(
+			throw new IllegalArgumentException(
 					"Working directory "+
 					workingDirectory.getAbsolutePath()+
 					" does not exist");
 		if(!workingDirectory.isDirectory())
-			throw new GlideinException(
+			throw new IllegalArgumentException(
 					"Working directory "+
 					workingDirectory.getAbsolutePath()+
 					" is not actually a directory");
@@ -244,9 +238,8 @@ public class CommandLine
 	
 	/**
 	 * Execute this command. You can execute it multiple times if you like.
-	 * @throws GlideinException If there is a problem executing this command.
 	 */
-	public void execute() throws GlideinException
+	public void execute() throws IOException
 	{
 		// Prepare the command
 		StringBuffer command = new StringBuffer();
@@ -266,40 +259,32 @@ public class CommandLine
 			env[i++] = variable+"="+environment.get(variable);
 		}
 		
-		try
+		// Create process
+		Process p = Runtime.getRuntime().exec(cmd, env, workingDirectory);
+			
+		// Consume stdout and stderr
+		BufferedReader stderr = new BufferedReader(
+				new InputStreamReader(p.getErrorStream()));
+		BufferedReader stdout = new BufferedReader(
+				new InputStreamReader(p.getInputStream()));
+		output = new StringBuffer();
+		error = new StringBuffer();
+		while(true)
 		{
-			// Create process
-			Process p = Runtime.getRuntime().exec(cmd, env, workingDirectory);
-			
-			// Consume stdout and stderr
-			BufferedReader stderr = new BufferedReader(
-					new InputStreamReader(p.getErrorStream()));
-			BufferedReader stdout = new BufferedReader(
-					new InputStreamReader(p.getInputStream()));
-			output = new StringBuffer();
-			error = new StringBuffer();
-			while(true)
-			{
-				String out, err;
-				if((out = stdout.readLine()) != null)
-					output.append(out+"\n");
-				if((err = stderr.readLine()) != null)
-					error.append(err+"\n");
-				if(out == null && err == null)
-					break;
-			}
-			
-			// Wait for command to finish
-			try {
-				exitCode = p.waitFor();
-			} catch(InterruptedException ie){
-				/* Ignore */
-			}
+			String out, err;
+			if((out = stdout.readLine()) != null)
+				output.append(out+"\n");
+			if((err = stderr.readLine()) != null)
+				error.append(err+"\n");
+			if(out == null && err == null)
+				break;
 		}
-		catch(IOException ioe){
-			throw new GlideinException(
-					"Unable to launch executable "+
-					executable.getAbsolutePath(),ioe);
+			
+		// Wait for command to finish
+		try {
+			exitCode = p.waitFor();
+		} catch(InterruptedException ie){
+			/* Ignore */
 		}
 	}
 	
@@ -332,7 +317,7 @@ public class CommandLine
 			else
 				System.out.println(submit.getOutput());
 		} 
-		catch(GlideinException e)
+		catch(IOException e)
 		{
 			e.printStackTrace();
 		}
