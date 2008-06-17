@@ -5,7 +5,8 @@ import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 
-import edu.usc.glidein.stubs.SitePortType;
+import edu.usc.glidein.api.SiteService;
+import edu.usc.glidein.service.impl.SiteNames;
 
 public class RemoveSiteCommand extends Command
 {	
@@ -59,7 +60,9 @@ public class RemoveSiteCommand extends Command
 		for (int id : ids) {
 			try {
 				if (isDebug()) System.out.print("Removing site "+id+"... ");
-				SitePortType instance = getSitePortType(id);
+				SiteService instance = new SiteService(
+						getServiceURL(SiteNames.SITE_SERVICE),id);
+				instance.setDescriptor(getClientSecurityDescriptor());
 				instance.remove(force);
 				if (isDebug()) System.out.println("done.");
 			} catch (Exception e) {

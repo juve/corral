@@ -1,6 +1,5 @@
 package edu.usc.glidein.cli;
 
-import java.rmi.RemoteException;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
@@ -8,9 +7,10 @@ import java.util.TimeZone;
 
 import org.apache.commons.cli.CommandLine;
 
-import edu.usc.glidein.stubs.SiteFactoryPortType;
-import edu.usc.glidein.stubs.SitePortType;
-import edu.usc.glidein.stubs.types.EmptyObject;
+import edu.usc.glidein.api.GlideinException;
+import edu.usc.glidein.api.SiteFactoryService;
+import edu.usc.glidein.api.SiteService;
+import edu.usc.glidein.service.impl.SiteNames;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.Site;
@@ -69,14 +69,15 @@ public class ListSiteCommand extends Command
 		if (isDebug()) System.out.printf("Listing sites\n");
 		try {
 			// Get the sites
-			SiteFactoryPortType factory = getSiteFactoryPortType();
-			Site[] sites = factory.listSites(longFormat).getSites();
+			SiteFactoryService factory = new SiteFactoryService(
+					getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
+			factory.setDescriptor(getClientSecurityDescriptor());
+			Site[] sites = factory.listSites(longFormat);
 			
 			// Print out the site list
 			printSites(sites);
-		} catch (RemoteException e) {
-			throw new CommandException("Unable to list sites: "+
-					"Error communicating with service: "+e.getMessage(), e);
+		} catch (GlideinException ge) {
+			throw new CommandException(ge.getMessage(), ge);
 		}
 		if (isDebug()) System.out.printf("Done listing sites.\n");
 	}
@@ -86,12 +87,14 @@ public class ListSiteCommand extends Command
 		LinkedList<Site> sites = new LinkedList<Site>();
 		for (int id : ids) {
 			try {
-				SitePortType instance = getSitePortType(id);
-				Site site = instance.getSite(new EmptyObject());
+				SiteService instance = new SiteService(
+						getServiceURL(SiteNames.SITE_SERVICE),id);
+				instance.setDescriptor(getClientSecurityDescriptor());
+				Site site = instance.getSite();
 				sites.add(site);
-			} catch (RemoteException e) {
-				System.out.println("Unable to get site '"+id+"': "+e.getMessage());
-				if (isDebug()) e.printStackTrace();
+			} catch (GlideinException ge) {
+				System.out.println(ge.getMessage());
+				if (isDebug()) ge.printStackTrace();
 			}
 		}
 		printSites(sites.toArray(new Site[0]));

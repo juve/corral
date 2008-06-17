@@ -13,8 +13,9 @@ import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
-import edu.usc.glidein.stubs.GlideinFactoryPortType;
-import edu.usc.glidein.stubs.GlideinPortType;
+import edu.usc.glidein.api.GlideinFactoryService;
+import edu.usc.glidein.api.GlideinService;
+import edu.usc.glidein.service.impl.GlideinNames;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.IOUtil;
@@ -251,9 +252,13 @@ public class CreateGlideinCommand extends Command
 		EndpointReferenceType credential = delegateCredential();
 		
 		try {
-			GlideinFactoryPortType factory = getGlideinFactoryPortType();	
+			ClientSecurityDescriptor desc = getClientSecurityDescriptor();
+			GlideinFactoryService factory = new GlideinFactoryService(
+					getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
+			factory.setDescriptor(desc);
 			EndpointReferenceType epr = factory.createGlidein(glidein);
-			GlideinPortType instance = getGlideinPortType(epr);
+			GlideinService instance = new GlideinService(epr);
+			instance.setDescriptor(desc);
 			instance.submit(credential);
 		} catch (Exception e) {
 			throw new CommandException("Unable to create glidein: "+e.getMessage(),e);

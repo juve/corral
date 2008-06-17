@@ -1,6 +1,5 @@
 package edu.usc.glidein.cli;
 
-import java.rmi.RemoteException;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
@@ -8,9 +7,10 @@ import java.util.TimeZone;
 
 import org.apache.commons.cli.CommandLine;
 
-import edu.usc.glidein.stubs.GlideinFactoryPortType;
-import edu.usc.glidein.stubs.GlideinPortType;
-import edu.usc.glidein.stubs.types.EmptyObject;
+import edu.usc.glidein.api.GlideinException;
+import edu.usc.glidein.api.GlideinFactoryService;
+import edu.usc.glidein.api.GlideinService;
+import edu.usc.glidein.service.impl.GlideinNames;
 import edu.usc.glidein.stubs.types.Glidein;
 
 public class ListGlideinCommand extends Command
@@ -69,8 +69,10 @@ public class ListGlideinCommand extends Command
 		Glidein[] glideins;
 		try {
 			// Get the sites
-			GlideinFactoryPortType factory = getGlideinFactoryPortType();
-			glideins = factory.listGlideins(longFormat).getGlideins();
+			GlideinFactoryService factory = new GlideinFactoryService(
+					getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
+			factory.setDescriptor(getClientSecurityDescriptor());
+			glideins = factory.listGlideins(longFormat);
 		} catch (Exception e) {
 			throw new CommandException("Unable to list glideins: "+
 					"Error communicating with service: "+e.getMessage(), e);
@@ -88,12 +90,14 @@ public class ListGlideinCommand extends Command
 		LinkedList<Glidein> glideins = new LinkedList<Glidein>();
 		for (int id : ids) {
 			try {
-				GlideinPortType instance = getGlideinPortType(id);
-				Glidein glidein = instance.getGlidein(new EmptyObject());
+				GlideinService instance = new GlideinService(
+						getServiceURL(GlideinNames.GLIDEIN_SERVICE),id);
+				instance.setDescriptor(getClientSecurityDescriptor());
+				Glidein glidein = instance.getGlidein();
 				glideins.add(glidein);
-			} catch (RemoteException e) {
-				System.out.println("Unable to get glidein '"+id+"': "+e.getMessage());
-				if (isDebug()) e.printStackTrace();
+			} catch (GlideinException ge) {
+				System.out.println(ge.getMessage());
+				if (isDebug()) ge.printStackTrace();
 			}
 		}
 		if(isDebug()) System.out.println("Done retrieving glideins");

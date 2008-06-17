@@ -1,12 +1,13 @@
 package edu.usc.glidein.cli;
 
-import java.rmi.RemoteException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 
-import edu.usc.glidein.stubs.GlideinPortType;
+import edu.usc.glidein.api.GlideinException;
+import edu.usc.glidein.api.GlideinService;
+import edu.usc.glidein.service.impl.GlideinNames;
 
 public class RemoveGlideinCommand extends Command
 {
@@ -59,12 +60,14 @@ public class RemoveGlideinCommand extends Command
 		for (int id : ids) {
 			try {
 				if (isDebug()) System.out.print("Removing glidein "+id+"... ");
-				GlideinPortType glidein = getGlideinPortType(id);
-				glidein.remove(force);
+				GlideinService instance = new GlideinService(
+						getServiceURL(GlideinNames.GLIDEIN_SERVICE),id);
+				instance.setDescriptor(getClientSecurityDescriptor());
+				instance.remove(force);
 				if (isDebug()) System.out.println("done.");
-			} catch (RemoteException e) {
-				System.out.println("Unable to remove glidein '"+id+"': "+e.getMessage());
-				if (isDebug()) e.printStackTrace();
+			} catch (GlideinException ge) {
+				System.out.println(ge.getMessage());
+				if (isDebug()) ge.printStackTrace();
 			}
 		}
 	}

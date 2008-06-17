@@ -2,7 +2,6 @@ package edu.usc.glidein.cli;
 
 import java.io.File;
 import java.net.URL;
-import java.rmi.RemoteException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -16,8 +15,10 @@ import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
-import edu.usc.glidein.stubs.SiteFactoryPortType;
-import edu.usc.glidein.stubs.SitePortType;
+import edu.usc.glidein.api.GlideinException;
+import edu.usc.glidein.api.SiteFactoryService;
+import edu.usc.glidein.api.SiteService;
+import edu.usc.glidein.service.impl.SiteNames;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
@@ -280,13 +281,16 @@ public class CreateSiteCommand extends Command
 		// Create sites
 		for (Site site : sites) {
 			try {
-				SiteFactoryPortType factory = getSiteFactoryPortType();
+				SiteFactoryService factory = new SiteFactoryService(
+						getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
+				factory.setDescriptor(getClientSecurityDescriptor());
 				EndpointReferenceType epr = factory.createSite(site);
-				SitePortType instance = getSitePortType(epr);
+				SiteService instance = new SiteService(epr);
+				instance.setDescriptor(getClientSecurityDescriptor());
 				instance.submit(credential);
-			} catch (RemoteException re) {
+			} catch (GlideinException ge) {
 				throw new CommandException("Unable to create site: "+
-						site.getName()+": "+re.getMessage(),re);
+						site.getName()+": "+ge.getMessage(),ge);
 			}
 		}
 		if (isDebug()) System.out.printf("Done creating sites.\n");

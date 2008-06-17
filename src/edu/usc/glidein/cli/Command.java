@@ -6,10 +6,6 @@ import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.xml.rpc.ServiceException;
-import javax.xml.rpc.Stub;
-
-import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
@@ -20,20 +16,6 @@ import org.globus.wsrf.impl.security.authorization.Authorization;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 import org.globus.wsrf.impl.security.util.AuthUtil;
 import org.globus.wsrf.security.Constants;
-
-import edu.usc.glidein.service.impl.GlideinNames;
-import edu.usc.glidein.service.impl.SiteNames;
-import edu.usc.glidein.stubs.GlideinFactoryPortType;
-import edu.usc.glidein.stubs.GlideinPortType;
-import edu.usc.glidein.stubs.SiteFactoryPortType;
-import edu.usc.glidein.stubs.SitePortType;
-import edu.usc.glidein.stubs.service.GlideinFactoryServiceAddressingLocator;
-import edu.usc.glidein.stubs.service.GlideinServiceAddressingLocator;
-import edu.usc.glidein.stubs.service.SiteFactoryServiceAddressingLocator;
-import edu.usc.glidein.stubs.service.SiteServiceAddressingLocator;
-import edu.usc.glidein.util.AddressingUtil;
-
-//TODO: Make a Facade for services
 
 public abstract class Command
 {
@@ -302,130 +284,6 @@ public abstract class Command
 		
 		// Execute command
 		execute();
-	}
-	
-	protected GlideinFactoryPortType getGlideinFactoryPortType()
-	throws CommandException
-	{
-		try {
-			EndpointReferenceType epr = 
-				AddressingUtil.getGlideinFactoryEPR(
-						getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
-			return getGlideinFactoryPortType(epr);
-		} catch (Exception e) {
-			throw new CommandException("Unable to get GlideinFactoryPortType: "+
-					e.getMessage(),e);
-		}
-	}
-	
-	protected GlideinFactoryPortType getGlideinFactoryPortType(EndpointReferenceType epr)
-	throws CommandException
-	{
-		try {
-			GlideinFactoryServiceAddressingLocator locator = 
-				new GlideinFactoryServiceAddressingLocator();
-			GlideinFactoryPortType factory = 
-				locator.getGlideinFactoryPortTypePort(epr);
-			((Stub)factory)._setProperty(
-					"clientDescriptor", getClientSecurityDescriptor());
-			return factory;
-		} catch (ServiceException se) {
-			throw new CommandException("Unable to get GlideinFactoryPortType: "+
-					se.getMessage(),se);
-		}
-	}
-	
-	protected GlideinPortType getGlideinPortType(int id)
-	throws CommandException
-	{
-		try {
-			EndpointReferenceType epr = 
-				AddressingUtil.getGlideinEPR(
-						getServiceURL(GlideinNames.GLIDEIN_SERVICE), id);
-			return getGlideinPortType(epr);
-		} catch (Exception e) {
-			throw new CommandException("Unable to get GlideinPortType: "+
-					e.getMessage(),e);
-		}
-	}
-	
-	protected GlideinPortType getGlideinPortType(EndpointReferenceType epr)
-	throws CommandException
-	{
-		try {
-			GlideinServiceAddressingLocator locator = 
-				new GlideinServiceAddressingLocator();
-			GlideinPortType instance = 
-				locator.getGlideinPortTypePort(epr);
-			((Stub)instance)._setProperty(
-					"clientDescriptor", getClientSecurityDescriptor());
-			return instance;
-		} catch (ServiceException se) {
-			throw new CommandException("Unable to get GlideinPortType: "+
-					se.getMessage(),se);
-		}
-	}
-	
-	protected SiteFactoryPortType getSiteFactoryPortType()
-	throws CommandException
-	{
-		try {
-			EndpointReferenceType epr = 
-				AddressingUtil.getSiteFactoryEPR(
-						getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
-			return getSiteFactoryPortType(epr);
-		} catch (Exception e) {
-			throw new CommandException("Unable to get SiteFactoryPortType: "+
-					e.getMessage(),e);
-		}
-	}
-	
-	protected SiteFactoryPortType getSiteFactoryPortType(EndpointReferenceType epr)
-	throws CommandException
-	{
-		try {
-			SiteFactoryServiceAddressingLocator locator = 
-				new SiteFactoryServiceAddressingLocator();
-			SiteFactoryPortType factory = 
-				locator.getSiteFactoryPortTypePort(epr);
-			((Stub)factory)._setProperty(
-					"clientDescriptor", getClientSecurityDescriptor());
-			return factory;
-		} catch (ServiceException se) {
-			throw new CommandException("Unable to get SiteFactoryPortType: "+
-					se.getMessage(),se);
-		}
-	}
-	
-	protected SitePortType getSitePortType(int id) 
-	throws CommandException
-	{
-		try {
-			EndpointReferenceType epr = 
-				AddressingUtil.getSiteEPR(
-						getServiceURL(SiteNames.SITE_SERVICE),id);
-		return getSitePortType(epr);
-		} catch (Exception e) {
-			throw new CommandException("Unable to get SitePortType: "+
-					e.getMessage(),e);
-		}
-	}
-	
-	protected SitePortType getSitePortType(EndpointReferenceType epr)
-	throws CommandException
-	{
-		try {
-			SiteServiceAddressingLocator locator = 
-				new SiteServiceAddressingLocator();
-			SitePortType instance = 
-				locator.getSitePortTypePort(epr);
-			((Stub)instance)._setProperty(
-					"clientDescriptor", getClientSecurityDescriptor());
-			return instance;
-		} catch (ServiceException se) {
-			throw new CommandException("Unable to get SitePortType: "+
-					se.getMessage(),se);
-		}
 	}
 	
 	public URL getServiceURL(String service) throws CommandException
