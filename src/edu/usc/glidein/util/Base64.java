@@ -41,7 +41,8 @@ public class Base64
 			return new String(output);
 		} 
 		catch(IOException ioe) {
-			return null; /* I don't think this will actually happen */
+			/* I don't think this will actually happen */
+			throw new RuntimeException("Unable to decode: "+ioe.getMessage(),ioe);
 		}
 	}
 }
