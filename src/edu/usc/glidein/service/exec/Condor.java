@@ -15,7 +15,6 @@ import javax.naming.InitialContext;
 
 import org.globus.gsi.GlobusCredential;
 
-import edu.usc.glidein.GlideinException;
 import edu.usc.glidein.util.CommandLine;
 
 /**
@@ -123,9 +122,9 @@ public class Condor
 			// Run condor_submit
 			submit.execute();
 		}
-		catch(GlideinException se)
+		catch(IOException ioe)
 		{
-			throw new CondorException("Unable to submit job",se);
+			throw new CondorException("Unable to submit job",ioe);
 		}
 			
 		// Check exit code and throw an exception if it failed
@@ -188,9 +187,9 @@ public class Condor
 			// Run condor_rm
 			cancel.execute();
 		}
-		catch(GlideinException se)
+		catch(IOException ioe)
 		{
-			throw new CondorException("Unable to cancel job",se);
+			throw new CondorException("Unable to cancel job",ioe);
 		}
 		
 		// Check exit code and throw an exception if it failed
