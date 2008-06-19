@@ -33,7 +33,14 @@
 			<xsd:element name="submitRequest" type="wsa:EndpointReferenceType"/>
 			<xsd:element name="submitResponse" type="glidein:EmptyObject"/>
 			
-			<xsd:element name="removeRequest" type="xsd:boolean" default="false"/>
+			<xsd:element name="removeRequest">
+				<xsd:complexType name="RemoveSiteRequest">
+					<xsd:sequence>
+						<xsd:element name="force" type="xsd:boolean" default="false"/>
+						<xsd:element name="credential" type="wsa:EndpointReferenceType"/>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
 			<xsd:element name="removeResponse" type="glidein:EmptyObject"/>
 			
 			<xsd:element name="getSiteRequest" type="glidein:EmptyObject"/>
