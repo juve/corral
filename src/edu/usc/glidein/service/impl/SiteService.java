@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.globus.wsrf.ResourceContext;
 
+import edu.usc.glidein.stubs.RemoveRequest;
 import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.Site;
 
@@ -30,9 +31,11 @@ public class SiteService
 		return new EmptyObject();
 	}
 	
-	public EmptyObject remove(boolean force) throws RemoteException
+	public EmptyObject remove(RemoveRequest request) throws RemoteException
 	{
-		getResource().remove(force);
+		boolean force = request.isForce();
+		EndpointReferenceType credential = request.getCredential();
+		getResource().remove(force,credential);
 		return new EmptyObject();
 	}
 }
