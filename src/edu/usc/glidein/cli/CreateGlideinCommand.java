@@ -2,13 +2,10 @@ package edu.usc.glidein.cli;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.List;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.commons.cli.CommandLine;
-import org.globus.delegation.DelegationException;
-import org.globus.delegation.DelegationUtil;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
@@ -227,29 +224,12 @@ public class CreateGlideinCommand extends Command
 		}
 	}
 	
-	private EndpointReferenceType delegateCredential() throws CommandException
-	{
-		// (see org.globus.delegation.DelegationUtil, org.globus.delegation.client.Delegate)
-		ClientSecurityDescriptor desc = getClientSecurityDescriptor();
-		boolean fullDelegation = true;
-		URL delegationServiceUrl = getServiceURL("DelegationFactoryService");
-		
-		try {
-			EndpointReferenceType credentialEPR = 
-				DelegationUtil.delegate(delegationServiceUrl.toString(), 
-					credential, credential.getIdentityCertificate(), fullDelegation, desc);
-			return credentialEPR;
-		} catch (DelegationException de) {
-			throw new CommandException("Unable to delegate credential: "+de.getMessage(),de);
-		}
-	}
-	
 	public void execute() throws CommandException
 	{	
 		if (isDebug()) System.out.println("Creating glidein...");
 		
 		// Delegate credential
-		EndpointReferenceType credential = delegateCredential();
+		EndpointReferenceType credentialEPR = delegateCredential(credential);
 		
 		try {
 			ClientSecurityDescriptor desc = getClientSecurityDescriptor();
@@ -259,7 +239,7 @@ public class CreateGlideinCommand extends Command
 			EndpointReferenceType epr = factory.createGlidein(glidein);
 			GlideinService instance = new GlideinService(epr);
 			instance.setDescriptor(desc);
-			instance.submit(credential);
+			instance.submit(credentialEPR);
 		} catch (Exception e) {
 			throw new CommandException("Unable to create glidein: "+e.getMessage(),e);
 		}

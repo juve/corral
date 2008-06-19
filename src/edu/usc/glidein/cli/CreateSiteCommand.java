@@ -1,7 +1,6 @@
 package edu.usc.glidein.cli;
 
 import java.io.File;
-import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -9,11 +8,8 @@ import java.util.regex.Pattern;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.commons.cli.CommandLine;
-import org.globus.delegation.DelegationException;
-import org.globus.delegation.DelegationUtil;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
-import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
 import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.api.SiteFactoryService;
@@ -253,30 +249,13 @@ public class CreateSiteCommand extends Command
 		}
 		return value;
 	}
-	
-	private EndpointReferenceType delegateCredential() throws CommandException
-	{
-		// (see org.globus.delegation.DelegationUtil, org.globus.delegation.client.Delegate)
-		ClientSecurityDescriptor desc = getClientSecurityDescriptor();
-		boolean fullDelegation = true;
-		URL delegationServiceUrl = getServiceURL("DelegationFactoryService");
-		
-		try {
-			EndpointReferenceType credentialEPR = 
-				DelegationUtil.delegate(delegationServiceUrl.toString(), 
-					credential, credential.getIdentityCertificate(), fullDelegation, desc);
-			return credentialEPR;
-		} catch (DelegationException de) {
-			throw new CommandException("Unable to delegate credential: "+de.getMessage(),de);
-		}
-	}
 
 	public void createSites(List<Site> sites) throws CommandException
 	{
 		if (isDebug()) System.out.printf("Creating sites...\n");
 		
 		// Delegate credential
-		EndpointReferenceType credential = delegateCredential();
+		EndpointReferenceType credentialEPR = delegateCredential(credential);
 		
 		// Create sites
 		for (Site site : sites) {
@@ -287,7 +266,7 @@ public class CreateSiteCommand extends Command
 				EndpointReferenceType epr = factory.createSite(site);
 				SiteService instance = new SiteService(epr);
 				instance.setDescriptor(getClientSecurityDescriptor());
-				instance.submit(credential);
+				instance.submit(credentialEPR);
 			} catch (GlideinException ge) {
 				throw new CommandException("Unable to create site: "+
 						site.getName()+": "+ge.getMessage(),ge);
