@@ -175,10 +175,12 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	public void remove() throws ResourceException
 	{
-		remove(false);
+		// TODO: Implement remove
+		throw new ResourceException("Remove called!");
 	}
 
-	public void remove(boolean force) throws ResourceException
+	public void remove(boolean force, EndpointReferenceType credentialEPR)
+	throws ResourceException
 	{
 		logger.debug("Removing site resource "+getSite().getId());
 		
@@ -325,9 +327,10 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	private void cancelInstallJob() throws ResourceException
 	{
-		// TODO: Find submit dir
-		// TODO: Determine job ID
-		// TODO: condor_rm job
+		// TODO: cancelInstallJob
+		// Find submit dir
+		// Determine job ID
+		// condor_rm job
 	}
 	
 	private void submitUninstallJob() throws ResourceException
