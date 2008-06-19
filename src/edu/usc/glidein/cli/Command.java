@@ -6,12 +6,16 @@ import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.globus.axis.util.Util;
+import org.globus.delegation.DelegationException;
+import org.globus.delegation.DelegationUtil;
+import org.globus.gsi.GlobusCredential;
 import org.globus.wsrf.impl.security.authorization.Authorization;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 import org.globus.wsrf.impl.security.util.AuthUtil;
@@ -353,6 +357,24 @@ public abstract class Command
         desc.setAuthz(authorization);
         
         return desc;
+	}
+	
+	public EndpointReferenceType delegateCredential(GlobusCredential credential)
+	throws CommandException
+	{
+		// (see org.globus.delegation.DelegationUtil, org.globus.delegation.client.Delegate)
+		ClientSecurityDescriptor desc = getClientSecurityDescriptor();
+		boolean fullDelegation = true;
+		URL delegationServiceUrl = getServiceURL("DelegationFactoryService");
+		
+		try {
+			EndpointReferenceType credentialEPR = 
+				DelegationUtil.delegate(delegationServiceUrl.toString(), 
+					credential, credential.getIdentityCertificate(), fullDelegation, desc);
+			return credentialEPR;
+		} catch (DelegationException de) {
+			throw new CommandException("Unable to delegate credential: "+de.getMessage(),de);
+		}
 	}
 	
 	abstract public String getUsage();
