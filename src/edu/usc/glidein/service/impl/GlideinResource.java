@@ -158,9 +158,18 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	public void remove(boolean force) throws ResourceException 
 	{
 		logger.debug("Removing "+getGlidein().getId());
-		// TODO: Implement force 
+		
+		// If we are forcing the issue, then just delete it
+		GlideinEventCode code = null;
+		if (force) {
+			code = GlideinEventCode.DELETE;
+		} else {
+			code = GlideinEventCode.REMOVE;
+		}
+		
+		// Queue the event
 		try {
-			Event event = new GlideinEvent(GlideinEventCode.REMOVE,getKey());
+			Event event = new GlideinEvent(code,getKey());
 			EventQueue queue = EventQueue.getInstance(); 
 			queue.add(event);
 		} catch(NamingException ne) {
@@ -179,7 +188,11 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			GlobusCredential credential = 
 				delegationResource.getCredential();
 			
-			// TODO: Validate credential lifetime
+			// Validate credential lifetime
+			if (glidein.getWallTime()*60 > credential.getTimeLeft()) {
+				throw new ResourceException("Credential does not have enough time left. " +
+						"Need: "+(glidein.getWallTime()*60)+", have: "+credential.getTimeLeft());
+			}
 			
 			// Create submit event
 			Event event = new GlideinEvent(GlideinEventCode.SUBMIT,getKey());
