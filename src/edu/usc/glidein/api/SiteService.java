@@ -8,6 +8,7 @@ import javax.xml.rpc.Stub;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 
+import edu.usc.glidein.stubs.RemoveRequest;
 import edu.usc.glidein.stubs.SitePortType;
 import edu.usc.glidein.stubs.service.SiteServiceAddressingLocator;
 import edu.usc.glidein.stubs.types.EmptyObject;
@@ -59,11 +60,12 @@ public class SiteService extends BaseService
 		}
 	}
 	
-	public void remove(boolean force) throws GlideinException
+	public void remove(boolean force, EndpointReferenceType credentialEPR) throws GlideinException
 	{
 		try {
 			SitePortType instance = getPort();
-			instance.remove(force);
+			RemoveRequest request = new RemoveRequest(credentialEPR, force);
+			instance.remove(request);
 		} catch (RemoteException re) {
 			throw new GlideinException("Unable to remove site: "+
 					re.getMessage(),re);
