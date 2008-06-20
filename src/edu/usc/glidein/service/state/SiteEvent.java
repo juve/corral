@@ -29,6 +29,8 @@ public class SiteEvent extends Event
 			logger.error("Unable to get SiteResourceHome",ne);
 		} catch (ResourceException re) {
 			logger.error("Unable to find SiteResource: "+getKey(),re);
+		} catch (Throwable t) {
+			logger.error("Unable to process event "+getCode()+" for resource "+getKey(),t);
 		}
 	}
 }
