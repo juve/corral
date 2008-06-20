@@ -366,4 +366,56 @@ public class MySQLSiteDAO implements SiteDAO
 			throw new DatabaseException("Unable to create Site object",sqle);
 		}
 	}
+	
+	public boolean hasGlideins(int siteId) throws DatabaseException
+	{
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			conn = database.getConnection();
+			stmt = conn.prepareStatement("SELECT count(*) FROM glidein WHERE site=?");
+			stmt.setInt(1, siteId);
+			rs = stmt.executeQuery();
+			if (rs.next()) {
+				int count = rs.getInt(1);
+				return count>0;
+			} else {
+				throw new DatabaseException("Expected one result: got zero");
+			}
+		} catch (SQLException sqle) {
+			throw new DatabaseException("Unable to count glideins",sqle);
+		} finally {
+			JDBCUtil.closeQuietly(rs);
+			JDBCUtil.closeQuietly(stmt);
+			JDBCUtil.closeQuietly(conn);
+		}
+	}
+	
+	public int[] getGlideinIds(int siteId) throws DatabaseException
+	{
+		LinkedList<Integer> result = new LinkedList<Integer>();
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			conn = database.getConnection();
+			stmt = conn.prepareStatement("SELECT id FROM glidein WHERE site=?");
+			stmt.setInt(1, siteId);
+			rs = stmt.executeQuery();
+			while (rs.next()) {
+				result.add(rs.getInt(1));
+			}
+			int[] ids = new int[result.size()];
+			int i = 0;
+			for (int id : result) ids[i++] = id;
+			return ids;
+		} catch (SQLException sqle) {
+			throw new DatabaseException("Unable to get glidein ids",sqle);
+		} finally {
+			JDBCUtil.closeQuietly(rs);
+			JDBCUtil.closeQuietly(stmt);
+			JDBCUtil.closeQuietly(conn);
+		}
+	}
 }

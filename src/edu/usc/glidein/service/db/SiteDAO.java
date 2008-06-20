@@ -11,4 +11,6 @@ public interface SiteDAO
 	public void delete(int siteId) throws DatabaseException;
 	public void updateState(int siteId, SiteState state, String shortMessage, String longMessage) throws DatabaseException;
 	public Site[] list(boolean full) throws DatabaseException;
+	public boolean hasGlideins(int siteId) throws DatabaseException;
+	public int[] getGlideinIds(int siteId) throws DatabaseException;
 }
