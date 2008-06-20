@@ -1,7 +1,10 @@
 package edu.usc.glidein.service.impl;
 
+import java.io.BufferedReader;
 import java.io.CharArrayWriter;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 
 import javax.naming.NamingException;
@@ -35,15 +38,20 @@ import edu.usc.glidein.service.exec.CondorJob;
 import edu.usc.glidein.service.exec.CondorUniverse;
 import edu.usc.glidein.service.state.Event;
 import edu.usc.glidein.service.state.EventQueue;
+import edu.usc.glidein.service.state.GlideinEvent;
+import edu.usc.glidein.service.state.GlideinEventCode;
 import edu.usc.glidein.service.state.SiteEvent;
 import edu.usc.glidein.service.state.SiteEventCode;
 import edu.usc.glidein.service.state.InstallSiteListener;
+import edu.usc.glidein.service.state.UninstallSiteListener;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteState;
 import edu.usc.glidein.util.AddressingUtil;
+import edu.usc.glidein.util.CredentialUtil;
+import edu.usc.glidein.util.IOUtil;
 
 //TODO: Improve dir hierarchy on remote
 
@@ -101,7 +109,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 
 	public void create(Site site) throws ResourceException
 	{
-		logger.debug("Creating site resource "+site.getName());
+		info("Creating site '"+site.getName()+"'");
 		
 		// Set state
 		site.setState(SiteState.NEW);
@@ -145,7 +153,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 
 	public void load(ResourceKey key) throws ResourceException
 	{
-		logger.debug("Loading site resource "+key.getValue());
+		info("Loading site resource "+key.getValue());
 		int id = ((Integer)key.getValue()).intValue();
 		try {
 			Database db = Database.getDatabase();
@@ -158,7 +166,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	public void store() throws ResourceException
 	{
-		logger.debug("Storing site resource "+getSite().getId());
+		info("Storing site");
 		
 		throw new ResourceException("Tried to store SiteResource");
 		
@@ -175,14 +183,14 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	public void remove() throws ResourceException
 	{
-		// TODO: Implement remove
-		throw new ResourceException("Remove called!");
+		// Just log a message
+		info("Removing site ");
 	}
 
 	public void remove(boolean force, EndpointReferenceType credentialEPR)
 	throws ResourceException
 	{
-		logger.debug("Removing site resource "+getSite().getId());
+		info("Creating remove event");
 		
 		// Choose new state. If force, then just delete the record from
 		// the database and remove the resource, otherwise go through the
@@ -197,40 +205,46 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		// Schedule remove event
 		try {
 			Event event = new SiteEvent(code,getKey());
+			if (!force) {
+				DelegationResource delegationResource = 
+					DelegationUtil.getDelegationResource(credentialEPR);
+				GlobusCredential credential = 
+					delegationResource.getCredential();
+				event.setProperty("credential", credential);
+			}
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get queue: "+ne.getMessage(),ne);
+			throw new ResourceException("Unable to get event queue",ne);
+		} catch (DelegationException de) {
+			throw new ResourceException("Unable to get delegated credential",de);
 		}
 	}
 	
 	public void submit(EndpointReferenceType credentialEPR) throws ResourceException 
 	{
-		logger.debug("Submitting site "+getSite().getId());
+		info("Creating submit event");
 		
+		// Schedule submit event
 		try {
-			// Get delegated credential
+			Event event = new SiteEvent(SiteEventCode.SUBMIT,getKey());
 			DelegationResource delegationResource = 
 				DelegationUtil.getDelegationResource(credentialEPR);
 			GlobusCredential credential = 
 				delegationResource.getCredential();
-		
-			// Schedule submit event
-			Event event = new SiteEvent(SiteEventCode.SUBMIT,getKey());
 			event.setProperty("credential", credential);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {
-			throw new ResourceException(ne.getMessage(),ne);
+			throw new ResourceException("Unable to get event queue",ne);
 		} catch (DelegationException de) {
-			throw new ResourceException(de.getMessage(),de);
+			throw new ResourceException("Unable to get delegated credential",de);
 		}
 	}
 	
 	private void updateState(SiteState state, String shortMessage, String longMessage)
-	throws ResourceException
 	{
-		logger.debug("Changing state of site "+getSite().getId()+" to "+state+": "+shortMessage);
+		info("Changing state to "+state+": "+shortMessage);
 		
 		// Update object
 		site.setState(state);
@@ -243,23 +257,63 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			SiteDAO dao = db.getSiteDAO();
 			dao.updateState(site.getId(), state, shortMessage, longMessage);
 		} catch(DatabaseException de) {
-			throw new ResourceException(de);
+			error("Unable to change state to "+state+": "+de.getMessage(),de);
 		}
+	}
+	
+	private ServiceConfiguration getConfig() throws ResourceException
+	{
+		try {
+			return ServiceConfiguration.getInstance();
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to get service configuration",ne);
+		}
+	}
+	
+	private File getWorkingDirectory() throws ResourceException
+	{
+		// Determine the directory path
+		File dir = new File(getConfig().getTempDir(),"site-"+site.getId());
+	
+		// Create the directory if it doesn't exist
+		if (dir.exists()) {
+			if (!dir.isDirectory()) {
+				throw new ResourceException(
+						"Working directory is not a directory");
+			}
+		} else {
+			try {
+				if (!dir.mkdirs()) {
+					throw new ResourceException(
+							"Unable to create working directory");
+				}
+			} catch (SecurityException e) {
+				throw new ResourceException(
+						"Unable to create working directory");
+			}
+		}
+		
+		return dir;
+	}
+	
+	private File getInstallDirectory() throws ResourceException
+	{
+		return new File(getWorkingDirectory(),"install");
+	}
+	
+	private File getUninstallDirectory() throws ResourceException
+	{
+		return new File(getWorkingDirectory(),"uninstall");
 	}
 	
 	private void submitInstallJob(GlobusCredential credential) throws ResourceException
 	{
-		logger.debug("Submitting install job for site '"+site.getName()+"'");
+		info("Submitting install job");
 		
-		ServiceConfiguration config = null;
-		try {
-			config = ServiceConfiguration.getInstance();
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get service configuration",ne);
-		}
+		ServiceConfiguration config = getConfig();
 		
-		// Create working directory
-		File jobDirectory = new File(config.getTempDir(),"install-site-"+site.getId());
+		// Get job directory
+		File jobDirectory = getInstallDirectory();
 		
 		// Create a job description
 		CondorJob job = new CondorJob(jobDirectory);
@@ -308,34 +362,187 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			Condor condor = Condor.getInstance();
 			condor.submitJob(job);
 		} catch (CondorException ce) {
-			throw new ResourceException("Unable to submit staging job: "+ce.getMessage(),ce);
+			throw new ResourceException("Unable to submit install job",ce);
 		}
-			
-		logger.debug("Submitted install job for site '"+site.getName()+"'");
 	}
 	
 	private boolean hasGlideins() throws ResourceException
 	{
-		// TODO: Implement hasGlideins
-		return false;
+		try {
+			Database db = Database.getDatabase();
+			SiteDAO dao = db.getSiteDAO();
+			return dao.hasGlideins(site.getId());
+		} catch(DatabaseException de) {
+			throw new ResourceException(de);
+		}
 	}
 	
 	private void cancelGlideins() throws ResourceException
 	{
-		// TODO: Cancel glideins
+		info("Canceling glideins");
+		
+		// Get glidein ids
+		int[] ids;
+		try {
+			Database db = Database.getDatabase();
+			SiteDAO dao = db.getSiteDAO();
+			ids = dao.getGlideinIds(site.getId());
+		} catch(DatabaseException de) {
+			throw new ResourceException(de);
+		}
+		
+		// Create a remove event for each glidein
+		try {
+			EventQueue queue = EventQueue.getInstance();
+			for (int id : ids) {
+				ResourceKey key = AddressingUtil.getGlideinKey(id);
+				Event event = new GlideinEvent(
+						GlideinEventCode.REMOVE,key);
+				queue.add(event);
+			}
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to get queue: "+
+					ne.getMessage(),ne);
+		}
+	}
+	
+	private void notifyGlideins() throws ResourceException
+	{
+		info("Notifying site glideins of "+SiteState.READY+" state");
+		
+		// Get glidein ids
+		int[] ids;
+		try {
+			Database db = Database.getDatabase();
+			SiteDAO dao = db.getSiteDAO();
+			ids = dao.getGlideinIds(site.getId());
+		} catch(DatabaseException de) {
+			throw new ResourceException(de);
+		}
+		
+		// Create a ready event for each glidein
+		try {
+			EventQueue queue = EventQueue.getInstance();
+			for (int id : ids) {
+				ResourceKey key = AddressingUtil.getGlideinKey(id);
+				Event event = new GlideinEvent(
+						GlideinEventCode.SITE_READY,key);
+				queue.add(event);
+			}
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to get queue: "+
+					ne.getMessage(),ne);
+		}
 	}
 	
 	private void cancelInstallJob() throws ResourceException
 	{
-		// TODO: cancelInstallJob
+		info("Canceling install job");
+		
 		// Find submit dir
-		// Determine job ID
-		// condor_rm job
+		File dir = getInstallDirectory();
+		File jobidFile = new File(dir,"jobid");
+		
+		try {
+			// Read job id from jobid file
+			BufferedReader reader = new BufferedReader(
+					new FileReader(jobidFile));
+			String jobid = reader.readLine();
+			reader.close();
+			
+			// condor_rm job
+			Condor.getInstance().cancelJob(jobid);
+		} catch (IOException ioe) {
+			throw new ResourceException(
+					"Unable to cancel install job: Unable to read job id",ioe);
+		} catch (CondorException ce) {
+			throw new ResourceException(
+					"Unable to cancel install job: condor_rm failed",ce);
+		}
+	}
+	
+	private File getUninstallCredentialFile() throws ResourceException
+	{
+		File dir = getWorkingDirectory();
+		File credFile = new File(dir,"credential");
+		return credFile;
+	}
+	
+	private void storeUninstallCredential(GlobusCredential credential)
+	throws ResourceException
+	{
+		info("Storing uninstall credential");
+		try {
+			File credFile = getUninstallCredentialFile();
+			CredentialUtil.save(credential,credFile);
+		} catch (IOException e) {
+			throw new ResourceException("Unable to save credential",e);
+		}
+	}
+	
+	private GlobusCredential loadUninstallCredential() 
+	throws ResourceException
+	{
+		info("Loading uninstall credential");
+		try {
+			File credFile = getUninstallCredentialFile();
+			return CredentialUtil.load(credFile);
+		} catch (IOException e) {
+			throw new ResourceException("Unable to load credential",e);
+		}
 	}
 	
 	private void submitUninstallJob() throws ResourceException
 	{
-		// TODO: Submit uninstall job
+		info("Submitting uninstall job");
+		
+		ServiceConfiguration config = getConfig();
+		
+		// Get job directory
+		File jobDirectory = getUninstallDirectory();
+		
+		// Create a job description
+		CondorJob job = new CondorJob(jobDirectory);
+		job.setUniverse(CondorUniverse.GRID);
+		
+		// Set jobmanager info
+		ExecutionService stagingService = site.getStagingService();
+		if(ServiceType.GT2.equals(stagingService.getServiceType())) {
+			job.setGridType(CondorGridType.GT2);
+		} else {
+			job.setGridType(CondorGridType.GT4);
+		}
+		job.setGridContact(stagingService.getServiceContact());
+		job.setProject(stagingService.getProject());
+		job.setQueue(stagingService.getQueue());
+		
+		// Set glidein_uninstall executable
+		String uninstall = config.getUninstall();
+		job.setExecutable(uninstall);
+		job.setLocalExecutable(true);
+		job.setMaxTime(300); // Not longer than 5 mins
+		job.setCredential(loadUninstallCredential());
+		
+		// Add environment
+		EnvironmentVariable env[] = site.getEnvironment();
+		if (env!=null) {
+			for (EnvironmentVariable var : env)
+				job.addEnvironment(var.getVariable(), var.getValue());
+		}
+		
+		// Add arguments
+		job.addArgument("-installPath "+site.getInstallPath());
+		
+		// Add a listener
+		job.addListener(new UninstallSiteListener(getKey()));
+		
+		// Submit job
+		try {
+			Condor condor = Condor.getInstance();
+			condor.submitJob(job);
+		} catch (CondorException ce) {
+			throw new ResourceException("Unable to submit uninstall job",ce);
+		}
 	}
 	
 	private void delete() throws ResourceException
@@ -345,7 +552,6 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			dao.delete(site.getId());
-			site = null;
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
 		}
@@ -353,15 +559,11 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	private void fail(String message, Exception exception)
 	{
-		try {
-			// Update status to FAILED
-			logger.error("Site "+site.getId()+": "+message,exception);
-			CharArrayWriter caw = new CharArrayWriter();
-			exception.printStackTrace(new PrintWriter(caw));
-			updateState(SiteState.FAILED, message, caw.toString());
-		} catch (ResourceException re) {
-			logger.error("Site "+site.getId()+": Unable to update status to failed",re);
-		}
+		// Update status to FAILED
+		error("Failure: "+message,exception);
+		CharArrayWriter caw = new CharArrayWriter();
+		exception.printStackTrace(new PrintWriter(caw));
+		updateState(SiteState.FAILED, message, caw.toString());
 	}
 	
 	public synchronized void handleEvent(SiteEvent event)
@@ -369,111 +571,237 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		SiteState state = site.getState();
 		SiteEventCode code = (SiteEventCode)event.getCode();
 		
+		// If the site was deleted, then we can just ignore the event
+		if (SiteState.DELETED.equals(state)) {
+			warn("Unable to process event "+code+": "+
+					"Site has been deleted");
+			return;
+		}
+		
+		// Process event
 		switch (code) {
 			
-			case SUBMIT:
-				if (SiteState.NEW.equals(state)) {
+			case SUBMIT: {
+				SiteState reqd = SiteState.NEW;
+				if (reqd.equals(state)) {
 					try {
 						// Change status to submitted
 						updateState(SiteState.STAGING, "Staging executables", null);
 						
-						// Submit job
+						// Get delegated credential
 						GlobusCredential credential = 
 							(GlobusCredential)event.getProperty("credential");
+						
+						// Submit job
 						submitInstallJob(credential);
 					} catch (ResourceException re) {
 						fail("Unable to submit install job",re);
 					}
 				} else {
-					/* Do nothing */
+					warn("State was not "+reqd+" when "+code+" was recieved");
 				}
-			break;
+			} break;
 				
-			case INSTALL_SUCCESS:
+			case INSTALL_SUCCESS: {
+				SiteState reqd = SiteState.STAGING;
+				if (reqd.equals(state)) {
+					// Change status to READY
+					updateState(SiteState.READY, "Installed", null);
+					
+					// Notify any waiting glideins for this site
+					try {
+						notifyGlideins();
+					} catch (ResourceException re) {
+						warn("Unable to notify glideins",re);
+					}
+				} else {
+					warn("State was not "+reqd+" when "+code+" was recieved");
+				}
+			} break;
+			
+			case INSTALL_FAILED: {
+				SiteState reqd = SiteState.STAGING;
+				if (reqd.equals(state)) {
+					fail((String)event.getProperty("message"),
+							(Exception)event.getProperty("exception"));
+				} else {
+					warn("State was not "+reqd+" when "+code+" was recieved");
+				}
+			} break;
+				
+			case REMOVE: {
+				
+				// If we are already removing, then do nothing
+				if (SiteState.REMOVING.equals(state)) {
+					warn("Already removing site");
+					return;
+				}
+				
+				// If we are currently staging, then we need to cancel the install job
 				if (SiteState.STAGING.equals(state)) {
 					try {
-						// Change status to READY
-						updateState(SiteState.READY, "Installed", null);
-						
-						// TODO: Trigger any ready glideins for this site
-					} catch (ResourceException re) {
-						fail("Unable to set state to READY",re);
-					}
-				} else {
-					/* Do nothing */
-				}
-			break;
-			
-			case INSTALL_FAILED:
-				if (SiteState.STAGING.equals(state)) {
-					fail((String)event.getProperty("message"),
-							(Exception)event.getProperty("exception"));
-				} else {
-					/* Do nothing */
-				}
-			break;
-				
-			case REMOVE:
-				try {
-					// If we are currently staging, then we need to cancel the install job
-					if (SiteState.STAGING.equals(state)) {
 						cancelInstallJob();
+					} catch (ResourceException re) {
+						fail("Could not cancel install job",re);
+					}
+				}
+				
+				// Store the credential for later. We have to do this because
+				// it is possible that there will be glideins that we need to
+				// wait for. If that happens then the event with the credential
+				// attached won't be available when we need to submit the
+				// uninstall job.
+				try {
+					GlobusCredential credential = 
+						(GlobusCredential)event.getProperty("credential");
+					storeUninstallCredential(credential);
+				} catch (ResourceException re) {
+					fail("Could not store uninstall credential",re);
+				}
+				
+				// Check to see if there are some glideins for this site
+				boolean hasGlideins = true;
+				try {
+					hasGlideins = hasGlideins();
+				} catch (ResourceException re) {
+					fail("Unable to determine glidein state",re);
+				}
+				
+				// If there are some glideins for this site
+				if (hasGlideins) {
+					// Cancel running glideins
+					try {
+						cancelGlideins();
+					} catch (ResourceException re) {
+						fail("Unable to cancel running glideins",re);
 					}
 					
-					// If there are some glideins for this site
-					if (hasGlideins()) { 
-						// Cancel running glideins
-						cancelGlideins();
-						
-						// Change state to EXITING
-						updateState(SiteState.EXITING, "Waiting for glideins", null);
-					} else {
-						// Submit uninstall job
+					// Change state to EXITING
+					updateState(SiteState.EXITING, "Waiting for glideins", null);
+				} else {
+					// Change state to REMOVING
+					updateState(SiteState.REMOVING, "Removing site", null);
+					
+					// Submit uninstall job
+					try {
 						submitUninstallJob();
+					} catch (ResourceException re) {
+						fail("Unable to submit uninstall job",re);
 					}
-				} catch (ResourceException re) {
-					fail("Unable to remove site",re);
 				}
-			break;
+			} break;
 				
-			case GLIDEIN_FINISHED:
+			case GLIDEIN_DELETED: {
 				// If exiting then check for last glidein
-				if (SiteState.EXITING.equals(state)) {
-					// TODO: If last glidein, then submit REMOVE event
+				SiteState reqd = SiteState.EXITING;
+				if (reqd.equals(state)) {
+					try {
+						// If last glidein
+						if (!hasGlideins()) {
+							// Change state
+							updateState(SiteState.REMOVING, "Removing site", null);
+							
+							// Submit uninstall job
+							submitUninstallJob();
+						}
+					} catch (ResourceException re) {
+						fail(re.getMessage(),re);
+					}
+				} else {
+					/* This is expected to happen frequently */
 				}
-			break;
+			} break;
 			
 			case UNINSTALL_SUCCESS:
-			case DELETE:
+			case DELETE: {
+				// Set state to deleted in case any other event
+				// handlers already have a reference to this resource
+				site.setState(SiteState.DELETED);
+				site.setShortMessage("deleted");
+				site.setLongMessage("deleted");
+				
+				// Remove the Resource from the resource home
 				try {
-					// TODO: Delete the Resource
-					ResourceKey key = AddressingUtil.getSiteKey(site.getId());
 					SiteResourceHome resourceHome = SiteResourceHome.getInstance();
-					resourceHome.remove(key);
-					
-					// TODO: Find out when Resource.remove gets called
-					delete();
-				} catch (Exception e) {
-					fail("Unable to delete site",e);
+					resourceHome.remove(getKey());
+				} catch (NamingException e) {
+					fail("Unable to locate SiteResourceHome",e);
+				} catch (ResourceException re) {
+					fail("Unable to remove site from SiteResourceHome",re);
 				}
-			break;
+				
+				// Delete the site from the database
+				try {
+					delete();
+				} catch (ResourceException re) {
+					fail("Unable to delete site from database",re);
+				}
+				
+				// Remove the working directory and all sub-directories
+				try {
+					IOUtil.rmdirs(getWorkingDirectory());
+				} catch (ResourceException re) {
+					fail("Unable to remove working directory",re);
+				}
+			} break;
 			
-			case UNINSTALL_FAILED:
-				if (SiteState.REMOVING.equals(state)) {
+			case UNINSTALL_FAILED: {
+				SiteState reqd = SiteState.REMOVING;
+				if (reqd.equals(state)) {
 					fail((String)event.getProperty("message"),
 							(Exception)event.getProperty("exception"));
 				} else {
-					/* Do nothing */
+					warn("Site "+site.getId()+" was not "+reqd+
+							" when "+code+" was recieved");
 				}
-			break;
+			} break;
 			
-			default:
-				try {
-					throw new IllegalStateException();
-				} catch (IllegalStateException e) {
-					logger.error("Unhandled event: "+event,e);
-				}
-			break;
+			default: {
+				Exception e = new IllegalStateException();
+				e.fillInStackTrace();
+				error("Unhandled event: "+event,e);
+			} break;
 		}
+	}
+	
+	private String logPrefix()
+	{
+		if (site == null) {
+			return "";
+		} else {
+			return "Site "+site.getId()+": ";
+		}
+	}
+	public void debug(String message)
+	{
+		debug(message,null);
+	}
+	public void debug(String message, Throwable t)
+	{
+		logger.debug(logPrefix()+message, t);
+	}
+	public void info(String message)
+	{
+		info(message,null);
+	}
+	public void info(String message, Throwable t)
+	{
+		logger.info(logPrefix()+message,t);
+	}
+	public void warn(String message)
+	{
+		warn(message,null);
+	}
+	public void warn(String message, Throwable t)
+	{
+		logger.warn(logPrefix()+message,t);
+	}
+	public void error(String message)
+	{
+		error(message,null);
+	}
+	public void error(String message, Throwable t)
+	{
+		logger.error(logPrefix()+message,t);
 	}
 }
