@@ -57,7 +57,7 @@ public abstract class BaseListener implements CondorEventListener
 				try {
 					// Abort the job
 					Condor condor = Condor.getInstance();
-					condor.cancelJob(event.getJob().getCondorId());
+					condor.cancelJob(event.getJob().getJobId());
 					
 					// Set message
 					abortMessage = event.getMessage();
