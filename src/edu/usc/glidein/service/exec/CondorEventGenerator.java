@@ -78,10 +78,10 @@ public class CondorEventGenerator extends Thread
 				throw new CondorException("Error parsing job id: "+fields[1]);
 			String condorId = 
 				Integer.parseInt(tokens[0])+"."+Integer.parseInt(tokens[1]);
-			if(!condorId.equals(job.getCondorId()))
+			if(!condorId.equals(job.getJobId()))
 			{
 				throw new CondorException("Condor ID mismatch: got "+
-						condorId + " expected " + job.getCondorId());
+						condorId + " expected " + job.getJobId());
 			}
 		}
 		catch(CondorException ce)
@@ -267,7 +267,7 @@ public class CondorEventGenerator extends Thread
 	public static void main(String[] args)
 	{
 		CondorJob j = new CondorJob(new File("/Users/juve/Workspace/Condor"));
-		j.setCondorId("8.0");
+		j.setJobId("8.0");
 		j.setLog(new File("/Users/juve/Workspace/Condor/terminated.log"));
 		
 		CondorEventGenerator gen = new CondorEventGenerator(j);
