@@ -60,10 +60,7 @@ public class InstallSiteListener extends BaseListener
 	private void success(CondorJob job)
 	{
 		// Cleanup job dir
-		File dir = job.getJobDirectory();
-		File[] files = dir.listFiles();
-		for(File file : files) file.delete();
-		dir.delete();
+		IOUtil.rmdirs(job.getJobDirectory());
 		
 		// Generate success event
 		try {
