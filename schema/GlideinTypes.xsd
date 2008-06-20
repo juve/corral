@@ -37,6 +37,7 @@
 			<xsd:enumeration value="EXITING"/>		<!-- Waiting for glideins to exit -->
 			<xsd:enumeration value="REMOVING"/>		<!-- Uninstall job running -->
 			<xsd:enumeration value="FAILED"/>		<!-- Failure occurred -->
+			<xsd:enumeration value="DELETED"/>		<!-- Site has been deleted -->
 		</xsd:restriction>
 	</xsd:simpleType>
 	
@@ -75,6 +76,7 @@
 			<xsd:enumeration value="RUNNING"/>		<!-- Running remotely -->
 			<xsd:enumeration value="CANCELLED"/>	<!-- Cancelled -->
 			<xsd:enumeration value="FAILED"/>		<!-- Failed -->
+			<xsd:enumeration value="DELETED"/>		<!-- Glidein has been deleted -->
 		</xsd:restriction>
 	</xsd:simpleType>
 	
