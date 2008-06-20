@@ -8,6 +8,6 @@ public enum SiteEventCode implements EventCode
 	REMOVE,				/* User requested remove */
 	UNINSTALL_SUCCESS,	/* Condor uninstalled successfully */
 	UNINSTALL_FAILED,	/* Condor uninstall failed */
-	GLIDEIN_FINISHED,	/* Glidein finished */
+	GLIDEIN_DELETED,	/* Glidein deleted */
 	DELETE				/* User requested delete */
 }
