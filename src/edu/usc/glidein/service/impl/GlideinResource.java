@@ -1,7 +1,11 @@
 package edu.usc.glidein.service.impl;
 
+import java.io.BufferedReader;
+import java.io.CharArrayWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import javax.naming.NamingException;
 
@@ -12,7 +16,6 @@ import org.globus.delegation.DelegationUtil;
 import org.globus.delegation.service.DelegationResource;
 import org.globus.gsi.GlobusCredential;
 import org.globus.wsrf.PersistenceCallback;
-import org.globus.wsrf.RemoveCallback;
 import org.globus.wsrf.Resource;
 import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceIdentifier;
@@ -37,6 +40,8 @@ import edu.usc.glidein.service.state.EventQueue;
 import edu.usc.glidein.service.state.GlideinEvent;
 import edu.usc.glidein.service.state.GlideinEventCode;
 import edu.usc.glidein.service.state.GlideinListener;
+import edu.usc.glidein.service.state.SiteEvent;
+import edu.usc.glidein.service.state.SiteEventCode;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.Glidein;
@@ -46,9 +51,10 @@ import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteState;
 import edu.usc.glidein.util.AddressingUtil;
 import edu.usc.glidein.util.Base64;
+import edu.usc.glidein.util.CredentialUtil;
 import edu.usc.glidein.util.IOUtil;
 
-public class GlideinResource implements Resource, ResourceIdentifier, PersistenceCallback, RemoveCallback, ResourceProperties
+public class GlideinResource implements Resource, ResourceIdentifier, PersistenceCallback, ResourceProperties
 {
 	private Logger logger = Logger.getLogger(GlideinResource.class);
 	private SimpleResourcePropertySet resourceProperties;
@@ -101,7 +107,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	public void create(Glidein glidein) throws ResourceException
 	{
-		logger.debug("Creating glidein for site "+glidein.getSiteId());
+		info("Creating glidein for site "+glidein.getSiteId());
 		
 		// Initialize glidein
 		glidein.setState(GlideinState.NEW);
@@ -122,7 +128,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 
 	public void load(ResourceKey key) throws ResourceException
 	{
-		logger.debug("Loading "+key.getValue());
+		info("Loading glidein "+key.getValue());
 		int id = ((Integer)key.getValue()).intValue();
 		try {
 			Database db = Database.getDatabase();
@@ -135,29 +141,12 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	public void store() throws ResourceException 
 	{
-		logger.debug("Storing "+getGlidein().getId());
-		
-		throw new ResourceException("Tried to store GlideinResource");
-		
-		/*
-		try {
-			Database db = Database.getDatabase();
-			GlideinDAO dao = db.getGlideinDAO();
-			dao.store(glidein);
-		} catch(DatabaseException de) {
-			throw new ResourceException(de);
-		}
-		*/
-	}
-	
-	public void remove() throws ResourceException
-	{
-		remove(false);
+		throw new UnsupportedOperationException();
 	}
 	
 	public void remove(boolean force) throws ResourceException 
 	{
-		logger.debug("Removing "+getGlidein().getId());
+		info("Removing glidein");
 		
 		// If we are forcing the issue, then just delete it
 		GlideinEventCode code = null;
@@ -179,7 +168,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 
 	public void submit(EndpointReferenceType credentialEPR) throws ResourceException
 	{
-		logger.debug("Submitting "+glidein.getId());
+		info("Submitting glidein");
 		try {
 			
 			// Get delegated credential
@@ -209,7 +198,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	private void updateState(GlideinState state, String shortMessage, String longMessage) 
 	throws ResourceException
 	{
-		logger.debug("Changing state of glidein "+getGlidein().getId()+" to "+state+": "+shortMessage);
+		info("Changing state to "+state+": "+shortMessage);
 		
 		// Update object
 		glidein.setState(state);
@@ -228,7 +217,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	private void submitGlideinJob(GlobusCredential credential) throws ResourceException
 	{
-		logger.debug("Submitting glidein job "+glidein.getId());
+		info("Submitting glidein job");
 		
 		SiteResource siteResource = getSiteResource();
 		Site site = siteResource.getSite();
@@ -243,7 +232,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 		
 		// Create working directory
-		File jobDirectory = new File(config.getTempDir(),"glidein-"+glidein.getId());
+		File jobDirectory = getWorkingDirectory();
 		
 		// Create a job description
 		CondorJob job = new CondorJob(jobDirectory);
@@ -327,8 +316,6 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			throw new ResourceException("Unable to submit glidein job: " +
 					"Submit failed",ce);
 		}
-		
-		logger.debug("Submitted glidein job '"+glidein.getId()+"'");
 	}
 	
 	private boolean siteReady() throws ResourceException
@@ -352,7 +339,28 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	private void cancelGlideinJob() throws ResourceException
 	{
-		// TODO: Cancel glidein job
+		info("Cancelling glidein job");
+		
+		// Find submit dir
+		File dir = getWorkingDirectory();
+		File jobidFile = new File(dir,"jobid");
+		
+		try {
+			// Read job id from jobid file
+			BufferedReader reader = new BufferedReader(
+					new FileReader(jobidFile));
+			String jobid = reader.readLine();
+			reader.close();
+			
+			// condor_rm job
+			Condor.getInstance().cancelJob(jobid);
+		} catch (IOException ioe) {
+			throw new ResourceException(
+					"Unable to cancel glidein job: Unable to read job id",ioe);
+		} catch (CondorException ce) {
+			throw new ResourceException(
+					"Unable to cancel glidein job: condor_rm failed",ce);
+		}
 	}
 	
 	private void delete() throws ResourceException
@@ -361,85 +369,268 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.delete(glidein.getId());
-			glidein = null;
-			resourceProperties = null;
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
 		}
 	}
 	
+	private ServiceConfiguration getConfig() throws ResourceException
+	{
+		try {
+			return ServiceConfiguration.getInstance();
+		} catch (NamingException ne) {
+			throw new ResourceException("Unable to get service configuration",ne);
+		}
+	}
+	
+	private File getWorkingDirectory() throws ResourceException
+	{
+		File dir = new File(getConfig().getTempDir(),"glidein-"+glidein.getId());
+		
+		// Create the directory if it doesn't exist
+		if (dir.exists()) {
+			if (!dir.isDirectory()) {
+				throw new ResourceException(
+						"Working directory is not a directory");
+			}
+		} else {
+			try {
+				if (!dir.mkdirs()) {
+					throw new ResourceException(
+							"Unable to create working directory");
+				}
+			} catch (SecurityException e) {
+				throw new ResourceException(
+						"Unable to create working directory");
+			}
+		}
+		
+		return dir;
+	}
+	
+	private void storeCredential(GlobusCredential credential) throws ResourceException
+	{
+		try {
+			File work = getWorkingDirectory();
+			File credFile = new File(work,"credential");
+			CredentialUtil.store(credential,credFile);
+		} catch (IOException ioe) {
+			throw new ResourceException("Unable to store credential");
+		}
+	}
+	
+	private GlobusCredential loadCredential() throws ResourceException
+	{
+		try {
+			File work = getWorkingDirectory();
+			File credFile = new File(work,"credential");
+			GlobusCredential credential = CredentialUtil.load(credFile);
+			return credential;
+		} catch (IOException ioe) {
+			throw new ResourceException("Unable to load credential");
+		}
+	}
+	
+	private void fail(String message, Exception exception)
+	{
+		// Update status to FAILED
+		error("Failure: "+message,exception);
+		CharArrayWriter caw = new CharArrayWriter();
+		exception.printStackTrace(new PrintWriter(caw));
+		try {
+			updateState(GlideinState.FAILED, message, caw.toString());
+		} catch (ResourceException re) {
+			error("Unable to change state to "+GlideinState.FAILED,re);
+		}
+	}
+	
 	public synchronized void handleEvent(GlideinEvent event)
 	{
-		/* TODO: Implement handleEvent
 		GlideinState state = glidein.getState();
 		GlideinEventCode code = (GlideinEventCode) event.getCode();
 		
+		// If the glidein was deleted, then don't process any more events
+		if (GlideinState.DELETED.equals(state)) {
+			warn("Unable to process event "+code+": "+
+					"Glidein has been deleted");
+			return;
+		}
+		
 		switch (code) {
 			
-			case SUBMIT:
+			case SUBMIT: {
 				// Only NEW glideins can be submitted
-				if (GlideinState.NEW.equals(state)) { 
-					if (siteReady()) {
-						GlobusCredential event.getProperty("credential");
-						submitGlideinJob(credential);
-						updateState(GlideinState.SUBMITTED,"Local job submitted",null);
+				if (GlideinState.NEW.equals(state)) {
+					GlobusCredential credential = (GlobusCredential)event.getProperty("credential");
+					
+					// Check to see if site is ready
+					boolean ready = false;
+					try {
+						ready = siteReady();
+					} catch (ResourceException re) {
+						fail("Unable to check for site ready state",re);
+					}
+					
+					// If the site is ready, submit the glidein job, otherwise wait
+					if (ready) {
+						try {
+							submitGlideinJob(credential);
+							updateState(GlideinState.SUBMITTED,"Local job submitted",null);
+						} catch (ResourceException re) {
+							fail("Unable to submit job",re);
+						}
 					} else {
-						updateState(GlideinState.WAITING,"Waiting for Site to be READY",null);
+						try {
+							storeCredential(credential);
+							updateState(GlideinState.WAITING,"Waiting for site to be "+SiteState.READY,null);
+						} catch (ResourceException re) {
+							fail("Unable to wait for site ready state",re);
+						}
 					}
 				}
-			break;
+			} break;
 			
-			case SITE_READY:
+			case SITE_READY: {
 				// If we are waiting, then queue a SUBMIT event
 				if (GlideinState.WAITING.equals(state)) {
-					submitGlideinJob();
-					updateState(GlideinState.SUBMITTED,"Local job submitted",null);
+					try {
+						GlobusCredential credential = loadCredential();
+						submitGlideinJob(credential);
+						updateState(GlideinState.SUBMITTED,"Local job submitted",null);
+					} catch (ResourceException re) {
+						fail("Unable to submit job",re);
+					}
 				}
-			break;
+			} break;
 			
-			case QUEUED:
-				// A SUBMITTED job has been QUEUED remotely
+			case QUEUED: {
 				if (GlideinState.SUBMITTED.equals(state)) {
-					updateState(GlideinState.QUEUED,"Glidein queued remotely",null);
+					try {
+						updateState(GlideinState.QUEUED,"Glidein job queued",null);
+					} catch (ResourceException re) {
+						fail("Unable to set state to "+GlideinState.QUEUED,re);
+					}
 				}
-			break;
+			} break;
 			
-			case RUNNING:
-				if (GlideinState.QUEUED.equals(state)) {
+			case RUNNING: {
+				try {
 					updateState(GlideinState.RUNNING,"Glidein job running",null);
+				} catch (ResourceException re) {
+					fail("Unable to set state to "+GlideinState.RUNNING,re);
 				}
-			break;
-				
-			case REMOVE:
-				cancelGlideinJob();
-				updateState(GlideinState.CANCELLED,"Local job cancelled",null);
-			break;
+			} break;
 			
-			case EXITED:
-			case DELETE:
-				ResourceKey siteKey = AddressingUtil.getSiteKey(glidein.getSiteId());
+			case REMOVE:
+			case JOB_SUCCESS:
+			case DELETE: {
+				// If the user requested remove
+				if (GlideinEventCode.REMOVE.equals(code)) {
+					
+					// If a glidein job has been submitted cancel the job
+					if (GlideinState.SUBMITTED.equals(state) || 
+							GlideinState.RUNNING.equals(state) || 
+							GlideinState.QUEUED.equals(state)) {
+						try {
+							cancelGlideinJob();
+						} catch (ResourceException re) {
+							fail("Unable to cancel glidein job",re);
+						}
+					}
+				}
 				
-				// Delete the glidein after it has exited or if
-				// a force delete was requested
-				GlideinResourceHome home = GlideinResourceHome.getInstance();
-				home.remove(getKey());
-				// TODO: Figure out when Resource.remove gets called
-				delete();
+				// Change the status to deleted
+				glidein.setState(GlideinState.DELETED);
+				
+				// Remove the glidein from the ResourceHome
+				try {
+					GlideinResourceHome home = GlideinResourceHome.getInstance();
+					home.remove(getKey());
+				}  catch (NamingException e) {
+					fail("Unable to locate GlideinResourceHome",e);
+					return;
+				} catch (ResourceException re) {
+					fail("Unable to remove glidein from GlideinResourceHome",re);
+					return;
+				}
+				
+				// Delete the glidein from the database
+				try {
+					delete();
+				} catch (ResourceException re) {
+					fail("Unable to delete glidein from database",re);
+					return;
+				}
 				
 				// Tell the Site About it
-				Event siteEvent = new SiteEvent(SiteEventCode.GLIDEIN_FINISHED, siteKey);
-				EventQueue queue = EventQueue.getInstance();
-				queue.add(siteEvent);
-			break;
+				try {
+					ResourceKey siteKey = AddressingUtil.getSiteKey(glidein.getSiteId());
+					Event siteEvent = new SiteEvent(SiteEventCode.GLIDEIN_DELETED, siteKey);
+					EventQueue queue = EventQueue.getInstance();
+					queue.add(siteEvent);
+				} catch (NamingException ne) {
+					warn("Unable to notify site of deleted glidein",ne);
+				}
+				
+				// Remove the working directory
+				try {
+					IOUtil.rmdirs(getWorkingDirectory());
+				} catch (ResourceException re) {
+					warn("Unable to remove working dir",re);
+				}
+			} break;
 			
-			case FAILED:
-				// TODO: Fail job
-			break;
+			case JOB_FAILURE: {
+				fail((String)event.getProperty("message"), 
+						(Exception)event.getProperty("exception"));
+			} break;
 			
-			default:
-				logger.warn("Unhandled event: "+event);
-			break;
+			default: {
+				IllegalStateException ise = new IllegalStateException();
+				ise.fillInStackTrace();
+				error("Unhandled event: "+event,ise);
+			} break;
 		}
-		*/
+	}
+	
+	private String logPrefix()
+	{
+		if (glidein == null) {
+			return "";
+		} else {
+			return "Glidein "+glidein.getId()+": ";
+		}
+	}
+	public void debug(String message)
+	{
+		debug(message,null);
+	}
+	public void debug(String message, Throwable t)
+	{
+		logger.debug(logPrefix()+message, t);
+	}
+	public void info(String message)
+	{
+		info(message,null);
+	}
+	public void info(String message, Throwable t)
+	{
+		logger.info(logPrefix()+message,t);
+	}
+	public void warn(String message)
+	{
+		warn(message,null);
+	}
+	public void warn(String message, Throwable t)
+	{
+		logger.warn(logPrefix()+message,t);
+	}
+	public void error(String message)
+	{
+		error(message,null);
+	}
+	public void error(String message, Throwable t)
+	{
+		logger.error(logPrefix()+message,t);
 	}
 }
