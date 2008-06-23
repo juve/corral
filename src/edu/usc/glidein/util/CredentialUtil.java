@@ -10,7 +10,7 @@ import org.globus.gsi.GlobusCredentialException;
 
 public class CredentialUtil
 {
-	public static void save(GlobusCredential credential, File file) 
+	public static void store(GlobusCredential credential, File file) 
 	throws IOException
 	{
 		// Create the file if it doesn't exist
