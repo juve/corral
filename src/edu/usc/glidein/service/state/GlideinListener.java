@@ -7,6 +7,7 @@ import javax.naming.NamingException;
 
 import org.globus.wsrf.ResourceKey;
 
+import edu.usc.glidein.service.exec.CondorEvent;
 import edu.usc.glidein.service.exec.CondorJob;
 import edu.usc.glidein.util.IOUtil;
 
@@ -17,10 +18,12 @@ public class GlideinListener extends BaseListener
 		super(key);
 	}
 	
-	public void terminated(CondorJob job)
+	public void terminated(CondorEvent event)
 	{
-		// A job finished successfully if it didn't produce any
-		// output on stderr. Its ugly, but GT2 is broken.
+		// A glidein job finished successfully if it didn't 
+		// produce any output on stderr. Its ugly, but GT2 
+		// is broken.
+		CondorJob job = event.getJob();
 		File error = job.getError();
 		if(error.exists())
 		{
@@ -28,19 +31,37 @@ public class GlideinListener extends BaseListener
 			{
 				String stderr = IOUtil.read(error);
 				if(stderr.length()>0)
-					failed("Glidein failed: "+stderr);
+					failure("Glidein failed: "+stderr);
 				else
 					success(job);
 			}
 			catch(IOException ioe)
 			{
-				failed("Unable to read error file",ioe);
+				failure("Unable to read error file",ioe);
 			}
 		}
 		else
 		{
-			failed("Glidein job produced no error file");
+			failure("Glidein job produced no error file");
 		}
+	}
+	
+	public void failed(CondorEvent event)
+	{
+		// Process failure
+		failure(event.getMessage(),event.getException());
+	}
+	
+	public void queued(CondorEvent event)
+	{
+		// Generate queued event
+		enqueue(GlideinEventCode.QUEUED);
+	}
+	
+	public void running(CondorEvent event)
+	{
+		// Generate running event
+		enqueue(GlideinEventCode.RUNNING);
 	}
 	
 	private void success(CondorJob job)
@@ -52,8 +73,21 @@ public class GlideinListener extends BaseListener
 		dir.delete();
 		
 		// Generate success event
+		enqueue(GlideinEventCode.JOB_SUCCESS);
+	}
+	
+	private void failure(String message)
+	{
+		failure(message,null);
+	}
+	
+	private void failure(String message, Exception exception)
+	{
+		// Generate failure event
 		try {
-			Event event = new GlideinEvent(GlideinEventCode.JOB_SUCCESS,getKey());
+			Event event = new GlideinEvent(GlideinEventCode.JOB_FAILURE,getKey());
+			event.setProperty("message", message);
+			event.setProperty("exception", exception);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {
@@ -61,11 +95,10 @@ public class GlideinListener extends BaseListener
 		}
 	}
 	
-	public void failed(String message, Exception e)
+	private void enqueue(GlideinEventCode code)
 	{
-		// Generate failure event
 		try {
-			Event event = new GlideinEvent(GlideinEventCode.JOB_FAILURE,getKey());
+			Event event = new GlideinEvent(code,getKey());
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {

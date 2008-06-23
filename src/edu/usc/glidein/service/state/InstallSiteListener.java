@@ -7,6 +7,7 @@ import javax.naming.NamingException;
 
 import org.globus.wsrf.ResourceKey;
 
+import edu.usc.glidein.service.exec.CondorEvent;
 import edu.usc.glidein.service.exec.CondorJob;
 import edu.usc.glidein.util.IOUtil;
 
@@ -17,43 +18,58 @@ public class InstallSiteListener extends BaseListener
 		super(key);
 	}
 	
-	public void failed(String message, Exception e)
+	public void failed(CondorEvent event)
+	{
+		failure(event.getMessage(),event.getException());
+	}
+	
+	public void queued(CondorEvent event)
+	{
+		/* Ignore */
+	}
+	
+	public void running(CondorEvent event)
+	{
+		/* Ignore */
+	}
+	
+	public void terminated(CondorEvent event)
+	{
+		// A job finished successfully if it didn't produce any
+		// output on stderr. Its ugly, but GT2 is broken.
+		CondorJob job = event.getJob();
+		File error = job.getError();
+		if(error.exists()) {
+			try {
+				String stderr = IOUtil.read(error);
+				if(stderr.length()>0)
+					failure("Install job failed: "+stderr);
+				else
+					success(job);
+			} catch(IOException ioe) {
+				failure("Unable to read install error file",ioe);
+			}
+		} else {
+			failure("Install job produced no error file");
+		}
+	}
+	
+	private void failure(String message)
+	{
+		failure(message,null);
+	}
+	
+	private void failure(String message, Exception exception)
 	{
 		// Generate failed event
 		try {
 			Event event = new SiteEvent(SiteEventCode.INSTALL_FAILED,getKey());
 			event.setProperty("message", message);
-			event.setProperty("exception", e);
+			event.setProperty("exception", exception);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {
 			throw new RuntimeException("Unable to get event queue: "+ne.getMessage(),ne);
-		}
-	}
-	
-	public void terminated(CondorJob job)
-	{
-		// A job finished successfully if it didn't produce any
-		// output on stderr. Its ugly, but GT2 is broken.
-		File error = job.getError();
-		if(error.exists())
-		{
-			try
-			{
-				String stderr = IOUtil.read(error);
-				if(stderr.length()>0)
-					failed("Install job failed: "+stderr);
-				else
-					success(job);
-			}
-			catch(IOException ioe)
-			{
-				failed("Unable to read install error file",ioe);
-			}
-		}
-		else
-		{
-			failed("Install job produced no error file");
 		}
 	}
 	

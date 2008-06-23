@@ -30,7 +30,7 @@ public class GlideinEvent extends Event
 		} catch (ResourceException re) {
 			logger.error("Unable to find resource: "+getKey(),re);
 		} catch (Throwable t) {
-			logger.error("Unable to process event "+getCode()+" for resource "+getKey(),t);
+			logger.error("Unable to process event "+getCode()+" for glidein "+getKey().getValue(),t);
 		}
 	}
 }
