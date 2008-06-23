@@ -16,7 +16,6 @@ import org.globus.delegation.DelegationUtil;
 import org.globus.delegation.service.DelegationResource;
 import org.globus.gsi.GlobusCredential;
 import org.globus.wsrf.PersistenceCallback;
-import org.globus.wsrf.RemoveCallback;
 import org.globus.wsrf.Resource;
 import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceIdentifier;
@@ -55,7 +54,7 @@ import edu.usc.glidein.util.IOUtil;
 
 //TODO: Improve dir hierarchy on remote
 
-public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, RemoveCallback, ResourceProperties
+public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, ResourceProperties
 {
 	private Logger logger = Logger.getLogger(SiteResource.class);
 	private SimpleResourcePropertySet resourceProperties;
@@ -66,13 +65,13 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	 */
 	public SiteResource() { }
 	
-	public void setSite(Site site) throws ResourceException
+	public synchronized void setSite(Site site) throws ResourceException
 	{
 		this.site = site;
 		setResourceProperties();
 	}
 	
-	public Site getSite()
+	public synchronized Site getSite()
 	{
 		return site;
 	}
@@ -166,25 +165,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	public void store() throws ResourceException
 	{
-		info("Storing site");
-		
-		throw new ResourceException("Tried to store SiteResource");
-		
-		/*
-		try {
-			Database db = Database.getDatabase();
-			SiteDAO dao = db.getSiteDAO();
-			dao.store(site);
-		} catch(DatabaseException de) {
-			throw new ResourceException(de);
-		}
-		*/
-	}
-	
-	public void remove() throws ResourceException
-	{
-		// Just log a message
-		info("Removing site ");
+		throw new UnsupportedOperationException();
 	}
 
 	public void remove(boolean force, EndpointReferenceType credentialEPR)
@@ -243,6 +224,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	}
 	
 	private void updateState(SiteState state, String shortMessage, String longMessage)
+	throws ResourceException
 	{
 		info("Changing state to "+state+": "+shortMessage);
 		
@@ -257,7 +239,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			SiteDAO dao = db.getSiteDAO();
 			dao.updateState(site.getId(), state, shortMessage, longMessage);
 		} catch(DatabaseException de) {
-			error("Unable to change state to "+state+": "+de.getMessage(),de);
+			throw new ResourceException(
+					"Unable to change state to "+state+": "+de.getMessage(),de);
 		}
 	}
 	
@@ -474,7 +457,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		info("Storing uninstall credential");
 		try {
 			File credFile = getUninstallCredentialFile();
-			CredentialUtil.save(credential,credFile);
+			CredentialUtil.store(credential,credFile);
 		} catch (IOException e) {
 			throw new ResourceException("Unable to save credential",e);
 		}
@@ -563,7 +546,11 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		error("Failure: "+message,exception);
 		CharArrayWriter caw = new CharArrayWriter();
 		exception.printStackTrace(new PrintWriter(caw));
-		updateState(SiteState.FAILED, message, caw.toString());
+		try {
+			updateState(SiteState.FAILED, message, caw.toString());
+		} catch (ResourceException re) {
+			error("Unable to change state to "+SiteState.FAILED,re);
+		}
 	}
 	
 	public synchronized void handleEvent(SiteEvent event)
@@ -606,7 +593,11 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				SiteState reqd = SiteState.STAGING;
 				if (reqd.equals(state)) {
 					// Change status to READY
-					updateState(SiteState.READY, "Installed", null);
+					try {
+						updateState(SiteState.READY, "Installed", null);
+					} catch (ResourceException re) {
+						fail("Unable to update state",re);
+					}
 					
 					// Notify any waiting glideins for this site
 					try {
@@ -677,10 +668,18 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 					}
 					
 					// Change state to EXITING
-					updateState(SiteState.EXITING, "Waiting for glideins", null);
+					try {
+						updateState(SiteState.EXITING, "Waiting for glideins", null);
+					} catch (ResourceException re) {
+						error("Unable to change state to "+SiteState.EXITING,re);
+					}
 				} else {
 					// Change state to REMOVING
-					updateState(SiteState.REMOVING, "Removing site", null);
+					try {
+						updateState(SiteState.REMOVING, "Removing site", null);
+					} catch (ResourceException re) {
+						error("Unable to change state to "+SiteState.REMOVING,re);
+					}
 					
 					// Submit uninstall job
 					try {
@@ -717,8 +716,6 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				// Set state to deleted in case any other event
 				// handlers already have a reference to this resource
 				site.setState(SiteState.DELETED);
-				site.setShortMessage("deleted");
-				site.setLongMessage("deleted");
 				
 				// Remove the Resource from the resource home
 				try {
