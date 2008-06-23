@@ -365,6 +365,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	private void delete() throws ResourceException
 	{
+		info("Deleting glidein from database");
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();

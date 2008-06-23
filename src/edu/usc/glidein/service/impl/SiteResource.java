@@ -530,7 +530,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	private void delete() throws ResourceException
 	{
-		// Remove the site from the database
+		info("Deleting site from database");
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
