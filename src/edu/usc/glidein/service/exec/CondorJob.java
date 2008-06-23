@@ -439,7 +439,7 @@ public class CondorJob
 	{
 		if (hasCredential()) {
 			try {
-				CredentialUtil.save(credential,getCredentialFile());
+				CredentialUtil.store(credential,getCredentialFile());
 			} catch (Exception e) {
 				throw new CondorException("Unable to save credential",e);
 			}
