@@ -10,7 +10,7 @@ drop table if exists site;
  * of the database and the date that it was created.
  */
 CREATE TABLE interface (
-	revision	VARCHAR(50) NOT NULL,
+	revision	VARCHAR(25) NOT NULL,
 	created		DATETIME NOT NULL
 ) type=InnoDB;
 
