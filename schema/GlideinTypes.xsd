@@ -71,11 +71,10 @@
 		<xsd:restriction base="xsd:string">
 			<xsd:enumeration value="NEW"/>			<!-- Created -->
 			<xsd:enumeration value="WAITING"/>		<!-- Waiting for site to be READY -->
-			<xsd:enumeration value="SUBMITTED"/>	<!-- Submitted locally -->
-			<xsd:enumeration value="QUEUED"/>		<!-- Queued remotely -->
-			<xsd:enumeration value="RUNNING"/>		<!-- Running remotely -->
-			<xsd:enumeration value="CANCELLED"/>	<!-- Cancelled -->
-			<xsd:enumeration value="FAILED"/>		<!-- Failed -->
+			<xsd:enumeration value="SUBMITTED"/>	<!-- Job submitted to Condor locally -->
+			<xsd:enumeration value="QUEUED"/>		<!-- Job queued remotely -->
+			<xsd:enumeration value="RUNNING"/>		<!-- Job running remotely -->
+			<xsd:enumeration value="FAILED"/>		<!-- Glidein failed -->
 			<xsd:enumeration value="DELETED"/>		<!-- Glidein has been deleted -->
 		</xsd:restriction>
 	</xsd:simpleType>
