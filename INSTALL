@@ -1,0 +1,28 @@
+INSTALLING THE GLIDEIN GRID SERVICE
+
+1. Set your GLOBUS_LOCATION environment variable to point to the globus 
+   directory where you want to install the service.
+
+2. Make sure ant (> 1.7) and java (> 1.5) are on your path
+
+3. Run:
+	$ ant deploy
+	
+4. Edit $GLOBUS_LOCATION/etc/glidein_service/jndi-config.xml.
+
+   4.1 Make sure the Database configuration points to a valid MySQL database
+   4.2 Make sure the Condor configuration points to Condor
+
+5. Restart your globus container
+
+6. Test with:
+
+	$ glidein help
+	$ glidein help ls
+	$ glidein ls
+	$ glidein ls -authz none
+
+   Note: If you have problems authenticating, make sure your container is set
+         up with a valid host certificate. You can look at the output of
+         'glidein help ls' to determine what the correct parameters are to
+         get the security working correctly. (Hint: 'glidein ls -authz none')
