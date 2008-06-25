@@ -18,6 +18,12 @@ public class UninstallSiteListener extends BaseListener
 		super(key);
 	}
 	
+	public void aborted(CondorEvent event)
+	{
+		// Treat aborted jobs like failed jobs
+		failed(event);
+	}
+	
 	public void queued(CondorEvent event)
 	{
 		/* Ignore */

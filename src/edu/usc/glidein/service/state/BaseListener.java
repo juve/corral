@@ -1,18 +1,18 @@
 package edu.usc.glidein.service.state;
 
+import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceKey;
 
 import edu.usc.glidein.service.exec.Condor;
 import edu.usc.glidein.service.exec.CondorEvent;
-import edu.usc.glidein.service.exec.CondorEventCode;
 import edu.usc.glidein.service.exec.CondorEventListener;
 import edu.usc.glidein.service.exec.CondorException;
 
 public abstract class BaseListener implements CondorEventListener
 {
+	private static final Logger logger = Logger.getLogger(BaseListener.class);
 	private ResourceKey key = null;
-	private CondorEvent abortEvent = null;
-	private boolean aborting = false;
+	private boolean aborted = false;
 	
 	public BaseListener(ResourceKey key)
 	{
@@ -34,6 +34,7 @@ public abstract class BaseListener implements CondorEventListener
 	public abstract void running(CondorEvent event);
 	public abstract void terminated(CondorEvent event);
 	public abstract void failed(CondorEvent event);
+	public abstract void aborted(CondorEvent event);
 	
 	public void handleEvent(CondorEvent event) 
 	{	
@@ -65,39 +66,28 @@ public abstract class BaseListener implements CondorEventListener
 			case GLOBUS_RESOURCE_DOWN:
 			case GRID_RESOURCE_DOWN:
 			case JOB_HELD: {
-				if (!aborting) {
+				// Some errors cause the job to be held. For those errors
+				// we need to abort the job.
+				if (!aborted) { // Only try to abort once
 					try {
-						// Now we are aborting and don't want to
-						// abort twice.
-						aborting = true;
-						
-						// Some errors cause the job to be held
-						// For those errors cancel the job first.
-						// Abort the job
+						aborted = true; // Only try to abort once
 						Condor condor = Condor.getInstance();
 						condor.cancelJob(event.getJob().getJobId());
-						
-						// Set abort event
-						abortEvent = event;
 					} catch(CondorException ce) {
-						CondorEvent e = new CondorEvent();
-						e.setEventCode(CondorEventCode.EXCEPTION);
-						e.setJob(event.getJob());
-						e.setException(ce);
-						e.setMessage("Unable to cancel held job");
-						failed(e);
+						// We are just going to log this because we may be 
+						// recovering the state of a job that has already 
+						// been aborted 
+						logger.error("Unable to abort failed job: "+
+								event.getJob().getJobId(),ce);
 					}
 				}
+				failed(event);
 			} break;
 			
 			case JOB_ABORTED: {
 				// Fail all aborted jobs
 				event.getGenerator().terminate();
-				if (abortEvent == null) {
-					failed(event);
-				} else {
-					failed(abortEvent);
-				}
+				aborted(event);
 			} break;
 		}
 	}

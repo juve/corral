@@ -46,6 +46,12 @@ public class GlideinListener extends BaseListener
 		}
 	}
 	
+	public void aborted(CondorEvent event)
+	{
+		// Treat aborted jobs like failed jobs
+		enqueue(GlideinEventCode.JOB_ABORTED);
+	}
+	
 	public void failed(CondorEvent event)
 	{
 		// Process failure

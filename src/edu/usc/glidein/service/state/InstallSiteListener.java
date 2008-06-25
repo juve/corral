@@ -18,6 +18,12 @@ public class InstallSiteListener extends BaseListener
 		super(key);
 	}
 	
+	public void aborted(CondorEvent event)
+	{
+		// Treat aborted jobs as failures
+		failed(event);
+	}
+	
 	public void failed(CondorEvent event)
 	{
 		failure(event.getMessage(),event.getException());
@@ -63,13 +69,15 @@ public class InstallSiteListener extends BaseListener
 	{
 		// Generate failed event
 		try {
-			Event event = new SiteEvent(SiteEventCode.INSTALL_FAILED,getKey());
+			Event event = new SiteEvent(SiteEventCode.INSTALL_FAILED,
+					getKey());
 			event.setProperty("message", message);
 			event.setProperty("exception", exception);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {
-			throw new RuntimeException("Unable to get event queue: "+ne.getMessage(),ne);
+			throw new RuntimeException("Unable to get event queue: "+
+					ne.getMessage(),ne);
 		}
 	}
 	
@@ -80,11 +88,13 @@ public class InstallSiteListener extends BaseListener
 		
 		// Generate success event
 		try {
-			Event event = new SiteEvent(SiteEventCode.INSTALL_SUCCESS,getKey());
+			Event event = new SiteEvent(SiteEventCode.INSTALL_SUCCESS,
+					getKey());
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {
-			throw new RuntimeException("Unable to get event queue: "+ne.getMessage(),ne);
+			throw new RuntimeException("Unable to get event queue: "+
+					ne.getMessage(),ne);
 		}
 	}
 }
