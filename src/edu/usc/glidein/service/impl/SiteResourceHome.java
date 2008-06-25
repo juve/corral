@@ -25,6 +25,9 @@ public class SiteResourceHome extends ResourceHomeImpl
 		super.initialize();
 		
 		// TODO: Recover site state
+		
+		// XXX: Do this to test the database auto-installation
+		Database.getDatabase();
 	}
 	
 	public static SiteResourceHome getInstance() throws NamingException
