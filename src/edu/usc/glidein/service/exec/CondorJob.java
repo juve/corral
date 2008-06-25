@@ -197,7 +197,7 @@ public class CondorJob implements Serializable
 		return jobId;
 	}
 
-	void setJobId(String jobId)
+	public void setJobId(String jobId)
 	{
 		this.jobId = jobId;
 	}
