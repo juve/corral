@@ -89,7 +89,7 @@ public class MySQLDatabase extends Database implements Initializable
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
-			conn = _getConnection();
+			conn = getConnection();
 			stmt = conn.createStatement();
 			rs = stmt.executeQuery("SHOW TABLES LIKE 'interface'");
 			return rs.next();
@@ -168,19 +168,15 @@ public class MySQLDatabase extends Database implements Initializable
 		return new MySQLGlideinDAO(this);
 	}
 	
-	private Connection _getConnection() throws SQLException 
-	{
-		Connection conn = DriverManager.getConnection(url,user,password);
-		conn.setAutoCommit(false);
-		return conn;
-	}
-	
 	public Connection getConnection() throws DatabaseException
 	{
 		try {
-			return _getConnection();
+			Connection conn = DriverManager.getConnection(url,user,password);
+			conn.setAutoCommit(false);
+			return conn;
 		} catch(SQLException sqle) {
-			throw new DatabaseException("Unable to connect to database",sqle);
+			throw new DatabaseException("Unable to connect to database: "+
+					sqle.getMessage(),sqle);
 		}
 	}
 }
