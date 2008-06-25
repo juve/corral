@@ -42,6 +42,7 @@
 	<fileset dir="${schema.dest}" id="garschema">
 		<include name="${base.name}/**/*.wsdl" />
 		<include name="${base.name}/**/*.xsd" />
+		<include name="${base.name}/**/*.sql" />
 	</fileset>
 	<property name="garschema.id" value="garschema" />
 
