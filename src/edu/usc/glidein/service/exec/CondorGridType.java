@@ -1,11 +1,13 @@
 package edu.usc.glidein.service.exec;
 
+import java.io.Serializable;
+
 /**
  * Enum of the different grid types supported by Condor
  *
  * @author Gideon Juve <juve@usc.edu>
  */
-public enum CondorGridType
+public enum CondorGridType implements Serializable
 {
 	GT2 ("gt2"),
 	GT4 ("gt4"),

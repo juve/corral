@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,8 +21,10 @@ import edu.usc.glidein.util.CredentialUtil;
  *
  * @author Gideon Juve <juve@usc.edu>
  */
-public class CondorJob
+public class CondorJob implements Serializable
 {
+	private static final long serialVersionUID = -3773144546382523651L;
+
 	/** 
 	 * Cluster ID assigned by condor schedd. The format is "clusterId.jobId"
 	 */

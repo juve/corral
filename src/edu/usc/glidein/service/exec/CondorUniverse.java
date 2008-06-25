@@ -1,6 +1,8 @@
 package edu.usc.glidein.service.exec;
 
-public enum CondorUniverse
+import java.io.Serializable;
+
+public enum CondorUniverse implements Serializable
 {
 	GRID ("grid"),
 	VANILLA ("vanilla"),
