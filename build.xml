@@ -29,7 +29,7 @@
     
 	<property name="jar.name" value="${base.name}.jar"/>
     <property name="gar.name" value="${package.name}.gar"/>
-    
+	
 	<!-- Globus build scripts -->
     <property name="build.stubs" location="${globus.location}/share/globus_wsrf_tools/build-stubs.xml"/>
     <property name="build.packages" location="${globus.location}/share/globus_wsrf_common/build-packages.xml"/>
@@ -67,7 +67,21 @@
 		<include name="**/*"/>
 	</fileset>
 	<property name="garbin.id" value="garbin" />
-		
+	
+	<!-- Test to see if globus is available -->
+	<target name="globus">
+		<condition property="globus.location.set">
+			<not>
+				<length string="${env.GLOBUS_LOCATION}" trim="true" length="0" />
+			</not>
+		</condition>
+		<fail unless="globus.location.set">
+			Please set GLOBUS_LOCATION environment variable or set an 
+			env.GLOBUS_LOCATION property in the build.properties file in your 
+			home directory
+		</fail>
+	</target>
+	
     <target name="clean">
     	<delete dir="tmp"/>
         <delete file="${gar.name}"/>
@@ -84,7 +98,7 @@
     	<mkdir dir="${jars.dir}"/>
     </target>
 	
-	<target name="schema" depends="init" description="Copy schema files">
+	<target name="schema" depends="init,globus" description="Copy schema files">
 		<copy toDir="${schema.dest}">
 			<fileset dir="${schema.src}" casesensitive="yes">
 				<include name="wsrf/**/*"/>
@@ -98,7 +112,7 @@
 		</copy>
 	</target>
 		
-	<target name="flatten" depends="schema" description="Generate flattened WSDL">
+	<target name="flatten" depends="schema,globus" description="Generate flattened WSDL">
 		<!-- Glidein -->
 		<ant antfile="${build.stubs}" target="flatten">
 			<property name="source.flatten.dir" location="${schema.dest}" />
@@ -133,7 +147,7 @@
 		</ant>
 	</target>
 	
-    <target name="bindings" depends="flatten" description="Generate bindings">
+    <target name="bindings" depends="flatten,globus" description="Generate bindings">
     	<!-- Glidein -->
         <ant antfile="${build.stubs}" target="generateBinding">
             <property name="source.binding.dir" value="${schema.dest}/${base.name}"/>
@@ -163,7 +177,7 @@
 		</ant>
 	</target>
 
-	<target name="stubs" depends="bindings" description="Generate stub classes">
+	<target name="stubs" depends="bindings,globus" description="Generate stub classes">
 		<mkdir dir="${stubs.dir}"/>
 		<ant antfile="${build.stubs}" target="mergePackageMapping">
 			<property name="mapping.src" value="${share.dir}/NStoPkg.properties"/>
@@ -199,7 +213,7 @@
 		</ant>
 	</target>
 	
-	<target name="compile" depends="stubs">
+	<target name="compile" depends="stubs,globus">
 		<!-- Compile stubs -->
 		<javac srcdir="${stubs.dir}" destdir="${classes.dir}" debug="${java.debug}">
 			<include name="**/*.java" />
@@ -238,7 +252,7 @@
 	</target>
 	
 	<!-- Creates the GAR file -->
-	<target name="gar" depends="jar">
+	<target name="gar" depends="jar,globus">
 		<ant antfile="${build.packages}" target="makeGar">
 			<property name="garserverdeployment.file" value="${etc.dir}/deploy-server.wsdd" />
 			<property name="garclientdeployment.file" value="${etc.dir}/deploy-client.wsdd" />
@@ -254,13 +268,13 @@
 	
 	<target name="dist" depends="gar"/>
 	
-	<target name="deploy" depends="dist">
+	<target name="deploy" depends="dist,globus">
 		<ant antfile="${build.packages}" target="deployGar">
 			<property name="gar.id" value="${package.name}"/>
 		</ant>
 	</target>
 
-	<target name="undeploy">
+	<target name="undeploy" depends="globus">
 		<!-- Ignore failures -->
 		<subant antfile="${build.packages}" target="undeployGar" failonerror="false" buildpath="/">
 			<property name="gar.id" value="${package.name}"/>
