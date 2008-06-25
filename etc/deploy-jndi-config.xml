@@ -23,6 +23,16 @@
                 	<name>password</name>
                 	<value>Mini14</value>
                 </parameter>
+                <parameter>
+                	<!-- Should we allow the database to install itself automatically? -->
+                	<name>autoInstall</name>
+                	<value>true</value>
+                </parameter>
+                <parameter>
+                	<!-- The path to the database creation script -->
+                	<name>schemaPath</name>
+                	<value>share/schema/glidein/mysql.sql</value>
+                </parameter>
             </resourceParams>
         </resource>
         <resource name="glidein/Condor" type="edu.usc.glidein.service.exec.Condor">
