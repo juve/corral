@@ -27,7 +27,6 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.globus.axis.util.Util;
 import org.globus.delegation.DelegationException;
 import org.globus.delegation.DelegationUtil;
 import org.globus.gsi.GlobusCredential;
@@ -75,6 +74,7 @@ public abstract class Command
 	private String security;
 	private Integer protection;
 	private Authorization authorization;
+	private boolean anonymous;
 	
 	public Command() 
 	{
@@ -123,10 +123,17 @@ public abstract class Command
 		options.add(
 			Option.create()
 				  .setOption("authz")
-				  .setLongOption("authz")
+				  .setLongOption("authorization")
 				  .setUsage("-authz [--authorization] <mode>")
 				  .setDescription("Authorization mode. One of: 'host', 'self', 'none', or a DN. (default: host)")
 				  .hasArgument()
+		);
+		options.add(
+			Option.create()
+				  .setOption("anon")
+				  .setLongOption("anonymous")
+				  .setUsage("-anon [--anonymous]")
+				  .setDescription("Enable anonymous authentication (default: false)")
 		);
 		
 		// Add command-specific options
@@ -232,9 +239,6 @@ public abstract class Command
 			security = Constants.GSI_SEC_CONV;
 		} else if (securityType.matches("^trans(port)?$")) {
 			security = Constants.GSI_TRANSPORT;
-			// I don't know if this is necessary. I got it from
-			// org.globus.delegation.client.BaseClient
-			Util.registerTransport();
 		} else if (securityType.matches("^none$")) {
 			security = null;
 		} else {
@@ -272,6 +276,13 @@ public abstract class Command
 		authorization = AuthUtil.getClientAuthorization(authz);
 		if (debug) {
 			System.out.println("Using "+authz+" authorization");
+		}
+		
+		// Authentication
+		if (cmdln.hasOption("anon")) {
+			anonymous = true;
+		} else {
+			anonymous = false;
 		}
 		
 		// Host
@@ -368,6 +379,11 @@ public abstract class Command
 			throw new IllegalStateException("Invalid security: "+security);
 		}
         
+		// Set anonymous authentication
+		if (anonymous) {
+			desc.setAnonymous();
+		}
+		
 		// Set authorization
         desc.setAuthz(authorization);
         
