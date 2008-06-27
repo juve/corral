@@ -30,12 +30,14 @@ import edu.usc.glidein.api.GlideinService;
 import edu.usc.glidein.service.GlideinNames;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.util.Base64;
+import edu.usc.glidein.util.GlideinUtil;
 import edu.usc.glidein.util.IOUtil;
 
 public class CreateGlideinCommand extends Command
 {
 	private Glidein glidein = null;
 	private GlobusCredential credential = null;
+	private boolean verbose;
 	
 	public void addOptions(List<Option> options)
 	{
@@ -137,6 +139,13 @@ public class CreateGlideinCommand extends Command
 				  .setUsage("-r [--resubmit]")
 				  .setDescription("Resubmit the glidein when it expires. The glidein will be resubmitted\n" +
 				  		"indefinitely until the cert expires or the user removes it.")
+		);
+		options.add(
+			Option.create()
+				  .setOption("v")
+				  .setLongOption("verbose")
+				  .setUsage("-v [--verbose]")
+				  .setDescription("Show details about the new glidein")
 		);
 	}
 	
@@ -252,6 +261,13 @@ public class CreateGlideinCommand extends Command
 		} else {
 			glidein.setResubmit(false);
 		}
+		
+		/* Verbose */
+		if (cmdln.hasOption("v")) {
+			verbose = true;
+		} else {
+			verbose = false;
+		}
 	}
 	
 	public void execute() throws CommandException
@@ -262,13 +278,25 @@ public class CreateGlideinCommand extends Command
 		EndpointReferenceType credentialEPR = delegateCredential(credential);
 		
 		try {
+			// Create glidein
 			ClientSecurityDescriptor desc = getClientSecurityDescriptor();
 			GlideinFactoryService factory = new GlideinFactoryService(
 					getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
 			factory.setDescriptor(desc);
 			EndpointReferenceType epr = factory.createGlidein(glidein);
+			
+			// Get instance
 			GlideinService instance = new GlideinService(epr);
 			instance.setDescriptor(desc);
+			
+			// If verbose, print details
+			if (verbose) {
+				glidein = instance.getGlidein();
+				GlideinUtil.print(glidein);
+				System.out.println();
+			}
+			
+			// Submit glidein
 			instance.submit(credentialEPR);
 		} catch (Exception e) {
 			throw new CommandException("Unable to create glidein: "+e.getMessage(),e);

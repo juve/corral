@@ -35,6 +35,7 @@ import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.util.INI;
+import edu.usc.glidein.util.SiteUtil;
 
 public class CreateSiteCommand extends Command
 {
@@ -42,6 +43,7 @@ public class CreateSiteCommand extends Command
 	private SiteCatalogFormat catalogFormat = null;
 	private String siteName = null;
 	private GlobusCredential credential;
+	private boolean verbose;
 	
 	private static enum SiteCatalogFormat {
 		ini,
@@ -85,6 +87,14 @@ public class CreateSiteCommand extends Command
 				  .setUsage("-C [--credential] <file>")
 				  .setDescription("The user's credential as a proxy file. If not specified the Globus default is used.")
 				  .hasArgument()
+		);
+		
+		options.add(
+			Option.create()
+				  .setOption("v")
+				  .setLongOption("verbose")
+				  .setUsage("-v [--verbose]")
+				  .setDescription("Show details about the new site")
 		);
 	}
 	
@@ -134,6 +144,13 @@ public class CreateSiteCommand extends Command
 				throw new CommandException("Unable to read default proxy " +
 						"credential: "+ce.getMessage(),ce);
 			}
+		}
+		
+		/* Verbose */
+		if (cmdln.hasOption("v")) {
+			verbose = true;
+		} else {
+			verbose = false;
 		}
 	}
 	
@@ -275,13 +292,26 @@ public class CreateSiteCommand extends Command
 		// Create sites
 		for (Site site : sites) {
 			try {
+				// Create site
 				SiteFactoryService factory = new SiteFactoryService(
 						getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
 				factory.setDescriptor(getClientSecurityDescriptor());
 				EndpointReferenceType epr = factory.createSite(site);
+				
+				// Get instance
 				SiteService instance = new SiteService(epr);
 				instance.setDescriptor(getClientSecurityDescriptor());
+				
+				// If verbose, print details
+				if (verbose) {
+					site = instance.getSite();
+					SiteUtil.print(site);
+					System.out.println();
+				}
+
+				// Submit the new site
 				instance.submit(credentialEPR);
+				
 			} catch (GlideinException ge) {
 				throw new CommandException("Unable to create site: "+
 						site.getName()+": "+ge.getMessage(),ge);

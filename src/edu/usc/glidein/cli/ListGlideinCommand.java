@@ -27,6 +27,7 @@ import edu.usc.glidein.api.GlideinFactoryService;
 import edu.usc.glidein.api.GlideinService;
 import edu.usc.glidein.service.GlideinNames;
 import edu.usc.glidein.stubs.types.Glidein;
+import edu.usc.glidein.util.GlideinUtil;
 
 public class ListGlideinCommand extends Command
 {
@@ -131,33 +132,8 @@ public class ListGlideinCommand extends Command
 		if (longFormat) {
 			if (isDebug()) System.out.println("Using long format");
 			for (Glidein g : glideins) {
-				System.out.printf("id = %d\n",g.getId());
-				System.out.printf("siteName = %s\n", g.getSiteName());
-				System.out.printf("siteId = %d\n", g.getSiteId());
-				System.out.printf("condorHost = %s\n",g.getCondorHost());
-				System.out.printf("count = %d\n", g.getCount());
-				System.out.printf("hostCount = %d\n", g.getHostCount());
-				System.out.printf("numCpus = %d\n", g.getNumCpus());
-				System.out.printf("wallTime = %d\n", g.getWallTime());
-				System.out.printf("idleTime = %d\n", g.getIdleTime());
-				
-				Calendar submitted = (Calendar)g.getSubmitted().clone();
-				submitted.setTimeZone(TimeZone.getDefault());
-				System.out.printf("submitted = %tc\n",submitted);
-				
-				Calendar lastUpdate = (Calendar)g.getLastUpdate().clone();
-				lastUpdate.setTimeZone(TimeZone.getDefault());
-				System.out.printf("lastUpdate = %tc\n",lastUpdate);
-				
-				System.out.printf("state = %s\n",g.getState().toString());
-				System.out.printf("shortMessage = %s\n",g.getShortMessage());
-				System.out.printf("longMessage = %s\n",g.getLongMessage());
-				
-				System.out.printf("condorDebug = %s\n", g.getCondorDebug());
-				System.out.printf("gcbBroker = %s\n", g.getGcbBroker());
-				System.out.printf("resubmit = %s\n", g.isResubmit());
-				
-				System.out.printf("\n");
+				GlideinUtil.print(g);
+				System.out.println();
 			}
 		} else {
 			System.out.printf("%-8s", "ID");
@@ -168,8 +144,8 @@ public class ListGlideinCommand extends Command
 			System.out.printf("%-8s", "TIME");
 			System.out.printf("%-15s", "SUBMITTED");
 			System.out.printf("%-15s", "LAST UPDATE");
-			System.out.printf("%-10s", "STATE");
 			System.out.printf("%-10s", "RESUBMIT");
+			System.out.printf("%-10s", "STATE");
 			System.out.printf("%s", "MESSAGE");
 			System.out.printf("\n");
 			for (Glidein g : glideins) {
@@ -188,8 +164,8 @@ public class ListGlideinCommand extends Command
 				lastUpdate.setTimeZone(TimeZone.getDefault());
 				System.out.printf("%1$tm-%1$td %1$TR    ",lastUpdate);
 				
-				System.out.printf("%-10s",g.getState().toString());
 				System.out.printf("%-10s",g.isResubmit());
+				System.out.printf("%-10s",g.getState().toString());
 				System.out.printf("%s",g.getShortMessage());
 				System.out.printf("\n");
 			}
