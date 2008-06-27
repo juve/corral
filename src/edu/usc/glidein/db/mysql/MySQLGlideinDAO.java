@@ -65,7 +65,7 @@ public class MySQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost, resubmit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?,?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
@@ -80,6 +80,7 @@ public class MySQLGlideinDAO implements GlideinDAO
 			stmt.setString(i++, glidein.getShortMessage());
 			stmt.setString(i++, glidein.getLongMessage());
 			stmt.setString(i++, glidein.getCondorHost());
+			stmt.setBoolean(i++, glidein.isResubmit());
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create glidein: wrong number of db updates");
 			}
@@ -255,6 +256,8 @@ public class MySQLGlideinDAO implements GlideinDAO
 			Timestamp last = rs.getTimestamp("lastUpdate",lastUpdate);
 			lastUpdate.setTime(last);
 			glidein.setLastUpdate(lastUpdate);
+			
+			glidein.setResubmit(rs.getBoolean("resubmit"));
 			return glidein;
 		} catch (SQLException sqle) {
 			throw new DatabaseException("Unable to create Glidein object",sqle);

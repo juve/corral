@@ -62,7 +62,7 @@ public class SQLiteGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'),datetime('now'),?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost, resubmit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'),datetime('now'),?,?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
@@ -77,6 +77,7 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			stmt.setString(i++, glidein.getShortMessage());
 			stmt.setString(i++, glidein.getLongMessage());
 			stmt.setString(i++, glidein.getCondorHost());
+			stmt.setBoolean(i++, glidein.isResubmit());
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create glidein: wrong number of db updates");
 			}
@@ -247,6 +248,8 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			
 			String last = rs.getString("lastUpdate");
 			glidein.setLastUpdate(database.parseDate(last));
+			
+			glidein.setResubmit(rs.getBoolean("resubmit"));
 			
 			return glidein;
 		} catch (SQLException sqle) {
