@@ -130,6 +130,14 @@ public class CreateGlideinCommand extends Command
 				  .setDescription("The user's credential as a proxy file. If not specified the Globus default is used.")
 				  .hasArgument()
 		);
+		options.add(
+			Option.create()
+				  .setOption("r")
+				  .setLongOption("resubmit")
+				  .setUsage("-r [--resubmit]")
+				  .setDescription("Resubmit the glidein when it expires. The glidein will be resubmitted\n" +
+				  		"indefinitely until the cert expires or the user removes it.")
+		);
 	}
 	
 	public void setArguments(CommandLine cmdln) throws CommandException
@@ -236,6 +244,13 @@ public class CreateGlideinCommand extends Command
 				throw new CommandException("Unable to read default proxy " +
 						"credential: "+ce.getMessage(),ce);
 			}
+		}
+		
+		/* Resubmit the glidein when it expires */
+		if (cmdln.hasOption("r")) {
+			glidein.setResubmit(true);
+		} else {
+			glidein.setResubmit(false);
 		}
 	}
 	

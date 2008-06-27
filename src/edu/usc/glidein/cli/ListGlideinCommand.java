@@ -155,6 +155,7 @@ public class ListGlideinCommand extends Command
 				
 				System.out.printf("condorDebug = %s\n", g.getCondorDebug());
 				System.out.printf("gcbBroker = %s\n", g.getGcbBroker());
+				System.out.printf("resubmit = %s\n", g.isResubmit());
 				
 				System.out.printf("\n");
 			}
@@ -168,6 +169,7 @@ public class ListGlideinCommand extends Command
 			System.out.printf("%-15s", "SUBMITTED");
 			System.out.printf("%-15s", "LAST UPDATE");
 			System.out.printf("%-10s", "STATE");
+			System.out.printf("%-10s", "RESUBMIT");
 			System.out.printf("%s", "MESSAGE");
 			System.out.printf("\n");
 			for (Glidein g : glideins) {
@@ -187,9 +189,11 @@ public class ListGlideinCommand extends Command
 				System.out.printf("%1$tm-%1$td %1$TR    ",lastUpdate);
 				
 				System.out.printf("%-10s",g.getState().toString());
+				System.out.printf("%-10s",g.isResubmit());
 				System.out.printf("%s",g.getShortMessage());
 				System.out.printf("\n");
 			}
+			
 		}
 		if (isDebug()) System.out.println("Done printing glideins.");
 	}
