@@ -18,7 +18,6 @@ package edu.usc.glidein.service.db;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-// TODO: Implement file persistence
 // TODO: Add history tracking
 
 public abstract class Database
