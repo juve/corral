@@ -22,6 +22,7 @@ import javax.naming.NamingException;
 
 import org.apache.axis.MessageContext;
 import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceContext;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.container.ServiceHost;
@@ -32,46 +33,61 @@ import edu.usc.glidein.stubs.types.Site;
 
 public class SiteFactoryService
 {
+	private Logger logger = Logger.getLogger(SiteFactoryService.class);
+	
 	public EndpointReferenceType createSite(Site site)
 	throws RemoteException
 	{	
-		// Get resource home
-		SiteResourceHome home = null;
-		try {
-			home = SiteResourceHome.getInstance();
-		} catch (NamingException ne) {
-			throw new RemoteException("Unable to get SiteResourceHome", ne);
-		}
-		
-		// Create resource
-		ResourceKey key = home.create(site);
-		
-		// Create an endpoint reference for the new resource
 		EndpointReferenceType epr = null;
+		
 		try {
-			URL baseURL = ServiceHost.getBaseURL();
-			MessageContext mctx = MessageContext.getCurrentContext();
-			String svc = (String) mctx.getService().getOption("instance");
-			String instanceURI = baseURL.toString() + svc;
-			epr = AddressingUtils.createEndpointReference(instanceURI, key);
-		} catch (Exception e) {
-			throw new RemoteException("Unable to create endpoint reference", e);
+			
+			// Get resource home
+			SiteResourceHome home = null;
+			try {
+				home = SiteResourceHome.getInstance();
+			} catch (NamingException ne) {
+				throw new RemoteException("Unable to get SiteResourceHome", ne);
+			}
+			
+			// Create resource
+			ResourceKey key = home.create(site);
+			
+			// Create an endpoint reference for the new resource
+			try {
+				URL baseURL = ServiceHost.getBaseURL();
+				MessageContext mctx = MessageContext.getCurrentContext();
+				String svc = (String) mctx.getService().getOption("instance");
+				String instanceURI = baseURL.toString() + svc;
+				epr = AddressingUtils.createEndpointReference(instanceURI, key);
+			} catch (Exception e) {
+				throw new RemoteException("Unable to create endpoint reference", e);
+			}
+		} catch (Throwable t) {
+			logAndRethrow("Unable to create site", t);
 		}
 		
-		// Return the endpoint reference to the client
 		return epr;
 	}
 	
 	public Sites listSites(boolean longFormat)
 	throws RemoteException
 	{
+		Sites sites = null;
 		try {
 			ResourceContext rctx = ResourceContext.getResourceContext();
 			SiteResourceHome home = (SiteResourceHome) rctx.getResourceHome();
-			Site[] sites = home.list(longFormat);
-			return new Sites(sites);
-		} catch (Exception e) {
-			throw new RemoteException("Unable to list sites", e);
+			Site[] _sites = home.list(longFormat);
+			sites = new Sites(_sites);
+		} catch (Throwable t) {
+			logAndRethrow("Unable to list sites", t);
 		}
+		return sites;
+	}
+	
+	private void logAndRethrow(String message, Throwable t) throws RemoteException
+	{
+		logger.error(message,t);
+		throw new RemoteException(message,t);
 	}
 }

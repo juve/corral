@@ -18,6 +18,7 @@ package edu.usc.glidein.service;
 import java.rmi.RemoteException;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceContext;
 
 import edu.usc.glidein.stubs.types.EmptyObject;
@@ -27,6 +28,8 @@ import edu.usc.glidein.stubs.types.Glidein;
 
 public class GlideinService
 {
+	private Logger logger = Logger.getLogger(GlideinService.class);
+	
 	private GlideinResource getResource() throws RemoteException
 	{
 		try {
@@ -40,18 +43,38 @@ public class GlideinService
 	
 	public Glidein getGlidein(EmptyObject empty) throws RemoteException
 	{
-		return getResource().getGlidein();
+		Glidein glidein = null;
+		try {
+			glidein = getResource().getGlidein();
+		} catch (Throwable t) {
+			logAndRethrow("Unable to get glidein", t);
+		}
+		return glidein;
 	}
 	
 	public EmptyObject submit(EndpointReferenceType credential) throws RemoteException
 	{
-		getResource().submit(credential);
+		try {
+			getResource().submit(credential);
+		} catch (Throwable t) {
+			logAndRethrow("Unable to submit glidein",t);
+		}
 		return new EmptyObject();
 	}
 	
 	public EmptyObject remove(boolean force) throws RemoteException
 	{
-		getResource().remove(force);
+		try {
+			getResource().remove(force);
+		} catch (Throwable t) {
+			logAndRethrow("Unable to remove glidein",t);
+		}
 		return new EmptyObject();
+	}
+	
+	private void logAndRethrow(String message, Throwable t) throws RemoteException
+	{
+		logger.error(message,t);
+		throw new RemoteException(message,t);
 	}
 }

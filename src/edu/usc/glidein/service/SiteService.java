@@ -18,6 +18,7 @@ package edu.usc.glidein.service;
 import java.rmi.RemoteException;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceContext;
 
 import edu.usc.glidein.stubs.RemoveRequest;
@@ -26,6 +27,8 @@ import edu.usc.glidein.stubs.types.Site;
 
 public class SiteService 
 {
+	private Logger logger = Logger.getLogger(SiteService.class);
+	
 	private SiteResource getResource() throws RemoteException
 	{
 		try {
@@ -37,20 +40,40 @@ public class SiteService
 	
 	public Site getSite(EmptyObject empty) throws RemoteException
 	{
-		return getResource().getSite();
+		Site site = null;
+		try {
+			getResource().getSite();
+		} catch (Throwable t) {
+			logAndRethrow("Unable to get site", t);
+		}
+		return site;
 	}
 	
 	public EmptyObject submit(EndpointReferenceType credential) throws RemoteException
 	{
-		getResource().submit(credential);
+		try {
+			getResource().submit(credential);
+		} catch (Throwable t) {
+			logAndRethrow("Unable to submit site", t);
+		}
 		return new EmptyObject();
 	}
 	
 	public EmptyObject remove(RemoveRequest request) throws RemoteException
 	{
-		boolean force = request.isForce();
-		EndpointReferenceType credential = request.getCredential();
-		getResource().remove(force,credential);
+		try {
+			boolean force = request.isForce();
+			EndpointReferenceType credential = request.getCredential();
+			getResource().remove(force,credential);
+		} catch (Throwable t) {
+			logAndRethrow("Unable to remove site", t);
+		}
 		return new EmptyObject();
+	}
+	
+	private void logAndRethrow(String message, Throwable t) throws RemoteException
+	{
+		logger.error(message,t);
+		throw new RemoteException(message,t);
 	}
 }
