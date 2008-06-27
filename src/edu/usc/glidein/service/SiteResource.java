@@ -162,6 +162,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			dao.create(site);
+			// Needed to get updated dates
+			site = dao.load(site.getId());
 		} catch (DatabaseException de) {
 			throw new ResourceException(de);
 		}

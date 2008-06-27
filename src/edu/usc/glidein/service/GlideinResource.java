@@ -138,6 +138,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.create(glidein);
+			// Needed to get updated dates
+			glidein = dao.load(glidein.getId());
 		} catch (DatabaseException dbe) {
 			throw new ResourceException(dbe);
 		}
@@ -657,6 +659,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			case JOB_ABORTED:
 			case JOB_SUCCESS:
 			case DELETE: {
+				
+				// TODO: Handle resubmit flag
 				
 				// Change the status to deleted
 				glidein.setState(GlideinState.DELETED);
