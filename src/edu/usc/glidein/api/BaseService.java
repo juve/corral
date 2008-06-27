@@ -16,6 +16,7 @@
 package edu.usc.glidein.api;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.util.Util;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
 public class BaseService
@@ -36,6 +37,13 @@ public class BaseService
 	public void setDescriptor(ClientSecurityDescriptor descriptor)
 	{
 		this.descriptor = descriptor;
+		if (descriptor != null) {
+			// I got this from org.globus.delegation.client.BaseClient
+			// Its required, but completely undocumented. Thanks Globus.
+			if (descriptor.getGSITransport() != null) {
+				Util.registerTransport();
+			}
+		}
 	}
 	
 	public EndpointReferenceType getEPR()
