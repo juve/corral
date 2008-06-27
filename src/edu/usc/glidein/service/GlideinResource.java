@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package edu.usc.glidein.service.impl;
+package edu.usc.glidein.service;
 
 import java.io.BufferedReader;
 import java.io.CharArrayWriter;
@@ -42,7 +42,6 @@ import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
 import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
 
-import edu.usc.glidein.service.ServiceConfiguration;
 import edu.usc.glidein.service.db.Database;
 import edu.usc.glidein.service.db.DatabaseException;
 import edu.usc.glidein.service.db.GlideinDAO;

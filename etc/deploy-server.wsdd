@@ -6,7 +6,7 @@
 
 	<!-- GlideinService -->
 	<service name="glidein/GlideinService" provider="Handler" use="literal" style="document">
-		<parameter name="className" value="edu.usc.glidein.service.impl.GlideinService"/>
+		<parameter name="className" value="edu.usc.glidein.service.GlideinService"/>
 		<wsdlFile>share/schema/glidein/GlideinService_service.wsdl</wsdlFile>
 		<parameter name="allowedMethods" value="*"/>
 		<parameter name="handlerClass" value="org.globus.axis.providers.RPCProvider"/>
@@ -16,7 +16,7 @@
 
 	<!-- GlideinFactoryService -->
 	<service name="glidein/GlideinFactoryService" provider="Handler" use="literal" style="document">
-		<parameter name="className" value="edu.usc.glidein.service.impl.GlideinFactoryService"/>
+		<parameter name="className" value="edu.usc.glidein.service.GlideinFactoryService"/>
 		<wsdlFile>share/schema/glidein/GlideinFactoryService_service.wsdl</wsdlFile>
 		<parameter name="allowedMethods" value="*"/>
 		<parameter name="handlerClass" value="org.globus.axis.providers.RPCProvider"/>
@@ -27,7 +27,7 @@
 
 	<!-- SiteService -->
 	<service name="glidein/SiteService" provider="Handler" use="literal" style="document">
-		<parameter name="className" value="edu.usc.glidein.service.impl.SiteService"/>
+		<parameter name="className" value="edu.usc.glidein.service.SiteService"/>
 		<wsdlFile>share/schema/glidein/SiteService_service.wsdl</wsdlFile>
 		<parameter name="allowedMethods" value="*"/>
 		<parameter name="handlerClass" value="org.globus.axis.providers.RPCProvider"/>
@@ -37,7 +37,7 @@
 
 	<!-- SiteFactoryService -->
 	<service name="glidein/SiteFactoryService" provider="Handler" use="literal" style="document">
-		<parameter name="className" value="edu.usc.glidein.service.impl.SiteFactoryService"/>
+		<parameter name="className" value="edu.usc.glidein.service.SiteFactoryService"/>
 		<wsdlFile>share/schema/glidein/SiteFactoryService_service.wsdl</wsdlFile>
 		<parameter name="allowedMethods" value="*"/>
 		<parameter name="handlerClass" value="org.globus.axis.providers.RPCProvider"/>

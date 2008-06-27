@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package edu.usc.glidein.service.impl;
+package edu.usc.glidein.service;
 
 import java.net.URL;
 import java.rmi.RemoteException;
@@ -23,38 +23,28 @@ import javax.naming.NamingException;
 import org.apache.axis.MessageContext;
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.globus.wsrf.ResourceContext;
-import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.container.ServiceHost;
 import org.globus.wsrf.utils.AddressingUtils;
 
-import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.Glideins;
-import edu.usc.glidein.util.AddressingUtil;
+import edu.usc.glidein.stubs.types.Sites;
+import edu.usc.glidein.stubs.types.Site;
 
-public class GlideinFactoryService
+public class SiteFactoryService
 {
-	public EndpointReferenceType createGlidein(Glidein glidein)
+	public EndpointReferenceType createSite(Site site)
 	throws RemoteException
-	{
-		// Get site or fail
-		try {
-			SiteResourceHome siteHome = SiteResourceHome.getInstance();
-			siteHome.find(AddressingUtil.getSiteKey(glidein.getSiteId()));
-		} catch(NamingException ne) {
-			throw new ResourceException("Unable to locate site",ne);
-		}
-		
+	{	
 		// Get resource home
-		GlideinResourceHome home = null;
+		SiteResourceHome home = null;
 		try {
-			home = GlideinResourceHome.getInstance();
-		} catch (NamingException e) {
-			throw new ResourceException("Unable to get GlideinResourceHome", e);
+			home = SiteResourceHome.getInstance();
+		} catch (NamingException ne) {
+			throw new RemoteException("Unable to get SiteResourceHome", ne);
 		}
 		
-		// Create glidein
-		ResourceKey key = home.create(glidein);
+		// Create resource
+		ResourceKey key = home.create(site);
 		
 		// Create an endpoint reference for the new resource
 		EndpointReferenceType epr = null;
@@ -72,16 +62,16 @@ public class GlideinFactoryService
 		return epr;
 	}
 	
-	public Glideins listGlideins(boolean longFormat)
+	public Sites listSites(boolean longFormat)
 	throws RemoteException
 	{
 		try {
 			ResourceContext rctx = ResourceContext.getResourceContext();
-			GlideinResourceHome home = (GlideinResourceHome) rctx.getResourceHome();
-			Glidein[] glideins = home.list(longFormat);
-			return new Glideins(glideins);
+			SiteResourceHome home = (SiteResourceHome) rctx.getResourceHome();
+			Site[] sites = home.list(longFormat);
+			return new Sites(sites);
 		} catch (Exception e) {
-			throw new ResourceException("Unable to list sites", e);
+			throw new RemoteException("Unable to list sites", e);
 		}
 	}
 }

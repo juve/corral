@@ -24,7 +24,7 @@ import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 
 import edu.usc.glidein.api.SiteService;
-import edu.usc.glidein.service.impl.SiteNames;
+import edu.usc.glidein.service.SiteNames;
 
 public class RemoveSiteCommand extends Command
 {	

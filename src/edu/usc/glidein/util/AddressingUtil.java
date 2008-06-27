@@ -24,8 +24,8 @@ import org.apache.axis.message.addressing.ReferencePropertiesType;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.impl.SimpleResourceKey;
 
-import edu.usc.glidein.service.impl.GlideinNames;
-import edu.usc.glidein.service.impl.SiteNames;
+import edu.usc.glidein.service.GlideinNames;
+import edu.usc.glidein.service.SiteNames;
 
 public class AddressingUtil
 {	

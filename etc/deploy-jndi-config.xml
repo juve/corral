@@ -160,7 +160,7 @@
 	<!-- GlideinService -->
 	<service name="glidein/GlideinService">
 		<resource name="home" 
-				  type="edu.usc.glidein.service.impl.GlideinResourceHome">
+				  type="edu.usc.glidein.service.GlideinResourceHome">
 			<resourceParams>
 				<parameter>
 					<name>sweeperDelay</name>
@@ -168,7 +168,7 @@
 				</parameter>
 				<parameter>
 					<name>resourceClass</name>
-					<value>edu.usc.glidein.service.impl.GlideinResource</value>
+					<value>edu.usc.glidein.service.GlideinResource</value>
 				</parameter>
 				<parameter>
 					<name>resourceKeyType</name>
@@ -195,7 +195,7 @@
 	<!-- SiteService -->
 	<service name="glidein/SiteService">
 		<resource name="home" 
-				  type="edu.usc.glidein.service.impl.SiteResourceHome">
+				  type="edu.usc.glidein.service.SiteResourceHome">
 			<resourceParams>
 				<parameter>
 					<name>sweeperDelay</name>
@@ -203,7 +203,7 @@
 				</parameter>
 				<parameter>
 					<name>resourceClass</name>
-					<value>edu.usc.glidein.service.impl.SiteResource</value>
+					<value>edu.usc.glidein.service.SiteResource</value>
 				</parameter>
 				<parameter>
 					<name>resourceKeyType</name>

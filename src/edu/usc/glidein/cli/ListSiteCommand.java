@@ -25,7 +25,7 @@ import org.apache.commons.cli.CommandLine;
 import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.api.SiteFactoryService;
 import edu.usc.glidein.api.SiteService;
-import edu.usc.glidein.service.impl.SiteNames;
+import edu.usc.glidein.service.SiteNames;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.Site;

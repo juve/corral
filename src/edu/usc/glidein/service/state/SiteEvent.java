@@ -21,8 +21,8 @@ import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceKey;
 
-import edu.usc.glidein.service.impl.SiteResource;
-import edu.usc.glidein.service.impl.SiteResourceHome;
+import edu.usc.glidein.service.SiteResource;
+import edu.usc.glidein.service.SiteResourceHome;
 
 public class SiteEvent extends Event
 {

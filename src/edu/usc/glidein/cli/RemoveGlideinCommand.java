@@ -22,7 +22,7 @@ import org.apache.commons.cli.CommandLine;
 
 import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.api.GlideinService;
-import edu.usc.glidein.service.impl.GlideinNames;
+import edu.usc.glidein.service.GlideinNames;
 
 public class RemoveGlideinCommand extends Command
 {
