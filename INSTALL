@@ -10,8 +10,13 @@ INSTALLING THE GLIDEIN GRID SERVICE
 	
 4. Edit $GLOBUS_LOCATION/etc/glidein_service/jndi-config.xml.
 
-   4.1 Make sure the Database configuration points to a valid MySQL database
-   4.2 Make sure the Condor configuration points to Condor
+   4.1 Make sure the Database configuration points to a valid database.
+       The glidein service supports both SQLite and MySQL databases.
+       It will automatically install tables if pointed at a valid database
+       instance.
+       
+   4.2 Make sure the Condor configuration points to Condor. The service
+       uses a local Condor central manager to submit staging and glidein jobs.
 
 5. Restart your globus container
 
