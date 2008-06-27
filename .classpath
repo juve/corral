@@ -4,5 +4,7 @@
 	<classpathentry kind="src" path="build/stubs"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Globus Library [4.0.5]"/>
+	<classpathentry kind="lib" path="lib/sqlitejdbc-v051.jar" sourcepath="libsrc/sqlitejdbc-v051.zip"/>
+	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.6.jar" sourcepath="libsrc/mysql-connector-java-5.1.6.zip"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
