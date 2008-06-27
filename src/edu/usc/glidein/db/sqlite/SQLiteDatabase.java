@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package edu.usc.glidein.service.db.mysql;
+package edu.usc.glidein.db.sqlite;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,51 +22,59 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 import org.apache.log4j.Logger;
 import org.globus.wsrf.jndi.Initializable;
 
-import edu.usc.glidein.service.db.DatabaseException;
-import edu.usc.glidein.service.db.GlideinDAO;
-import edu.usc.glidein.service.db.Database;
-import edu.usc.glidein.service.db.JDBCUtil;
-import edu.usc.glidein.service.db.SiteDAO;
+import edu.usc.glidein.db.Database;
+import edu.usc.glidein.db.DatabaseException;
+import edu.usc.glidein.db.GlideinDAO;
+import edu.usc.glidein.db.JDBCUtil;
+import edu.usc.glidein.db.SiteDAO;
 import edu.usc.glidein.util.IOUtil;
 
-public class MySQLDatabase extends Database implements Initializable
+public class SQLiteDatabase extends Database implements Initializable
 {
-	public static final Logger logger = Logger.getLogger(MySQLDatabase.class);
-	public static final String DB_DRIVER = "com.mysql.jdbc.Driver";
+	public static final Logger logger = Logger.getLogger(SQLiteDatabase.class);
+	public static final String DB_DRIVER = "org.sqlite.JDBC";
+	public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	public static final String TIME_ZONE = "UTC";
 	
-	private String url;
-	private String user;
-	private String password;
+	private File databaseFile;
 	private File schemaFile;
-	private boolean autoInstall;
+	private boolean autoInstall = false;
 	private boolean initialized = false;
 	
-	public MySQLDatabase() { }
+	
+	public SQLiteDatabase() { }
 	
 	public void initialize() throws Exception
 	{
 		synchronized (this) {
 			if (initialized)
 				return;
-		
+			
 			try {
 				// Load database driver
 				Class.forName(DB_DRIVER);
 				
 				// If we are allowing auto installation of the database tables
 				if (isAutoInstall()) {
-
+					
 					// If tables aren't installed
 					if (!tablesInstalled()) {
 						logger.info("Installing database tables");
-
+						
+						// Create database dir
+						createDatabaseDirectory();
+						
 						// Run script
 						runDatabaseScript();
-
+						
 						// Check interface table again
 						if (!tablesInstalled()) {
 							throw new DatabaseException(
@@ -75,11 +83,31 @@ public class MySQLDatabase extends Database implements Initializable
 					}
 				}
 			} catch (Exception e) {
-				logger.error("Unable to initialize MySQLDatabase",e);
+				logger.error("Unable to initialize SQLiteDatabase",e);
 				throw e;
 			}
 			
 			initialized = true;
+		}
+	}
+	
+	private void createDatabaseDirectory() throws DatabaseException
+	{
+		if (!databaseFile.exists()) {
+			File dir = databaseFile.getParentFile();
+			try {
+				if (!dir.exists()) {
+					if(!dir.mkdirs()) {
+						throw new DatabaseException(
+								"Unable to create database directory: "+
+								dir.getAbsolutePath());
+					}
+				}
+			} catch (Exception e) {
+				throw new DatabaseException(
+						"Unable to create database directory: "+
+						dir.getAbsolutePath(),e);
+			}
 		}
 	}
 	
@@ -91,9 +119,8 @@ public class MySQLDatabase extends Database implements Initializable
 			conn = getConnection();
 			stmt = conn.createStatement();
 			for (String s : getStatements(schemaFile)) {
-				stmt.addBatch(s);
+				stmt.executeUpdate(s);
 			}
-			stmt.executeBatch();
 			conn.commit();
 		} catch (SQLException sqle) {
 			throw new DatabaseException(
@@ -109,13 +136,18 @@ public class MySQLDatabase extends Database implements Initializable
 	
 	private boolean tablesInstalled() throws DatabaseException
 	{
+		// First, make sure that the database file exists
+		if (!databaseFile.exists())
+			return false;
+		
+		// Next, try to select some stuff from the database
 		Connection conn = null;
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
 			conn = getConnection();
 			stmt = conn.createStatement();
-			rs = stmt.executeQuery("SHOW TABLES LIKE 'interface'");
+			rs = stmt.executeQuery("SELECT * FROM sqlite_master WHERE name='interface' and type='table'");
 			return rs.next();
 		} catch (SQLException sqle) {
 			throw new DatabaseException(
@@ -133,34 +165,14 @@ public class MySQLDatabase extends Database implements Initializable
 		return stmts.split("[;]");
 	}
 	
-	public String getUrl()
+	public String getDatabaseFile()
 	{
-		return url;
+		return databaseFile.getAbsolutePath();
 	}
-
-	public void setUrl(String url)
+	
+	public void setDatabaseFile(String databaseFile)
 	{
-		this.url = url;
-	}
-
-	public String getUser()
-	{
-		return user;
-	}
-
-	public void setUser(String user)
-	{
-		this.user = user;
-	}
-
-	public String getPassword()
-	{
-		return password;
-	}
-
-	public void setPassword(String password)
-	{
-		this.password = password;
+		this.databaseFile = new File(databaseFile);
 	}
 
 	public String getSchemaFile()
@@ -185,23 +197,49 @@ public class MySQLDatabase extends Database implements Initializable
 
 	public SiteDAO getSiteDAO()
 	{
-		return new MySQLSiteDAO(this);
+		return new SQLiteSiteDAO(this);
 	}
 	
 	public GlideinDAO getGlideinDAO()
 	{
-		return new MySQLGlideinDAO(this);
+		return new SQLiteGlideinDAO(this);
+	}
+	
+	public String getURL()
+	{
+		return "jdbc:sqlite:"+getDatabaseFile();
 	}
 	
 	public Connection getConnection() throws DatabaseException
 	{
 		try {
-			Connection conn = DriverManager.getConnection(url,user,password);
+			Connection conn = DriverManager.getConnection(getURL());
 			conn.setAutoCommit(false);
 			return conn;
 		} catch(SQLException sqle) {
 			throw new DatabaseException("Unable to connect to database: "+
 					sqle.getMessage(),sqle);
+		}
+	}
+	
+	public Calendar parseDate(String date) throws DatabaseException
+	{
+		if (date == null)
+			return null;
+		if ("".equals(date))
+			return null;
+		
+		// SQLite stores dates as strings in this format in UTC
+		final SimpleDateFormat dateParser = 
+			new SimpleDateFormat(DATE_FORMAT);
+		dateParser.setTimeZone(TimeZone.getTimeZone(TIME_ZONE));
+		
+		try {
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(dateParser.parse(date));
+			return cal;
+		} catch (ParseException pe) {
+			throw new DatabaseException("Unable to parse date: "+date,pe);
 		}
 	}
 }

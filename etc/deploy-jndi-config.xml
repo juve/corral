@@ -10,7 +10,7 @@
         <!--					  itself automatically?							-->
        	<!-- 	schemaFile	- The path to the database creation script			-->
 		<resource name="glidein/Database"
-				  type="edu.usc.glidein.service.db.sqlite.SQLiteDatabase">
+				  type="edu.usc.glidein.db.sqlite.SQLiteDatabase">
             <resourceParams>
                 <parameter>
                     <name>factory</name>
@@ -41,7 +41,7 @@
        	<!-- 	schemaFile	- The path to the database creation script			-->
         <!-- 
 		<resource name="glidein/Database" 
-				  type="edu.usc.glidein.service.db.mysql.MySQLDatabase">
+				  type="edu.usc.glidein.db.mysql.MySQLDatabase">
             <resourceParams>
                 <parameter>
                     <name>factory</name>

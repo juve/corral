@@ -13,28 +13,25 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package edu.usc.glidein.service.db.mysql;
+package edu.usc.glidein.db.sqlite;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Calendar;
 import java.util.LinkedList;
-import java.util.TimeZone;
 
-import edu.usc.glidein.service.db.DatabaseException;
-import edu.usc.glidein.service.db.GlideinDAO;
-import edu.usc.glidein.service.db.JDBCUtil;
+import edu.usc.glidein.db.DatabaseException;
+import edu.usc.glidein.db.GlideinDAO;
+import edu.usc.glidein.db.JDBCUtil;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinState;
 
-public class MySQLGlideinDAO implements GlideinDAO
+public class SQLiteGlideinDAO implements GlideinDAO
 {
-	private MySQLDatabase database = null;
+	private SQLiteDatabase database = null;
 	
-	public MySQLGlideinDAO(MySQLDatabase db)
+	public SQLiteGlideinDAO(SQLiteDatabase db)
 	{
 		this.database = db;
 	}
@@ -65,14 +62,14 @@ public class MySQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'),datetime('now'),?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
 			stmt.setInt(i++, glidein.getHostCount());
 			stmt.setInt(i++, glidein.getWallTime());
 			stmt.setInt(i++, glidein.getNumCpus());
-			stmt.setBytes(i++, glidein.getCondorConfig());
+			stmt.setString(i++, new String(glidein.getCondorConfig()));
 			stmt.setString(i++, glidein.getGcbBroker());
 			stmt.setInt(i++, glidein.getIdleTime());
 			stmt.setString(i++, glidein.getCondorDebug());
@@ -144,7 +141,6 @@ public class MySQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		try {
 			conn = database.getConnection();
-			/* Cascaded deletes should take care of the other tables */
 			stmt = conn.prepareStatement("DELETE FROM glidein WHERE id=?");
 			stmt.setInt(1, glideinId);
 			if (stmt.executeUpdate() != 1) {
@@ -170,7 +166,7 @@ public class MySQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		try {
 			conn = database.getConnection();
-			stmt = conn.prepareStatement("UPDATE glidein SET state=?, shortMessage=?, longMessage=?, lastUpdate=NOW() WHERE id=?");
+			stmt = conn.prepareStatement("UPDATE glidein SET state=?, shortMessage=?, longMessage=?, lastUpdate=datetime('now') WHERE id=?");
 			int i = 1;
 			stmt.setString(i++, state.toString());
 			stmt.setString(i++, shortMessage);
@@ -236,7 +232,7 @@ public class MySQLGlideinDAO implements GlideinDAO
 			glidein.setHostCount(rs.getInt("hostCount"));
 			glidein.setWallTime(rs.getInt("wallTime"));
 			glidein.setNumCpus(rs.getInt("numCpus"));
-			glidein.setCondorConfig(rs.getBytes("condorConfig"));
+			glidein.setCondorConfig(rs.getString("condorConfig").getBytes());
 			glidein.setGcbBroker(rs.getString("gcbBroker"));
 			glidein.setIdleTime(rs.getInt("idleTime"));
 			glidein.setCondorDebug(rs.getString("condorDebug"));
@@ -246,15 +242,12 @@ public class MySQLGlideinDAO implements GlideinDAO
 			glidein.setShortMessage(rs.getString("shortMessage"));
 			glidein.setLongMessage(rs.getString("longMessage"));
 			
-			Calendar submitted = Calendar.getInstance(TimeZone.getDefault());
-			Timestamp submit = rs.getTimestamp("submitted",submitted);
-			submitted.setTime(submit);
-			glidein.setSubmitted(submitted);
+			String submit = rs.getString("submitted");
+			glidein.setSubmitted(database.parseDate(submit));
 			
-			Calendar lastUpdate = Calendar.getInstance(TimeZone.getDefault());
-			Timestamp last = rs.getTimestamp("lastUpdate",lastUpdate);
-			lastUpdate.setTime(last);
-			glidein.setLastUpdate(lastUpdate);
+			String last = rs.getString("lastUpdate");
+			glidein.setLastUpdate(database.parseDate(last));
+			
 			return glidein;
 		} catch (SQLException sqle) {
 			throw new DatabaseException("Unable to create Glidein object",sqle);

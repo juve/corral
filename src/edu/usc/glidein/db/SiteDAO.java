@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package edu.usc.glidein.service.db;
+package edu.usc.glidein.db;
 
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteState;

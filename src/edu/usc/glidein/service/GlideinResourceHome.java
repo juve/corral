@@ -26,9 +26,9 @@ import org.globus.wsrf.impl.ResourceHomeImpl;
 import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
 
-import edu.usc.glidein.service.db.Database;
-import edu.usc.glidein.service.db.DatabaseException;
-import edu.usc.glidein.service.db.GlideinDAO;
+import edu.usc.glidein.db.Database;
+import edu.usc.glidein.db.DatabaseException;
+import edu.usc.glidein.db.GlideinDAO;
 import edu.usc.glidein.stubs.types.Glidein;
 
 public class GlideinResourceHome extends ResourceHomeImpl

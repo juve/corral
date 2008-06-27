@@ -13,33 +13,36 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package edu.usc.glidein.service.db.sqlite;
+package edu.usc.glidein.db.mysql;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.LinkedList;
+import java.util.TimeZone;
 
-import edu.usc.glidein.service.db.DatabaseException;
-import edu.usc.glidein.service.db.JDBCUtil;
-import edu.usc.glidein.service.db.SiteDAO;
+import edu.usc.glidein.db.DatabaseException;
+import edu.usc.glidein.db.JDBCUtil;
+import edu.usc.glidein.db.SiteDAO;
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteState;
 
-public class SQLiteSiteDAO implements SiteDAO
+public class MySQLSiteDAO implements SiteDAO
 {
 	private enum ServiceFunction {
 		STAGING,
 		GLIDEIN
 	};
 	
-	private SQLiteDatabase database = null;
+	private MySQLDatabase database = null;
 	
-	public SQLiteSiteDAO(SQLiteDatabase db)
+	public MySQLSiteDAO(MySQLDatabase db)
 	{
 		this.database = db;
 	}
@@ -73,7 +76,7 @@ public class SQLiteSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,?,datetime('now'),datetime('now'))");
+			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,?,NOW(),NOW())");
 			int i = 1;
 			stmt.setString(i++, site.getName());
 			stmt.setString(i++, site.getInstallPath());
@@ -254,11 +257,15 @@ public class SQLiteSiteDAO implements SiteDAO
 	public void delete(int siteId) throws DatabaseException
 	{
 		Connection conn = null;
+		PreparedStatement stmt = null;
 		try {
 			conn = database.getConnection();
-			deleteEnvironment(conn, siteId);
-			deleteExecutionServices(conn, siteId);
-			deleteSite(conn,siteId);
+			/* Cascaded deletes should take care of the other tables */
+			stmt = conn.prepareStatement("DELETE FROM site WHERE id=?");
+			stmt.setInt(1, siteId);
+			if (stmt.executeUpdate() != 1) {
+				throw new DatabaseException("Unable to delete site: wrong number of db updates");
+			}
 			conn.commit();
 		} catch (DatabaseException dbe) {
 			JDBCUtil.rollbackQuietly(conn);
@@ -267,51 +274,8 @@ public class SQLiteSiteDAO implements SiteDAO
 			JDBCUtil.rollbackQuietly(conn);
 			throw new DatabaseException("Unable to delete site: delete failed",sqle);
 		} finally {
+			JDBCUtil.closeQuietly(stmt);
 			JDBCUtil.closeQuietly(conn);
-		}
-	}
-	
-	private void deleteSite(Connection conn, int siteId) throws DatabaseException
-	{
-		PreparedStatement stmt = null;
-		try {
-			stmt = conn.prepareStatement("DELETE FROM site WHERE id=?");
-			stmt.setInt(1, siteId);
-			if (stmt.executeUpdate() != 1) {
-				throw new DatabaseException("Unable to delete site: wrong number of db updates");
-			}
-		} catch (SQLException sqle) {
-			throw new DatabaseException("Unable to delete site",sqle);
-		} finally {
-			JDBCUtil.closeQuietly(stmt);
-		}
-	}
-	
-	private void deleteEnvironment(Connection conn, int siteId) throws DatabaseException
-	{
-		PreparedStatement stmt = null;
-		try {
-			stmt = conn.prepareStatement("DELETE FROM environment WHERE site=?");
-			stmt.setInt(1, siteId);
-			stmt.executeUpdate();
-		} catch (SQLException sqle) {
-			throw new DatabaseException("Unable to delete environment",sqle);
-		} finally {
-			JDBCUtil.closeQuietly(stmt);
-		}
-	}
-	
-	private void deleteExecutionServices(Connection conn, int siteId) throws DatabaseException
-	{
-		PreparedStatement stmt = null;
-		try {
-			stmt = conn.prepareStatement("DELETE FROM execution_service WHERE site=?");
-			stmt.setInt(1, siteId);
-			stmt.executeUpdate();
-		} catch (SQLException sqle) {
-			throw new DatabaseException("Unable to delete execution services",sqle);
-		} finally {
-			JDBCUtil.closeQuietly(stmt);
 		}
 	}
 	
@@ -322,7 +286,7 @@ public class SQLiteSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		try {
 			conn = database.getConnection();
-			stmt = conn.prepareStatement("UPDATE site SET state=?, shortMessage=?, longMessage=?, lastUpdate=datetime('now') WHERE id=?");
+			stmt = conn.prepareStatement("UPDATE site SET state=?, shortMessage=?, longMessage=?, lastUpdate=NOW() WHERE id=?");
 			int i = 1;
 			stmt.setString(i++, state.toString());
 			stmt.setString(i++, shortMessage);
@@ -402,11 +366,15 @@ public class SQLiteSiteDAO implements SiteDAO
 			site.setShortMessage(rs.getString("shortMessage"));
 			site.setLongMessage(rs.getString("longMessage"));
 			
-			String submit = rs.getString("submitted");
-			site.setSubmitted(database.parseDate(submit));
+			Calendar submitted = Calendar.getInstance(TimeZone.getDefault());
+			Timestamp submit = rs.getTimestamp("submitted",submitted);
+			submitted.setTime(submit);
+			site.setSubmitted(submitted);
 			
-			String last = rs.getString("lastUpdate");
-			site.setLastUpdate(database.parseDate(last));
+			Calendar lastUpdate = Calendar.getInstance(TimeZone.getDefault());
+			Timestamp last = rs.getTimestamp("lastUpdate",lastUpdate);
+			lastUpdate.setTime(last);
+			site.setLastUpdate(lastUpdate);
 			
 			return site;
 		} catch (SQLException sqle) {
