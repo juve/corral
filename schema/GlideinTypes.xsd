@@ -98,6 +98,7 @@
 			<xsd:element name="longMessage" type="xsd:string" nillable="true"/>
 			<xsd:element name="submitted" type="xsd:dateTime" nillable="true"/>
 			<xsd:element name="lastUpdate" type="xsd:dateTime" nillable="true"/>
+			<xsd:element name="resubmit" type="xsd:boolean" default="false"/>
 		</xsd:sequence>
 	</xsd:complexType>
 	

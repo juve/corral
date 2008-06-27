@@ -86,6 +86,7 @@ CREATE TABLE glidein (
 	longMessage			TEXT,							-- Long status message (e.g. stack trace)
 	submitted			DATETIME NOT NULL,				-- Date when glidein was submitted
 	lastUpdate			DATETIME NOT NULL,				-- Date when glidein was last updated
+	resubmit			BOOLEAN NOT NULL,				-- Should the glidein be resubmitted when it terminates?
 	CONSTRAINT pk_glidein PRIMARY KEY (id),
 	CONSTRAINT fk_glidein_01 FOREIGN KEY (site) REFERENCES site(id) ON DELETE SET NULL
 ) type=InnoDB;

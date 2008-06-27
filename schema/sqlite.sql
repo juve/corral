@@ -82,5 +82,6 @@ CREATE TABLE glidein (
 	shortMessage	TEXT NOT NULL,		-- Short status message
 	longMessage		TEXT,				-- Long status message (e.g. stack trace)
 	submitted		DATETIME NOT NULL,	-- Date when glidein was submitted
-	lastUpdate		DATETIME NOT NULL	-- Date when glidein was last updated
+	lastUpdate		DATETIME NOT NULL,	-- Date when glidein was last updated
+	resubmit		INTEGER NOT NULL	-- Should the glidein be resubmitted when it terminates? (1 true, 0 false)
 );
