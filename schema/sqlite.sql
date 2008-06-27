@@ -14,7 +14,7 @@ CREATE TABLE interface (
 	created		DATETIME NOT NULL
 );
 
-INSERT INTO interface (revision,created) VALUES ('$Revision: 483 $',datetime('now'));
+INSERT INTO interface (revision,created) VALUES ('$Revision$',datetime('now'));
 
 /**
  * Table to store information about sites. This includes any data needed
