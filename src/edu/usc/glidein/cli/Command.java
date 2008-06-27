@@ -27,6 +27,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.globus.axis.util.Util;
 import org.globus.delegation.DelegationException;
 import org.globus.delegation.DelegationUtil;
 import org.globus.gsi.GlobusCredential;
@@ -37,6 +38,8 @@ import org.globus.wsrf.security.Constants;
 
 public abstract class Command
 {
+	static { Util.registerTransport(); }
+	
 	public static final String COMMAND_NAME = "glidein";
 	
 	public static final Class[] SUBCOMMANDS = {

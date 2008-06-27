@@ -21,6 +21,8 @@ import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
 public class BaseService
 {
+	static { Util.registerTransport(); }
+	
 	private EndpointReferenceType epr;
 	private ClientSecurityDescriptor descriptor;
 	
@@ -37,13 +39,6 @@ public class BaseService
 	public void setDescriptor(ClientSecurityDescriptor descriptor)
 	{
 		this.descriptor = descriptor;
-		if (descriptor != null) {
-			// I got this from org.globus.delegation.client.BaseClient
-			// Its required, but completely undocumented. Thanks Globus.
-			if (descriptor.getGSITransport() != null) {
-				Util.registerTransport();
-			}
-		}
 	}
 	
 	public EndpointReferenceType getEPR()
