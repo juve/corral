@@ -46,11 +46,10 @@ public class CommandLineClient
 				try {
 					command.invoke(ops);
 				} catch (CommandException e) {
-					if (e.getMessage() != null) {
+					if (command.isDebug()) {
+						e.printStackTrace();
+					} else {
 						System.out.println(e.getMessage());
-					}
-					if (command.isDebug() && e.getCause() != null) {
-						e.getCause().printStackTrace();
 					}
 					System.exit(1);
 				} catch (Exception e) {
