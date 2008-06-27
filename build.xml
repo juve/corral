@@ -215,7 +215,7 @@
 	
 	<target name="compile" depends="stubs,globus">
 		<!-- Compile stubs -->
-		<javac srcdir="${stubs.dir}" destdir="${classes.dir}" debug="${java.debug}">
+		<javac srcdir="${stubs.dir}" destdir="${classes.dir}" debug="true">
 			<include name="**/*.java" />
 			<classpath>
 				<fileset dir="${globus.location}/lib">
@@ -225,7 +225,7 @@
 			</classpath>
 		</javac>
 		<!-- Compile service -->
-		<javac srcdir="${service.dir}" destdir="${classes.dir}" debug="${java.debug}">
+		<javac srcdir="${service.dir}" destdir="${classes.dir}" debug="true">
 			<include name="**/*.java"/>
 			<classpath>
 				<fileset dir="${globus.location}/lib">
