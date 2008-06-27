@@ -18,10 +18,10 @@ package edu.usc.glidein.service.state;
 import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceKey;
 
-import edu.usc.glidein.service.exec.Condor;
-import edu.usc.glidein.service.exec.CondorEvent;
-import edu.usc.glidein.service.exec.CondorEventListener;
-import edu.usc.glidein.service.exec.CondorException;
+import edu.usc.glidein.condor.Condor;
+import edu.usc.glidein.condor.CondorEvent;
+import edu.usc.glidein.condor.CondorEventListener;
+import edu.usc.glidein.condor.CondorException;
 
 public abstract class BaseListener implements CondorEventListener
 {

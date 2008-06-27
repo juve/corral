@@ -22,8 +22,8 @@ import javax.naming.NamingException;
 
 import org.globus.wsrf.ResourceKey;
 
-import edu.usc.glidein.service.exec.CondorEvent;
-import edu.usc.glidein.service.exec.CondorJob;
+import edu.usc.glidein.condor.CondorEvent;
+import edu.usc.glidein.condor.CondorJob;
 import edu.usc.glidein.util.IOUtil;
 
 public class UninstallSiteListener extends BaseListener

@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package edu.usc.glidein.service.exec;
+package edu.usc.glidein.condor;
 
 import java.io.File;
 import java.io.IOException;

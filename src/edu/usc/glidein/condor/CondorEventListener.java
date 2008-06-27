@@ -13,34 +13,14 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package edu.usc.glidein.service.exec;
+package edu.usc.glidein.condor;
 
 /**
- * An exception for condor errors
+ * An interface for classes that recieve condor job events.
  *
  * @author Gideon Juve <juve@usc.edu>
  */
-public class CondorException extends Exception
+public interface CondorEventListener
 {
-	private static final long serialVersionUID = 634176449871496327L;
-
-	public CondorException()
-	{
-		super();
-	}
-
-	public CondorException(String message, Throwable throwable)
-	{
-		super(message, throwable);
-	}
-
-	public CondorException(String message)
-	{
-		super(message);
-	}
-
-	public CondorException(Throwable throwable)
-	{
-		super(throwable);
-	}	
+	public void handleEvent(CondorEvent event);	
 }

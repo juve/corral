@@ -77,7 +77,7 @@
         <!-- 	condorHome		- Directory where condor is installed		 -->
         <!-- 	codnorConfig	- Path to the condor configuration file		 -->
         <resource name="glidein/Condor" 
-        		  type="edu.usc.glidein.service.exec.Condor">
+        		  type="edu.usc.glidein.condor.Condor">
             <resourceParams>
                 <parameter>
                     <name>factory</name>
