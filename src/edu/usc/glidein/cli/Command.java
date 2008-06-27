@@ -356,7 +356,15 @@ public abstract class Command
 			int len = option.getUsage().length();
 			for (int i=len; i<=max; i++) buff.append(" ");
 			buff.append(" : ");
-			buff.append(option.getDescription());
+			String desc = option.getDescription();
+			String[] ds = desc.split("[\n]");
+			for (int i = 0; i<ds.length; i++) {
+				if (i>0) {
+					buff.append("\n");
+					for (int j=1; j<=max+7; j++) buff.append(" ");
+				}
+				buff.append(ds[i]);
+			}
 			buff.append("\n");
 		}
 		
