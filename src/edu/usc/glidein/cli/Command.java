@@ -133,7 +133,7 @@ public abstract class Command
 				  .setOption("anon")
 				  .setLongOption("anonymous")
 				  .setUsage("-anon [--anonymous]")
-				  .setDescription("Enable anonymous authentication (default: false)")
+				  .setDescription("Enable anonymous authentication")
 		);
 		
 		// Add command-specific options
