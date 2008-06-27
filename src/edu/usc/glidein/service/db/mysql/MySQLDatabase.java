@@ -41,57 +41,66 @@ public class MySQLDatabase extends Database implements Initializable
 	private String url;
 	private String user;
 	private String password;
-	private String schemaPath;
+	private File schemaFile;
 	private boolean autoInstall;
+	private boolean initialized = false;
 	
 	public MySQLDatabase() { }
 	
-	public MySQLDatabase(String url, String user, String password)
-	{
-		this.url = url;
-		this.user = user;
-		this.password = password;
-	}
-	
 	public void initialize() throws Exception
 	{
-		// Load database driver
-		Class.forName(DB_DRIVER).newInstance();
+		synchronized (this) {
+			if (initialized)
+				return;
 		
-		// If we are allowing auto installation of the database tables
-		if (isAutoInstall()) {
-			
-			// If tables aren't installed
-			if (!tablesInstalled()) {
-				logger.info("Installing database tables");
+			try {
+				// Load database driver
+				Class.forName(DB_DRIVER);
 				
-				// Run script
-				runDatabaseScript();
-				
-				// Check interface table again
-				if (!tablesInstalled()) {
-					throw new DatabaseException("Unable to install tables");
+				// If we are allowing auto installation of the database tables
+				if (isAutoInstall()) {
+
+					// If tables aren't installed
+					if (!tablesInstalled()) {
+						logger.info("Installing database tables");
+
+						// Run script
+						runDatabaseScript();
+
+						// Check interface table again
+						if (!tablesInstalled()) {
+							throw new DatabaseException(
+									"Unable to install tables");
+						}
+					}
 				}
+			} catch (Exception e) {
+				logger.error("Unable to initialize MySQLDatabase",e);
+				throw e;
 			}
+			
+			initialized = true;
 		}
 	}
 	
 	private void runDatabaseScript() throws DatabaseException
 	{
-		File script = new File(getSchemaPath());
 		Connection conn = null;
 		Statement stmt = null;
 		try {
 			conn = getConnection();
 			stmt = conn.createStatement();
-			for (String s : getStatements(script)) {
+			for (String s : getStatements(schemaFile)) {
 				stmt.addBatch(s);
 			}
 			stmt.executeBatch();
+			conn.commit();
 		} catch (SQLException sqle) {
-			throw new DatabaseException("Unable to run database setup script");
+			throw new DatabaseException(
+					"Unable to run database setup script",sqle);
 		} catch (IOException ioe) {
-			throw new DatabaseException("Unable to read database setup script");
+			throw new DatabaseException(
+					"Unable to read database setup script",ioe);
 		} finally {
 			JDBCUtil.closeQuietly(stmt);
 			JDBCUtil.closeQuietly(conn);
@@ -110,8 +119,9 @@ public class MySQLDatabase extends Database implements Initializable
 			return rs.next();
 		} catch (SQLException sqle) {
 			throw new DatabaseException(
-					"Unable to determine if tables are installed");
+					"Unable to determine if tables are installed",sqle);
 		} finally {
+			JDBCUtil.closeQuietly(rs);
 			JDBCUtil.closeQuietly(stmt);
 			JDBCUtil.closeQuietly(conn);
 		}
@@ -153,14 +163,14 @@ public class MySQLDatabase extends Database implements Initializable
 		this.password = password;
 	}
 
-	public String getSchemaPath()
+	public String getSchemaFile()
 	{
-		return schemaPath;
+		return schemaFile.getAbsolutePath();
 	}
 
-	public void setSchemaPath(String schemaPath)
+	public void setSchemaFile(String schemaFile)
 	{
-		this.schemaPath = schemaPath;
+		this.schemaFile = new File(schemaFile);
 	}
 
 	public boolean isAutoInstall()
