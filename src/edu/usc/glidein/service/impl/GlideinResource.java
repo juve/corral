@@ -420,7 +420,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	private File getWorkingDirectory() throws ResourceException
 	{
-		File dir = new File(getConfig().getTempDir(),"glidein-"+glidein.getId());
+		File dir = new File(getConfig().getWorkingDirectory(),"glidein-"+glidein.getId());
 		
 		// Create the directory if it doesn't exist
 		if (dir.exists()) {

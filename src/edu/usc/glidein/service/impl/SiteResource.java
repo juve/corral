@@ -283,7 +283,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	private File getWorkingDirectory() throws ResourceException
 	{
 		// Determine the directory path
-		File dir = new File(getConfig().getTempDir(),"site-"+site.getId());
+		File dir = new File(getConfig().getWorkingDirectory(),"site-"+site.getId());
 	
 		// Create the directory if it doesn't exist
 		if (dir.exists()) {
