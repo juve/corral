@@ -69,7 +69,12 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			stmt.setInt(i++, glidein.getHostCount());
 			stmt.setInt(i++, glidein.getWallTime());
 			stmt.setInt(i++, glidein.getNumCpus());
-			stmt.setString(i++, new String(glidein.getCondorConfig()));
+			byte[] cfg = glidein.getCondorConfig();
+			if (cfg == null) {
+				stmt.setString(i++, null);
+			} else {
+				stmt.setString(i++, new String(cfg));
+			}
 			stmt.setString(i++, glidein.getGcbBroker());
 			stmt.setInt(i++, glidein.getIdleTime());
 			stmt.setString(i++, glidein.getCondorDebug());
@@ -233,7 +238,12 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			glidein.setHostCount(rs.getInt("hostCount"));
 			glidein.setWallTime(rs.getInt("wallTime"));
 			glidein.setNumCpus(rs.getInt("numCpus"));
-			glidein.setCondorConfig(rs.getString("condorConfig").getBytes());
+			String cfg = rs.getString("condorConfig");
+			if (cfg == null) {
+				glidein.setCondorConfig(null);
+			} else {
+				glidein.setCondorConfig(cfg.getBytes());
+			}
 			glidein.setGcbBroker(rs.getString("gcbBroker"));
 			glidein.setIdleTime(rs.getInt("idleTime"));
 			glidein.setCondorDebug(rs.getString("condorDebug"));
