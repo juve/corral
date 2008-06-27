@@ -28,12 +28,9 @@ public class ServiceConfiguration
 	private File run;
 	private String[] stagingURLs;
 	private File glideinCondorConfig;
-	private File tempDir;
+	private File workingDirectory;
 	
-	public ServiceConfiguration()
-	{
-		this.tempDir = new File("/tmp");
-	}
+	public ServiceConfiguration() { }
 	
 	public static ServiceConfiguration getInstance() throws NamingException
 	{
@@ -110,13 +107,13 @@ public class ServiceConfiguration
 		this.glideinCondorConfig = new File(glideinCondorConfig);
 	}
 
-	public String getTempDir()
+	public String getWorkingDirectory()
 	{
-		return tempDir.getAbsolutePath();
+		return workingDirectory.getAbsolutePath();
 	}
 
-	public void setTempDir(String tempDir)
+	public void setWorkingDirectory(String workingDirectory)
 	{
-		this.tempDir = new File(tempDir);
+		this.workingDirectory = new File(workingDirectory);
 	}
 }
