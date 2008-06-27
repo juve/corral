@@ -2,103 +2,154 @@
 <jndiConfig xmlns="http://wsrf.globus.org/jndi/config">
 
 	<global>
-		<resource name="glidein/Database" type="edu.usc.glidein.service.db.mysql.MySQLDatabase">
+		<!-- Use an SQLite database												-->
+        <!-- 																    -->
+        <!-- Parameters:														-->
+        <!-- 	databaseFile	- Path to the SQLite database file				-->
+        <!-- 	autoInstall		- Should we allow the database to install 		-->
+        <!--					  itself automatically?							-->
+       	<!-- 	schemaFile	- The path to the database creation script			-->
+		<resource name="glidein/Database"
+				  type="edu.usc.glidein.service.db.sqlite.SQLiteDatabase">
             <resourceParams>
                 <parameter>
                     <name>factory</name>
                     <value>org.globus.wsrf.jndi.BeanFactory</value>
                 </parameter>
                 <parameter>
-                	<!-- The MySQL Database URL -->
-                    <name>url</name>
-                    <value>jdbc:mysql://localhost:3306/glidein</value>
+                    <name>databaseFile</name>
+                    <value>var/glidein_service/glidein.db</value>
                 </parameter>
                 <parameter>
-                	<!-- The MySQL Databse user -->
-                	<name>user</name>
-                	<value>juve</value>
-                </parameter>
-                <parameter>
-                	<!-- The MySQL User's Password -->
-                	<name>password</name>
-                	<value>Mini14</value>
-                </parameter>
-                <parameter>
-                	<!-- Should we allow the database to install itself automatically? -->
                 	<name>autoInstall</name>
                 	<value>true</value>
                 </parameter>
                 <parameter>
-                	<!-- The path to the database creation script -->
-                	<name>schemaPath</name>
-                	<value>share/schema/glidein/mysql.sql</value>
+                	<name>schemaFile</name>
+                	<value>share/schema/glidein/sqlite.sql</value>
                 </parameter>
             </resourceParams>
         </resource>
-        <resource name="glidein/Condor" type="edu.usc.glidein.service.exec.Condor">
+        <!-- Use a MySQL database                                               -->
+        <!-- 																    -->
+        <!-- Parameters:														-->
+        <!-- 	url			- The MySQL Database URL							--> 
+        <!-- 	user		- The MySQL Databse user							-->
+        <!-- 	password	- The MySQL user's password							-->
+        <!-- 	autoInstall	- Should we allow the database to install itself	--> 
+        <!-- 				  automatically?									-->
+       	<!-- 	schemaFile	- The path to the database creation script			-->
+        <!-- 
+		<resource name="glidein/Database" 
+				  type="edu.usc.glidein.service.db.mysql.MySQLDatabase">
             <resourceParams>
                 <parameter>
                     <name>factory</name>
                     <value>org.globus.wsrf.jndi.BeanFactory</value>
                 </parameter>
                 <parameter>
-                	<!-- Path to where condor is installed -->
+                    <name>url</name>
+                    <value>jdbc:mysql://localhost:3306/glidein</value>
+                </parameter>
+                <parameter>
+                	<name>user</name>
+                	<value>juve</value>
+                </parameter>
+                <parameter>
+                	<name>password</name>
+                	<value>Mini14</value>
+                </parameter>
+                <parameter>
+                	<name>autoInstall</name>
+                	<value>true</value>
+                </parameter>
+                <parameter>
+                	<name>schemaFile</name>
+                	<value>share/schema/glidein/mysql.sql</value>
+                </parameter>
+            </resourceParams>
+        </resource>
+        -->
+        <!-- Condor configuration											 -->
+        <!-- 																 -->
+        <!-- Parameters:													 -->
+        <!-- 	factory			- BeanFactory used to create object			 -->
+        <!-- 	condorHome		- Directory where condor is installed		 -->
+        <!-- 	codnorConfig	- Path to the condor configuration file		 -->
+        <resource name="glidein/Condor" 
+        		  type="edu.usc.glidein.service.exec.Condor">
+            <resourceParams>
+                <parameter>
+                    <name>factory</name>
+                    <value>org.globus.wsrf.jndi.BeanFactory</value>
+                </parameter>
+                <parameter>
                     <name>condorHome</name>
                     <value>/opt/condor/7.0.0</value>
                 </parameter>
                 <parameter>
-                	<!-- Path to the condor configuration file -->
                 	<name>condorConfig</name>
                 	<value>/etc/condor/condor_config</value>
                 </parameter>
             </resourceParams>
         </resource>
-        <resource name="glidein/ServiceConfiguration" type="edu.usc.glidein.service.ServiceConfiguration">
+        <!-- Glidein service configuration									 -->
+        <!-- 																 -->
+        <!-- Parameters:													 -->
+        <!-- 	factory				- BeanFactory used to instantiate object -->
+        <!-- 	install				- Path to the site install shell script	 -->
+        <!-- 	uninstall			- Path to the site uninstall shell script-->
+        <!-- 	run					- Path to the glidein run shell script	 -->
+        <!-- 	glideinServerURLs	- List of URLs to retrieve glidein 		 -->
+        <!-- 						  binaries from (comma-separated list)	 -->
+        <!-- 	glideinCondorConfig	- Default glidein config file			 -->
+        <!-- 	workingDirectory	- Directory to store working files. URLs -->
+        <!-- 						  are considered in the order specified  -->
+        <resource name="glidein/ServiceConfiguration" 
+        		  type="edu.usc.glidein.service.ServiceConfiguration">
             <resourceParams>
                 <parameter>
                     <name>factory</name>
                     <value>org.globus.wsrf.jndi.BeanFactory</value>
                 </parameter>
                 <parameter>
-                	<!-- Path to the glidein installation shell script -->
                     <name>install</name>
                     <value>share/glidein_service/glidein_install</value>
                 </parameter>
                 <parameter>
-                	<!-- Path to the glidein uninstallation shell script -->
                 	<name>uninstall</name>
                 	<value>share/glidein_service/glidein_uninstall</value>
                 </parameter>
                 <parameter>
-                	<!-- Path to the glidein run shell script -->
                 	<name>run</name>
                 	<value>share/glidein_service/glidein_run</value>
                 </parameter>
                 <parameter>
-                	<!-- List of urls to retrieve glidein binaries from -->
                 	<name>glideinServerURLs</name>
                 	<value>http://scecit02.usc.edu/glidein/binaries,http://www.cs.wisc.edu/condor/glidein/binaries,gsiftp://gridftp.cs.wisc.edu/p/condor/public/binaries/glidein</value>
                 </parameter>
                 <parameter>
-                	<!-- Default configuration file for glideins -->
                 	<name>glideinCondorConfig</name>
                 	<value>etc/glidein_service/glidein_condor_config</value>
                 </parameter>
                 <parameter>
-                	<!-- Temporary directory (default: /tmp) -->
-                	<name>tempDir</name>
-                	<value>tmp/glidein_service</value>
+                	<name>workingDirectory</name>
+                	<value>var/glidein_service</value>
                 </parameter>
             </resourceParams>
         </resource>
-        <resource name="glidein/EventQueue" type="edu.usc.glidein.service.state.EventQueue">
+        <!-- Event queue													 -->
+        <!-- 																 -->
+        <!-- Parameters:													 -->
+        <!-- 	numThreads	- Number of worker threads to process events	 -->
+        <resource name="glidein/EventQueue" 
+        		  type="edu.usc.glidein.service.state.EventQueue">
             <resourceParams>
                 <parameter>
                     <name>factory</name>
                     <value>org.globus.wsrf.jndi.BeanFactory</value>
                 </parameter>
                 <parameter>
-                	<!-- Number of threads in the thread pool -->
                 	<name>numThreads</name>
                 	<value>1</value>
                 </parameter>
@@ -108,7 +159,8 @@
 
 	<!-- GlideinService -->
 	<service name="glidein/GlideinService">
-		<resource name="home" type="edu.usc.glidein.service.impl.GlideinResourceHome">
+		<resource name="home" 
+				  type="edu.usc.glidein.service.impl.GlideinResourceHome">
 			<resourceParams>
 				<parameter>
 					<name>sweeperDelay</name>
@@ -136,12 +188,14 @@
 	
 	<!-- GlideinFactoryService -->
 	<service name="glidein/GlideinFactoryService">
-		<resourceLink name="home" target="java:comp/env/services/glidein/GlideinService/home"/>
+		<resourceLink name="home" 
+			target="java:comp/env/services/glidein/GlideinService/home"/>
 	</service>
 	
 	<!-- SiteService -->
 	<service name="glidein/SiteService">
-		<resource name="home" type="edu.usc.glidein.service.impl.SiteResourceHome">
+		<resource name="home" 
+				  type="edu.usc.glidein.service.impl.SiteResourceHome">
 			<resourceParams>
 				<parameter>
 					<name>sweeperDelay</name>
@@ -169,7 +223,8 @@
 	
 	<!-- SiteFactoryService -->
 	<service name="glidein/SiteFactoryService">
-		<resourceLink name="home" target="java:comp/env/services/glidein/SiteService/home"/>
+		<resourceLink name="home" 
+			target="java:comp/env/services/glidein/SiteService/home"/>
 	</service>
 
 </jndiConfig>
