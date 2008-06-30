@@ -68,12 +68,6 @@ import edu.usc.glidein.util.AddressingUtil;
 import edu.usc.glidein.util.CredentialUtil;
 import edu.usc.glidein.util.IOUtil;
 
-// TODO: Improve dir hierarchy on remote
-/* TODO: Fix error handling for failure cases
- * A serious failure should cause the handleEvent method to return.
- */
-
-
 public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, ResourceProperties
 {
 	private final Logger logger = Logger.getLogger(SiteResource.class);
@@ -346,7 +340,14 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		job.setExecutable(install);
 		job.setLocalExecutable(true);
 		job.setMaxTime(300); // Not longer than 5 mins
-		job.setCredential(loadCredential());
+		
+		// Set credential
+		GlobusCredential cred = loadCredential();
+		if (validateCredentialLifetime(cred)) {
+			job.setCredential(cred);
+		} else {
+			throw new ResourceException("Not enough time left on credential");
+		}
 		
 		// Add environment
 		EnvironmentVariable env[] = site.getEnvironment();
@@ -509,15 +510,12 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private void validateCredentialLifetime(GlobusCredential credential)
+	private boolean validateCredentialLifetime(GlobusCredential credential)
 	throws ResourceException
 	{
 		// Require at least 5 minutes
 		long need = 300;
-		if (need > credential.getTimeLeft()) {
-			throw new ResourceException("Credential does not have enough time left. " +
-					"Need: "+need+", have: "+credential.getTimeLeft());
-		}
+		return (need < credential.getTimeLeft());
 	}
 	
 	private GlobusCredential loadCredential() 
@@ -525,9 +523,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	{
 		info("Loading credential");
 		try {
-			GlobusCredential credential = CredentialUtil.load(getCredentialFile());
-			validateCredentialLifetime(credential);
-			return credential;
+			return CredentialUtil.load(getCredentialFile());
 		} catch (IOException e) {
 			throw new ResourceException("Unable to load credential",e);
 		}
@@ -562,7 +558,13 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		job.setExecutable(uninstall);
 		job.setLocalExecutable(true);
 		job.setMaxTime(300); // Not longer than 5 mins
-		job.setCredential(loadCredential());
+		
+		GlobusCredential cred = loadCredential();
+		if (validateCredentialLifetime(cred)) {
+			job.setCredential(cred);
+		} else {
+			throw new ResourceException("Not enough time on credential");
+		}
 		
 		// Add environment
 		EnvironmentVariable env[] = site.getEnvironment();
@@ -586,7 +588,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private void delete() throws ResourceException
+	private void deleteFromDatabase() throws ResourceException
 	{
 		info("Deleting site from database");
 		try {
@@ -595,6 +597,31 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			dao.delete(site.getId());
 		} catch(DatabaseException de) {
 			throw new ResourceException(de);
+		}
+	}
+	
+	private void delete() throws ResourceException
+	{
+		// Set state to deleted in case any other event
+		// handlers already have a reference to this resource
+		site.setState(SiteState.DELETED);
+		
+		// Remove the Resource from the resource home
+		try {
+			SiteResourceHome resourceHome = SiteResourceHome.getInstance();
+			resourceHome.remove(getKey());
+		} catch (NamingException e) {
+			throw new ResourceException("Unable to locate SiteResourceHome",e);
+		}
+		
+		// Delete the site from the database
+		deleteFromDatabase();
+		
+		// Remove the working directory and all sub-directories
+		try {
+			IOUtil.rmdirs(getWorkingDirectory());
+		} catch (ResourceException re) {
+			throw new ResourceException("Unable to remove working directory",re);
 		}
 	}
 	
@@ -625,6 +652,15 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	public synchronized void handleEvent(SiteEvent event)
 	{
+		try {
+			_handleEvent(event);
+		} catch(ResourceException re) {
+			failQuietly(re.getMessage(), re);
+		}
+	}
+	
+	private void _handleEvent(SiteEvent event) throws ResourceException
+	{
 		SiteState state = site.getState();
 		SiteEventCode code = (SiteEventCode)event.getCode();
 		
@@ -639,49 +675,51 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		switch (code) {
 			
 			case SUBMIT: {
+				
 				SiteState reqd = SiteState.NEW;
 				if (reqd.equals(state)) {
-					try {
-						// Change status to submitted
-						updateState(SiteState.STAGING, "Staging executables", null);
+					
+					// Change status to submitted
+					updateState(SiteState.STAGING, "Staging executables", null);
 						
-						// Store delegated credential
-						GlobusCredential credential = 
-							(GlobusCredential)event.getProperty("credential");
-						storeCredential(credential);
+					// Store delegated credential
+					GlobusCredential credential = 
+						(GlobusCredential)event.getProperty("credential");
+					storeCredential(credential);
 						
-						// Submit job
-						submitInstallJob();
-					} catch (ResourceException re) {
-						failQuietly("Unable to submit install job",re);
-					}
+					// Submit job
+					submitInstallJob();
+					
 				} else {
 					warn("State was not "+reqd+" when "+code+" was recieved");
 				}
+				
 			} break;
 				
 			case INSTALL_SUCCESS: {
+				
 				SiteState reqd = SiteState.STAGING;
 				if (reqd.equals(state)) {
+					
 					// Change status to READY
-					try {
-						updateState(SiteState.READY, "Installed", null);
-					} catch (ResourceException re) {
-						failQuietly("Unable to update state",re);
-					}
+					updateState(SiteState.READY, "Installed", null);
 					
 					// Notify any waiting glideins for this site
 					try {
 						notifyGlideinsOfReady();
 					} catch (ResourceException re) {
+						// No need to fail here, just print a warning
 						warn("Unable to notify glideins",re);
 					}
+					
 				} else {
 					warn("State was not "+reqd+" when "+code+" was recieved");
 				}
+				
 			} break;
 			
 			case INSTALL_FAILED: {
+				
 				SiteState reqd = SiteState.STAGING;
 				if (reqd.equals(state)) {
 					failQuietly((String)event.getProperty("message"),
@@ -689,6 +727,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				} else {
 					warn("State was not "+reqd+" when "+code+" was recieved");
 				}
+				
 			} break;
 				
 			case REMOVE: {
@@ -701,11 +740,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				
 				// If we are currently staging, then we need to cancel the install job
 				if (SiteState.STAGING.equals(state)) {
-					try {
-						cancelInstallJob();
-					} catch (ResourceException re) {
-						failQuietly("Could not cancel install job",re);
-					}
+					cancelInstallJob();
 				}
 				
 				// Store the credential for later. We have to do this because
@@ -713,111 +748,59 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				// wait for. If that happens then the event with the credential
 				// attached won't be available when we need to submit the
 				// uninstall job.
-				try {
-					GlobusCredential credential = 
-						(GlobusCredential)event.getProperty("credential");
-					storeCredential(credential);
-				} catch (ResourceException re) {
-					failQuietly("Could not store uninstall credential",re);
-				}
-				
-				// Check to see if there are some glideins for this site
-				boolean hasGlideins = true;
-				try {
-					hasGlideins = hasGlideins();
-				} catch (ResourceException re) {
-					failQuietly("Unable to determine glidein state",re);
-				}
+				GlobusCredential credential = 
+					(GlobusCredential)event.getProperty("credential");
+				storeCredential(credential);
 				
 				// If there are some glideins for this site
-				if (hasGlideins) {
+				if (hasGlideins()) {
 					
 					// Change state to EXITING
-					try {
-						updateState(SiteState.EXITING, "Waiting for glideins", null);
-					} catch (ResourceException re) {
-						error("Unable to change state to "+SiteState.EXITING,re);
-					}
+					updateState(SiteState.EXITING, "Waiting for glideins", null);
 					
 					// Cancel running glideins
-					try {
-						cancelGlideins();
-					} catch (ResourceException re) {
-						failQuietly("Unable to cancel running glideins",re);
-					}
+					cancelGlideins();
 					
 				} else {
 					
 					// Change state to REMOVING
-					try {
-						updateState(SiteState.REMOVING, "Removing site", null);
-					} catch (ResourceException re) {
-						error("Unable to change state to "+SiteState.REMOVING,re);
-					}
+					updateState(SiteState.REMOVING, "Removing site", null);
 					
 					// Submit uninstall job
-					try {
-						submitUninstallJob();
-					} catch (ResourceException re) {
-						failQuietly("Unable to submit uninstall job",re);
-					}
+					submitUninstallJob();
 					
 				}
+				
 			} break;
 				
 			case GLIDEIN_DELETED: {
 				
 				// If exiting then check for last glidein
-				SiteState reqd = SiteState.EXITING;
-				if (reqd.equals(state)) {
-					try {
-						// If last glidein
-						if (!hasGlideins()) {
-							// Change state
-							updateState(SiteState.REMOVING, "Removing site", null);
-							
-							// Submit uninstall job
-							submitUninstallJob();
-						}
-					} catch (ResourceException re) {
-						failQuietly(re.getMessage(),re);
+				if (SiteState.EXITING.equals(state)) {
+					
+					// If last glidein
+					if (!hasGlideins()) {
+						
+						// Change state
+						updateState(SiteState.REMOVING, 
+								"Removing site", null);
+						
+						// Submit uninstall job
+						submitUninstallJob();
+						
 					}
 					
 				} else {
 					/* This is expected to happen frequently */
 				}
+				
 			} break;
 			
 			case UNINSTALL_SUCCESS:
 			case DELETE: {
 				
-				// Set state to deleted in case any other event
-				// handlers already have a reference to this resource
-				site.setState(SiteState.DELETED);
-				
-				// Remove the Resource from the resource home
-				try {
-					SiteResourceHome resourceHome = SiteResourceHome.getInstance();
-					resourceHome.remove(getKey());
-				} catch (NamingException e) {
-					failQuietly("Unable to locate SiteResourceHome",e);
-				} catch (ResourceException re) {
-					failQuietly("Unable to remove site from SiteResourceHome",re);
-				}
-				
-				// Delete the site from the database
-				try {
-					delete();
-				} catch (ResourceException re) {
-					failQuietly("Unable to delete site from database",re);
-				}
-				
-				// Remove the working directory and all sub-directories
-				try {
-					IOUtil.rmdirs(getWorkingDirectory());
-				} catch (ResourceException re) {
-					failQuietly("Unable to remove working directory",re);
-				}
+				// Delete the site
+				delete();
 				
 			} break;
 			

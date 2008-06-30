@@ -24,8 +24,6 @@ import org.globus.wsrf.ResourceContext;
 import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.Glidein;
 
-// TODO: Add the ability to automatically resubmit glideins
-
 public class GlideinService
 {
 	private Logger logger = Logger.getLogger(GlideinService.class);
