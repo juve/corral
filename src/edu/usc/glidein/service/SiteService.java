@@ -42,7 +42,7 @@ public class SiteService
 	{
 		Site site = null;
 		try {
-			getResource().getSite();
+			site = getResource().getSite();
 		} catch (Throwable t) {
 			logAndRethrow("Unable to get site", t);
 		}
