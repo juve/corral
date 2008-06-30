@@ -1,8 +1,10 @@
 /* Delete any existing tables */
 drop table if exists interface;
 drop table if exists execution_service;
+drop table if exists glidein_history;
 drop table if exists glidein;
 drop table if exists environment;
+drop table if exists site_history;
 drop table if exists site;
 
 /**
@@ -10,8 +12,8 @@ drop table if exists site;
  * of the database and the date that it was created.
  */
 CREATE TABLE interface (
-	revision	TEXT NOT NULL,
-	created		DATETIME NOT NULL
+	revision	TEXT NOT NULL,	-- SVN revision number of database creation script
+	created		TEXT NOT NULL 	-- Date when tables were created ("YYYY-MM-DD HH:MM:SS" 24-hour UTC format)
 );
 
 INSERT INTO interface (revision,created) VALUES ('$Revision$',datetime('now'));
@@ -31,8 +33,8 @@ CREATE TABLE site (
 	state			TEXT NOT NULL,		-- The current state (e.g. READY)
 	shortMessage	TEXT NOT NULL,		-- A short status message
 	longMessage		TEXT,				-- A long status message (e.g. Stack trace)
-	submitted		DATETIME NOT NULL,	-- Time when site was submitted
-	lastUpdate		DATETIME NOT NULL	-- Time when site was last updated
+	submitted		TEXT NOT NULL,		-- Time when site was submitted ("YYYY-MM-DD HH:MM:SS" 24-hour UTC format)
+	lastUpdate		TEXT NOT NULL		-- Time when site was last updated ("YYYY-MM-DD HH:MM:SS" 24-hour UTC format)
 );
 
 /**
@@ -81,7 +83,25 @@ CREATE TABLE glidein (
 	state			TEXT NOT NULL,		-- The current state of the glidein (e.g. RUNNING)
 	shortMessage	TEXT NOT NULL,		-- Short status message
 	longMessage		TEXT,				-- Long status message (e.g. stack trace)
-	submitted		DATETIME NOT NULL,	-- Date when glidein was submitted
-	lastUpdate		DATETIME NOT NULL,	-- Date when glidein was last updated
+	submitted		TEXT NOT NULL,		-- Date when glidein was submitted ("YYYY-MM-DD HH:MM:SS" 24-hour UTC format)
+	lastUpdate		TEXT NOT NULL,		-- Date when glidein was last updated ("YYYY-MM-DD HH:MM:SS" 24-hour UTC format)
 	resubmit		INTEGER NOT NULL	-- Should the glidein be resubmitted when it terminates? (1 true, 0 false)
+);
+
+/**
+ * History of glidein state changes
+ */
+CREATE TABLE glidein_history (
+	glidein			INTEGER NOT NULL,	-- Glidein ID
+	state			TEXT NOT NULL,		-- New state
+	time			TEXT NOT NULL		-- Date/time when state was entered ("YYYY-MM-DD HH:MM:SS" 24-hour UTC format)
+);
+
+/**
+ * History of site state changes
+ */
+CREATE TABLE site_history (
+	site			INTEGER NOT NULL,	-- Site ID
+	state			TEXT NOT NULL,		-- New state
+	time			TEXT NOT NULL		-- Date/time when state was entered ("YYYY-MM-DD HH:MM:SS" 24-hour UTC format)
 );

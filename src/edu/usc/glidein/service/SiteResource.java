@@ -158,6 +158,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			dao.create(site);
 			// Needed to get updated dates
 			site = dao.load(site.getId());
+			dao.insertHistory(site.getId(), site.getState(), site.getLastUpdate());
 		} catch (DatabaseException de) {
 			throw new ResourceException(de);
 		}
@@ -260,6 +261,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			dao.updateState(site.getId(), state, shortMessage, longMessage);
+			site = dao.load(site.getId());
+			dao.insertHistory(site.getId(), site.getState(), site.getLastUpdate());
 		} catch(DatabaseException de) {
 			throw new ResourceException(
 					"Unable to change state to "+state+": "+de.getMessage(),de);
@@ -602,10 +605,6 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	
 	private void delete() throws ResourceException
 	{
-		// Set state to deleted in case any other event
-		// handlers already have a reference to this resource
-		site.setState(SiteState.DELETED);
-		
 		// Remove the Resource from the resource home
 		try {
 			SiteResourceHome resourceHome = SiteResourceHome.getInstance();
@@ -800,6 +799,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			case DELETE: {
 				
 				// Delete the site
+				updateState(SiteState.DELETED,
+						"Site deleted",null);
 				delete();
 				
 			} break;
@@ -943,9 +944,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			
 		} else if (SiteState.DELETED.equals(state)) {
 			
-			/* This should not happen */
-			throw new IllegalStateException(SiteState.DELETED+
-					" state should not be in database");
+			// Delete the site
+			delete();
 			
 		} else {
 			

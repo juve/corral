@@ -15,7 +15,10 @@
  */
 package edu.usc.glidein.db;
 
+import java.util.Calendar;
+
 import edu.usc.glidein.stubs.types.Site;
+import edu.usc.glidein.stubs.types.SiteHistory;
 import edu.usc.glidein.stubs.types.SiteState;
 
 public interface SiteDAO
@@ -28,4 +31,6 @@ public interface SiteDAO
 	public Site[] list(boolean full) throws DatabaseException;
 	public boolean hasGlideins(int siteId) throws DatabaseException;
 	public int[] getGlideinIds(int siteId) throws DatabaseException;
+	public void insertHistory(int siteId, SiteState state, Calendar time) throws DatabaseException;
+	public SiteHistory getHistory(int siteId) throws DatabaseException;
 }

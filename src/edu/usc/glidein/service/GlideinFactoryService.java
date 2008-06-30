@@ -23,13 +23,15 @@ import javax.naming.NamingException;
 import org.apache.axis.MessageContext;
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
-import org.globus.wsrf.ResourceContext;
 import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.container.ServiceHost;
 import org.globus.wsrf.utils.AddressingUtils;
 
+import edu.usc.glidein.db.Database;
+import edu.usc.glidein.db.GlideinDAO;
 import edu.usc.glidein.stubs.types.Glidein;
+import edu.usc.glidein.stubs.types.GlideinHistory;
 import edu.usc.glidein.stubs.types.Glideins;
 import edu.usc.glidein.util.AddressingUtil;
 
@@ -85,14 +87,27 @@ public class GlideinFactoryService
 	{
 		Glideins glideins = null;
 		try {
-			ResourceContext rctx = ResourceContext.getResourceContext();
-			GlideinResourceHome home = (GlideinResourceHome) rctx.getResourceHome();
-			Glidein[] _glideins = home.list(longFormat);
+			Database db = Database.getDatabase();
+			GlideinDAO dao = db.getGlideinDAO();
+			Glidein[] _glideins = dao.list(longFormat);
 			glideins = new Glideins(_glideins);
 		} catch (Throwable t) {
 			logAndRethrow("Unable to list glideins", t);
 		}
 		return glideins;
+	}
+	
+	public GlideinHistory getHistory(int glideinId) throws RemoteException
+	{
+		GlideinHistory history = null;
+		try {
+			Database db = Database.getDatabase();
+			GlideinDAO dao = db.getGlideinDAO();
+			history = dao.getHistory(glideinId);
+		} catch (Throwable t) {
+			logAndRethrow("Unable to get glidein history", t);
+		}
+		return history;
 	}
 
 	private void logAndRethrow(String message, Throwable t) throws RemoteException

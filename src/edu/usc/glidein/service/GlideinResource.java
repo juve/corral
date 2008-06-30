@@ -136,6 +136,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			dao.create(glidein);
 			// Needed to get updated dates
 			glidein = dao.load(glidein.getId());
+			dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
 		} catch (DatabaseException dbe) {
 			throw new ResourceException(dbe);
 		}
@@ -225,6 +226,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.updateState(glidein.getId(), state, shortMessage, longMessage);
+			glidein = dao.load(glidein.getId());
+			dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
 		} catch(DatabaseException de) {
 			throw new ResourceException("Unable to update state to "+state,de);
 		}
@@ -417,9 +420,6 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	private void delete() throws ResourceException
 	{
-		// Update the status
-		glidein.setState(GlideinState.DELETED);
-		
 		// Remove the glidein from the ResourceHome
 		try {
 			GlideinResourceHome home = GlideinResourceHome.getInstance();
@@ -671,6 +671,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				} else {
 					
 					// Otherwise, just delete it
+					updateState(GlideinState.DELETED,
+							"Glidein deleted",null);
 					delete();
 					
 				}
@@ -692,6 +694,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				} else {
 					
 					// Otherwise, delete the glidein
+					updateState(GlideinState.DELETED,
+							"Glidein deleted",null);
 					delete();
 					
 				}
@@ -703,6 +707,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				
 				// If the job was aborted, or a delete was requested, then
 				// just delete the glidein
+				updateState(GlideinState.DELETED,
+						"Glidein deleted",null);
 				delete();
 				
 			} break;
@@ -813,8 +819,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			
 		} else if (GlideinState.DELETED.equals(state)) {
 			
-			// This should not happen
-			throw new IllegalStateException("Glidein state was deleted");
+			// Delete the glidein
+			delete();
 			
 		} else {
 			
@@ -823,7 +829,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			
 		}
 	}
-	
+
 	private String logPrefix()
 	{
 		if (glidein == null) {

@@ -1,8 +1,10 @@
 /* Delete any existing tables */
 drop table if exists interface;
 drop table if exists execution_service;
+drop table if exists glidein_history;
 drop table if exists glidein;
 drop table if exists environment;
+drop table if exists site_history;
 drop table if exists site;
 
 /**
@@ -10,8 +12,8 @@ drop table if exists site;
  * of the database and the date that it was created.
  */
 CREATE TABLE interface (
-	revision	VARCHAR(25) NOT NULL,
-	created		DATETIME NOT NULL
+	revision	VARCHAR(25) NOT NULL,	-- SVN revision number of database creation script
+	created		DATETIME NOT NULL		-- Date/time when tables were created
 ) type=InnoDB;
 
 INSERT INTO interface (revision,created) VALUES ('$Revision$',NOW());
@@ -89,4 +91,24 @@ CREATE TABLE glidein (
 	resubmit			BOOLEAN NOT NULL,				-- Should the glidein be resubmitted when it terminates?
 	CONSTRAINT pk_glidein PRIMARY KEY (id),
 	CONSTRAINT fk_glidein_01 FOREIGN KEY (site) REFERENCES site(id) ON DELETE SET NULL
+) type=InnoDB;
+
+/**
+ * History of glidein state changes
+ */
+CREATE TABLE glidein_history (
+	glidein				BIGINT NOT NULL,				-- Glidein ID
+	state				VARCHAR(16) NOT NULL,			-- New state
+	time				DATETIME NOT NULL				-- Date/time when glidein entered state
+	/* No foreign key constraint, history is not deleted */
+) type=InnoDB;
+
+/**
+ * History of site state changes
+ */
+CREATE TABLE site_history (
+	site				BIGINT NOT NULL,				-- Site id
+	state				VARCHAR(16) NOT NULL,			-- New state
+	time				DATETIME NOT NULL				-- Date/time when site entered state
+	/* No foreign key constraint, history is not deleted */
 ) type=InnoDB;

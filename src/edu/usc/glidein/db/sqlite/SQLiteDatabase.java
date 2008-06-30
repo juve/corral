@@ -37,6 +37,8 @@ import edu.usc.glidein.db.JDBCUtil;
 import edu.usc.glidein.db.SiteDAO;
 import edu.usc.glidein.util.IOUtil;
 
+// TODO: Convert dates to unix time format
+
 public class SQLiteDatabase extends Database implements Initializable
 {
 	public static final Logger logger = Logger.getLogger(SQLiteDatabase.class);
@@ -241,5 +243,17 @@ public class SQLiteDatabase extends Database implements Initializable
 		} catch (ParseException pe) {
 			throw new DatabaseException("Unable to parse date: "+date,pe);
 		}
+	}
+	
+	public String formatDate(Calendar date) throws DatabaseException
+	{
+		if (date == null)
+			return null;
+		
+		final SimpleDateFormat dateFormatter = 
+			new SimpleDateFormat(DATE_FORMAT);
+		dateFormatter.setTimeZone(TimeZone.getTimeZone(TIME_ZONE));
+		
+		return dateFormatter.format(date.getTime());
 	}
 }

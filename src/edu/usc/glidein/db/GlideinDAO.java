@@ -15,7 +15,10 @@
  */
 package edu.usc.glidein.db;
 
+import java.util.Calendar;
+
 import edu.usc.glidein.stubs.types.Glidein;
+import edu.usc.glidein.stubs.types.GlideinHistory;
 import edu.usc.glidein.stubs.types.GlideinState;
 
 public interface GlideinDAO
@@ -26,4 +29,6 @@ public interface GlideinDAO
 	public void delete(int glideinId) throws DatabaseException;
 	public void updateState(int glideinId, GlideinState state, String shortMessage, String longMessage) throws DatabaseException;
 	public Glidein[] list(boolean longFormat) throws DatabaseException;
+	public void insertHistory(int glideinId, GlideinState state, Calendar time) throws DatabaseException;
+	public GlideinHistory getHistory(int glideinId) throws DatabaseException;
 }

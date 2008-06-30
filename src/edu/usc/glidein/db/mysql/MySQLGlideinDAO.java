@@ -28,6 +28,8 @@ import edu.usc.glidein.db.DatabaseException;
 import edu.usc.glidein.db.GlideinDAO;
 import edu.usc.glidein.db.JDBCUtil;
 import edu.usc.glidein.stubs.types.Glidein;
+import edu.usc.glidein.stubs.types.GlideinHistory;
+import edu.usc.glidein.stubs.types.GlideinHistoryEntry;
 import edu.usc.glidein.stubs.types.GlideinState;
 
 public class MySQLGlideinDAO implements GlideinDAO
@@ -223,6 +225,68 @@ public class MySQLGlideinDAO implements GlideinDAO
 		} finally {
 			JDBCUtil.closeQuietly(rs);
 			JDBCUtil.closeQuietly(stmt);
+		}
+	}
+	
+	public GlideinHistory getHistory(int glideinId) throws DatabaseException
+	{
+		GlideinHistory hist = new GlideinHistory();
+		hist.setGlideinId(glideinId);
+		LinkedList<GlideinHistoryEntry> entries = new LinkedList<GlideinHistoryEntry>();
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			conn = database.getConnection();
+			stmt = conn.prepareStatement("SELECT * FROM glidein_history WHERE glidein=?");
+			stmt.setInt(1,glideinId);
+			rs = stmt.executeQuery();
+			while (rs.next()) {
+				GlideinState state = GlideinState.fromString(rs.getString("state"));
+				Calendar time = Calendar.getInstance(TimeZone.getDefault());
+				time.setTime(rs.getTimestamp("time",time));
+				
+				GlideinHistoryEntry entry = new GlideinHistoryEntry();
+				entry.setState(state);
+				entry.setTime(time);
+				
+				entries.add(entry);
+			}
+			hist.setHistory(entries.toArray(new GlideinHistoryEntry[0]));
+		} catch (SQLException sqle) {
+			throw new DatabaseException("Unable to get glidein history",sqle);
+		} finally {
+			JDBCUtil.closeQuietly(rs);
+			JDBCUtil.closeQuietly(stmt);
+			JDBCUtil.closeQuietly(conn);
+		}
+		
+		return hist;
+	}
+	
+	public void insertHistory(int glideinId, GlideinState state, Calendar time)
+			throws DatabaseException
+	{
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		try {
+			conn = database.getConnection();
+			stmt = conn.prepareStatement("INSERT INTO glidein_history (glidein,state,time) VALUES (?,?,?)");
+			stmt.setInt(1,glideinId);
+			stmt.setString(2, state.toString());
+			stmt.setTimestamp(3, new Timestamp(time.getTimeInMillis()), time);
+			if (stmt.executeUpdate() != 1) {
+				throw new DatabaseException(
+						"Unable to insert glidein history: " +
+						"wrong number of updates");
+			}
+			conn.commit();
+		} catch (SQLException sqle) {
+			throw new DatabaseException(
+					"Unable to insert glidein history",sqle);
+		} finally {
+			JDBCUtil.closeQuietly(stmt);
+			JDBCUtil.closeQuietly(conn);
 		}
 	}
 	

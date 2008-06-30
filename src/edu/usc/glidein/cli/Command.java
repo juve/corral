@@ -49,7 +49,9 @@ public abstract class Command
 		ListSiteCommand.class,
 		CreateGlideinCommand.class,
 		RemoveGlideinCommand.class,
-		ListGlideinCommand.class
+		ListGlideinCommand.class,
+		SiteHistoryCommand.class,
+		GlideinHistoryCommand.class
 	};
 	
 	public static HashMap<String,Class> LOOKUP;

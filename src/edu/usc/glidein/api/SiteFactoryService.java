@@ -26,6 +26,7 @@ import org.apache.axis.message.addressing.EndpointReferenceType;
 import edu.usc.glidein.stubs.SiteFactoryPortType;
 import edu.usc.glidein.stubs.service.SiteFactoryServiceAddressingLocator;
 import edu.usc.glidein.stubs.types.Site;
+import edu.usc.glidein.stubs.types.SiteHistory;
 import edu.usc.glidein.util.AddressingUtil;
 
 public class SiteFactoryService extends BaseService
@@ -67,6 +68,17 @@ public class SiteFactoryService extends BaseService
 			return sites;
 		} catch (RemoteException re) {
 			throw new GlideinException("Unable to list sites: "+
+					re.getMessage(),re);
+		}
+	}
+	
+	public SiteHistory getHistory(int siteId) throws GlideinException
+	{
+		try {
+			SiteFactoryPortType instance = getPort();
+			return instance.getHistory(siteId);
+		} catch (RemoteException re) {
+			throw new GlideinException("Unable to get site history: "+
 					re.getMessage(),re);
 		}
 	}

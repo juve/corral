@@ -86,16 +86,4 @@ public class SiteResourceHome extends ResourceHomeImpl
 		this.add(key, resource);
 		return key;
 	}
-
-	public Site[] list(boolean longFormat) 
-	throws ResourceException
-	{
-		try {
-			Database db = Database.getDatabase();
-			SiteDAO dao = db.getSiteDAO();
-			return dao.list(longFormat);
-		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to list sites",de);
-		}
-	}
 }

@@ -18,7 +18,7 @@ package edu.usc.glidein.db;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-// TODO: Add history tracking
+// TODO: Record event times in the database to match Condor event times
 
 public abstract class Database
 {

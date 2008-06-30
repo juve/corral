@@ -26,6 +26,7 @@ import org.apache.axis.message.addressing.EndpointReferenceType;
 import edu.usc.glidein.stubs.GlideinFactoryPortType;
 import edu.usc.glidein.stubs.service.GlideinFactoryServiceAddressingLocator;
 import edu.usc.glidein.stubs.types.Glidein;
+import edu.usc.glidein.stubs.types.GlideinHistory;
 import edu.usc.glidein.util.AddressingUtil;
 
 public class GlideinFactoryService extends BaseService
@@ -67,6 +68,17 @@ public class GlideinFactoryService extends BaseService
 			return glideins;
 		} catch (RemoteException re) {
 			throw new GlideinException("Unable to list glideins: "+
+					re.getMessage(),re);
+		}
+	}
+	
+	public GlideinHistory getHistory(int glideinId) throws GlideinException
+	{
+		try {
+			GlideinFactoryPortType glidein = getPort();
+			return glidein.getHistory(glideinId);
+		} catch (RemoteException re) {
+			throw new GlideinException("Unable to get glidein history: "+
 					re.getMessage(),re);
 		}
 	}

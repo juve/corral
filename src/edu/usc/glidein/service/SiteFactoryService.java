@@ -23,11 +23,13 @@ import javax.naming.NamingException;
 import org.apache.axis.MessageContext;
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
-import org.globus.wsrf.ResourceContext;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.container.ServiceHost;
 import org.globus.wsrf.utils.AddressingUtils;
 
+import edu.usc.glidein.db.Database;
+import edu.usc.glidein.db.SiteDAO;
+import edu.usc.glidein.stubs.types.SiteHistory;
 import edu.usc.glidein.stubs.types.Sites;
 import edu.usc.glidein.stubs.types.Site;
 
@@ -75,14 +77,27 @@ public class SiteFactoryService
 	{
 		Sites sites = null;
 		try {
-			ResourceContext rctx = ResourceContext.getResourceContext();
-			SiteResourceHome home = (SiteResourceHome) rctx.getResourceHome();
-			Site[] _sites = home.list(longFormat);
+			Database db = Database.getDatabase();
+			SiteDAO dao = db.getSiteDAO();
+			Site[] _sites = dao.list(longFormat);
 			sites = new Sites(_sites);
 		} catch (Throwable t) {
 			logAndRethrow("Unable to list sites", t);
 		}
 		return sites;
+	}
+	
+	public SiteHistory getHistory(int siteId) throws RemoteException
+	{
+		SiteHistory history = null;
+		try {
+			Database db = Database.getDatabase();
+			SiteDAO dao = db.getSiteDAO();
+			history =  dao.getHistory(siteId);
+		} catch (Throwable t) {
+			logAndRethrow("Unable to get site history", t);
+		}
+		return history;
 	}
 	
 	private void logAndRethrow(String message, Throwable t) throws RemoteException

@@ -25,6 +25,9 @@
 				namespace="http://www.usc.edu/glidein/GlideinTypes"
 				schemaLocation="GlideinTypes.xsd" />
 				
+			<xsd:element name="getHistoryRequest" type="xsd:int"/>
+			<xsd:element name="getHistoryResponse" type="glidein:GlideinHistory"/>
+			
 		</xsd:schema>
 	</types>
 	
@@ -46,6 +49,13 @@
 		<part name="glideins" type="glidein:Glideins"/>
 	</message>
 	
+	<message name="getHistoryInputMessage">
+		<part name="request" element="tns:getHistoryRequest"/>
+	</message>
+	<message name="getHistoryOutputMessage">
+		<part name="response" element="tns:getHistoryResponse"/>
+	</message>
+	
 	<!--============================================================
 							PORT TYPE
 	============================================================-->
@@ -60,6 +70,11 @@
 		<operation name="listGlideins">
 			<input message="tns:listGlideinsRequestMessage"/>
 			<output message="tns:listGlideinsResponseMessage"/>
+		</operation>
+		
+		<operation name="getHistory">
+			<input message="tns:getHistoryInputMessage"/>
+			<output message="tns:getHistoryOutputMessage"/>
 		</operation>
 		
 	</portType>

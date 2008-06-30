@@ -88,16 +88,4 @@ public class GlideinResourceHome extends ResourceHomeImpl
 		this.add(key, resource);
 		return key;
 	}
-
-	public Glidein[] list(boolean longFormat)
-	throws ResourceException
-	{
-		try {
-			Database db = Database.getDatabase();
-			GlideinDAO dao = db.getGlideinDAO();
-			return dao.list(longFormat);
-		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to list sites",de);
-		}
-	}
 }

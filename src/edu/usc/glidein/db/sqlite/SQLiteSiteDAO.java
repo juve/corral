@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.LinkedList;
 
 import edu.usc.glidein.db.DatabaseException;
@@ -28,6 +29,8 @@ import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
+import edu.usc.glidein.stubs.types.SiteHistory;
+import edu.usc.glidein.stubs.types.SiteHistoryEntry;
 import edu.usc.glidein.stubs.types.SiteState;
 
 public class SQLiteSiteDAO implements SiteDAO
@@ -461,6 +464,67 @@ public class SQLiteSiteDAO implements SiteDAO
 			throw new DatabaseException("Unable to get glidein ids",sqle);
 		} finally {
 			JDBCUtil.closeQuietly(rs);
+			JDBCUtil.closeQuietly(stmt);
+			JDBCUtil.closeQuietly(conn);
+		}
+	}
+	
+	public SiteHistory getHistory(int siteId) throws DatabaseException
+	{
+		SiteHistory hist = new SiteHistory();
+		hist.setSiteId(siteId);
+		LinkedList<SiteHistoryEntry> entries = new LinkedList<SiteHistoryEntry>();
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			conn = database.getConnection();
+			stmt = conn.prepareStatement("SELECT * FROM site_history WHERE site=?");
+			stmt.setInt(1,siteId);
+			rs = stmt.executeQuery();
+			while (rs.next()) {
+				SiteState state = SiteState.fromString(rs.getString("state"));
+				Calendar time = database.parseDate(rs.getString("time"));
+				
+				SiteHistoryEntry entry = new SiteHistoryEntry();
+				entry.setState(state);
+				entry.setTime(time);
+				
+				entries.add(entry);
+			}
+			hist.setHistory(entries.toArray(new SiteHistoryEntry[0]));
+		} catch (SQLException sqle) {
+			throw new DatabaseException("Unable to get site history",sqle);
+		} finally {
+			JDBCUtil.closeQuietly(rs);
+			JDBCUtil.closeQuietly(stmt);
+			JDBCUtil.closeQuietly(conn);
+		}
+		
+		return hist;
+	}
+	
+	public void insertHistory(int siteId, SiteState state, Calendar time)
+			throws DatabaseException
+	{
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		try {
+			conn = database.getConnection();
+			stmt = conn.prepareStatement("INSERT INTO site_history (site,state,time) VALUES (?,?,?)");
+			stmt.setInt(1,siteId);
+			stmt.setString(2, state.toString());
+			stmt.setString(3, database.formatDate(time));
+			if (stmt.executeUpdate() != 1) {
+				throw new DatabaseException(
+						"Unable to insert site history: " +
+						"wrong number of updates");
+			}
+			conn.commit();
+		} catch (SQLException sqle) {
+			throw new DatabaseException(
+					"Unable to insert site history",sqle);
+		} finally {
 			JDBCUtil.closeQuietly(stmt);
 			JDBCUtil.closeQuietly(conn);
 		}
