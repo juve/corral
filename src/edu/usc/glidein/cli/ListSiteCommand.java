@@ -117,7 +117,7 @@ public class ListSiteCommand extends Command
 	public void printSites(Site[] sites) throws CommandException
 	{
 		if (sites == null) {
-			System.out.println("No sites");
+			if (isDebug()) System.out.println("No sites");
 			return;
 		}
 		

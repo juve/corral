@@ -125,7 +125,7 @@ public class ListGlideinCommand extends Command
 		if (isDebug()) System.out.println("Printing glideins");
 		
 		if (glideins == null || glideins.length == 0) {
-			System.out.println("No glideins");
+			if (isDebug()) System.out.println("No glideins");
 			return;
 		}
 		
