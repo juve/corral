@@ -344,7 +344,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	private String readJobId() throws ResourceException
 	{
-		File jobidFile = new File(getWorkingDirectory(),"jobid");
+		File jobidFile = new File(getJobDirectory(),"jobid");
 		try {
 			// Read job id from jobid file
 			BufferedReader reader = new BufferedReader(
@@ -382,7 +382,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		info("Cancelling glidein job");
 		
 		// Find submit dir
-		File dir = getWorkingDirectory();
+		File dir = getJobDirectory();
 		File jobidFile = new File(dir,"jobid");
 		
 		try {
@@ -767,7 +767,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			// If the state is submitted, then the job could be finished,
 			// running, ready, or unready
 			
-			File jobDir = getWorkingDirectory();
+			File jobDir = getJobDirectory();
 			CondorJob job = new CondorJob(jobDir);
 			
 			if (job.getLog().exists()) {
@@ -798,7 +798,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			
 			// If glidein has been submitted to condor, then it can only 
 			// be running or finished
-			File jobDir = getWorkingDirectory();
+			File jobDir = getJobDirectory();
 			CondorJob job = new CondorJob(jobDir);
 			job.setJobId(readJobId());
 			GlideinListener listener = 
