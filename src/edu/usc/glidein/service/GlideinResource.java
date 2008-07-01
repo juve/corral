@@ -133,6 +133,11 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		glidein.setLastUpdate(time);
 		glidein.setCreated(time);
 		
+		// Validate glidein
+		if (glidein.getWallTime() < 2) {
+			throw new ResourceException("Wall time must be >= 2 minutes");
+		}
+		
 		// Save in the database
 		try {
 			Database db = Database.getDatabase();
@@ -276,9 +281,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		job.setHostCount(glidein.getHostCount());
 		job.setCount(glidein.getCount());
 		
-		// Add 1 to the runtime so that the glidein has time to
-		// exit on its own before being killed by the scheduler
-		job.setMaxTime(glidein.getWallTime()+1);
+		// Set job runtime
+		job.setMaxTime(glidein.getWallTime());
 		
 		// Add environment
 		EnvironmentVariable env[] = site.getEnvironment();
@@ -291,7 +295,9 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		job.addArgument("-installPath "+site.getInstallPath());
 		job.addArgument("-localPath "+site.getLocalPath());
 		job.addArgument("-condorHost "+glidein.getCondorHost());
-		job.addArgument("-wallTime "+glidein.getWallTime());
+		// Subtract 1 from wall time to give condor a chance to exit on its
+		// own before it gets killed by the local scheduler
+		job.addArgument("-wallTime "+(glidein.getWallTime()-1));
 		if(glidein.getGcbBroker()!=null)
 			job.addArgument("-gcbBroker "+glidein.getGcbBroker());
 		if(glidein.getIdleTime()>0)

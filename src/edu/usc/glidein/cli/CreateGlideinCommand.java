@@ -73,7 +73,7 @@ public class CreateGlideinCommand extends Command
 				  .setOption("w")
 				  .setLongOption("wall-time")
 				  .setUsage("-w [--wall-time] <t>")
-				  .setDescription("Wall time for job in minutes (default: 60)")		 
+				  .setDescription("Wall time for job in minutes (default: 60, min: 2, max: site-specific)")		 
 				  .hasArgument()
 		);
 		options.add(
@@ -205,6 +205,9 @@ public class CreateGlideinCommand extends Command
 		//wall-time w
 		if (cmdln.hasOption("w")) {
 			int wallTime = Integer.parseInt(cmdln.getOptionValue("wall-time"));
+			if (wallTime<2) {
+				throw new CommandException("Wall time must be >= 2 minutes");
+			}
 			glidein.setWallTime(wallTime);
 		} else {
 			glidein.setWallTime(60);
