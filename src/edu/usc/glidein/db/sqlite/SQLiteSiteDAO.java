@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Calendar;
 import java.util.LinkedList;
 
@@ -86,9 +87,18 @@ public class SQLiteSiteDAO implements SiteDAO
 			stmt.setString(i++, site.getState().toString());
 			stmt.setString(i++, site.getShortMessage());
 			stmt.setString(i++, site.getLongMessage());
-			long time = System.currentTimeMillis();
-			stmt.setLong(i++, time);
-			stmt.setLong(i++, time);
+			Calendar submitted = site.getSubmitted();
+			if (submitted == null) {
+				stmt.setNull(i++, Types.INTEGER);
+			} else {
+				stmt.setLong(i++, submitted.getTimeInMillis());
+			}
+			Calendar lastUpdate = site.getLastUpdate();
+			if (lastUpdate == null) {
+				stmt.setNull(i++, Types.INTEGER);
+			} else {
+				stmt.setLong(i++, lastUpdate.getTimeInMillis());
+			}
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create site: wrong number of db updates");
 			}
@@ -251,11 +261,6 @@ public class SQLiteSiteDAO implements SiteDAO
 		}
 		return (EnvironmentVariable[])env.toArray(new EnvironmentVariable[0]);
 	}
-
-	public void store(Site site) throws DatabaseException 
-	{
-		updateState(site.getId(),site.getState(),site.getShortMessage(),site.getLongMessage());
-	}
 	
 	public void delete(int siteId) throws DatabaseException
 	{
@@ -321,7 +326,7 @@ public class SQLiteSiteDAO implements SiteDAO
 		}
 	}
 	
-	public void updateState(int siteId, SiteState state, String shortMessage, String longMessage)
+	public void updateState(int siteId, SiteState state, String shortMessage, String longMessage, Calendar time)
 	throws DatabaseException
 	{
 		Connection conn = null;
@@ -333,7 +338,7 @@ public class SQLiteSiteDAO implements SiteDAO
 			stmt.setString(i++, state.toString());
 			stmt.setString(i++, shortMessage);
 			stmt.setString(i++, longMessage);
-			stmt.setLong(i++, System.currentTimeMillis());
+			stmt.setLong(i++, time.getTimeInMillis());
 			stmt.setInt(i++, siteId);
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to update site status: wrong number of db updates");

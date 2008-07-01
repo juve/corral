@@ -78,7 +78,7 @@ public class MySQLSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,?,NOW(),NOW())");
+			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setString(i++, site.getName());
 			stmt.setString(i++, site.getInstallPath());
@@ -88,6 +88,18 @@ public class MySQLSiteDAO implements SiteDAO
 			stmt.setString(i++, site.getState().toString());
 			stmt.setString(i++, site.getShortMessage());
 			stmt.setString(i++, site.getLongMessage());
+			Calendar submitted = site.getSubmitted();
+			if (submitted == null) {
+				stmt.setTimestamp(i++, null);
+			} else {
+				stmt.setTimestamp(i++, new Timestamp(submitted.getTimeInMillis()));
+			}
+			Calendar lastUpdate = site.getLastUpdate();
+			if (lastUpdate == null) {
+				stmt.setTimestamp(i++, null);
+			} else {
+				stmt.setTimestamp(i++, new Timestamp(lastUpdate.getTimeInMillis()));
+			}
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create site: wrong number of db updates");
 			}
@@ -250,11 +262,6 @@ public class MySQLSiteDAO implements SiteDAO
 		}
 		return (EnvironmentVariable[])env.toArray(new EnvironmentVariable[0]);
 	}
-
-	public void store(Site site) throws DatabaseException 
-	{
-		updateState(site.getId(),site.getState(),site.getShortMessage(),site.getLongMessage());
-	}
 	
 	public void delete(int siteId) throws DatabaseException
 	{
@@ -281,18 +288,19 @@ public class MySQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	public void updateState(int siteId, SiteState state, String shortMessage, String longMessage)
+	public void updateState(int siteId, SiteState state, String shortMessage, String longMessage, Calendar time)
 	throws DatabaseException
 	{
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
 			conn = database.getConnection();
-			stmt = conn.prepareStatement("UPDATE site SET state=?, shortMessage=?, longMessage=?, lastUpdate=NOW() WHERE id=?");
+			stmt = conn.prepareStatement("UPDATE site SET state=?, shortMessage=?, longMessage=?, lastUpdate=? WHERE id=?");
 			int i = 1;
 			stmt.setString(i++, state.toString());
 			stmt.setString(i++, shortMessage);
 			stmt.setString(i++, longMessage);
+			stmt.setTimestamp(i++, new Timestamp(time.getTimeInMillis()));
 			stmt.setInt(i++, siteId);
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to update site status: wrong number of db updates");
@@ -368,14 +376,12 @@ public class MySQLSiteDAO implements SiteDAO
 			site.setShortMessage(rs.getString("shortMessage"));
 			site.setLongMessage(rs.getString("longMessage"));
 			
-			Calendar submitted = Calendar.getInstance(TimeZone.getDefault());
-			Timestamp submit = rs.getTimestamp("submitted",submitted);
-			submitted.setTime(submit);
+			Calendar submitted = Calendar.getInstance();
+			submitted.setTime(rs.getTimestamp("submitted"));
 			site.setSubmitted(submitted);
 			
-			Calendar lastUpdate = Calendar.getInstance(TimeZone.getDefault());
-			Timestamp last = rs.getTimestamp("lastUpdate",lastUpdate);
-			lastUpdate.setTime(last);
+			Calendar lastUpdate = Calendar.getInstance();
+			lastUpdate.setTime(rs.getTimestamp("lastUpdate"));
 			site.setLastUpdate(lastUpdate);
 			
 			return site;

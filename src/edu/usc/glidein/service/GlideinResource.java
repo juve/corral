@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Calendar;
 
 import javax.naming.NamingException;
 
@@ -128,14 +129,15 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		// Initialize glidein
 		glidein.setState(GlideinState.NEW);
 		glidein.setShortMessage("Created");
+		Calendar time = Calendar.getInstance();
+		glidein.setLastUpdate(time);
+		glidein.setSubmitted(time);
 		
 		// Save in the database
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.create(glidein);
-			// Needed to get updated dates
-			glidein = dao.load(glidein.getId());
 			dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
 		} catch (DatabaseException dbe) {
 			throw new ResourceException("Unable to create glidein",dbe);
@@ -177,7 +179,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		
 		// Queue the event
 		try {
-			Event event = new GlideinEvent(code,getKey());
+			Event event = new GlideinEvent(code,Calendar.getInstance(),getKey());
 			EventQueue queue = EventQueue.getInstance(); 
 			queue.add(event);
 		} catch(NamingException ne) {
@@ -200,7 +202,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			validateCredentialLifetime(credential);
 			
 			// Create submit event
-			Event event = new GlideinEvent(GlideinEventCode.SUBMIT,getKey());
+			Event event = new GlideinEvent(GlideinEventCode.SUBMIT,Calendar.getInstance(),getKey());
 			event.setProperty("credential", credential);
 			EventQueue queue = EventQueue.getInstance(); 
 			queue.add(event);
@@ -211,7 +213,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 	}
 	
-	private void updateState(GlideinState state, String shortMessage, String longMessage) 
+	private void updateState(GlideinState state, String shortMessage, String longMessage, Calendar time) 
 	throws ResourceException
 	{
 		info("Changing state to "+state+": "+shortMessage);
@@ -220,13 +222,13 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		glidein.setState(state);
 		glidein.setShortMessage(shortMessage);
 		glidein.setLongMessage(longMessage);
+		glidein.setLastUpdate(time);
 		
 		// Update database
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
-			dao.updateState(glidein.getId(), state, shortMessage, longMessage);
-			glidein = dao.load(glidein.getId());
+			dao.updateState(glidein.getId(), state, shortMessage, longMessage, time);
 			dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
 		} catch(DatabaseException de) {
 			throw new ResourceException("Unable to update state to "+state,de);
@@ -431,7 +433,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		// Tell the Site About it
 		try {
 			ResourceKey siteKey = AddressingUtil.getSiteKey(glidein.getSiteId());
-			Event siteEvent = new SiteEvent(SiteEventCode.GLIDEIN_DELETED, siteKey);
+			Event siteEvent = new SiteEvent(SiteEventCode.GLIDEIN_DELETED, 
+					glidein.getLastUpdate(), siteKey);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(siteEvent);
 		} catch (NamingException ne) {
@@ -524,25 +527,25 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 	}
 	
-	private void failQuietly(String message, Exception exception)
+	private void failQuietly(String message, Exception exception, Calendar time)
 	{
 		try {
-			fail(message,exception);
+			fail(message,exception,time);
 		} catch (ResourceException re) {
 			error("Unable to change state to "+GlideinState.FAILED,re);
 		}
 	}
 	
-	private void fail(String message, Exception exception) throws ResourceException
+	private void fail(String message, Exception exception, Calendar time) throws ResourceException
 	{
 		// Update status to FAILED
 		error("Failure: "+message,exception);
 		if (exception == null) {
-			updateState(GlideinState.FAILED, message, null);
+			updateState(GlideinState.FAILED, message, null, time);
 		} else {
 			CharArrayWriter caw = new CharArrayWriter();
 			exception.printStackTrace(new PrintWriter(caw));
-			updateState(GlideinState.FAILED, message, caw.toString());
+			updateState(GlideinState.FAILED, message, caw.toString(), time);
 		}
 	}
 	
@@ -558,9 +561,9 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			String message = re.getMessage();
 			int cause = message.indexOf("; nested exception is:");
 			if (cause > 0) {
-				failQuietly(message.substring(0, cause), re);
+				failQuietly(message.substring(0, cause), re, event.getTime());
 			} else {
-				failQuietly(message, re);
+				failQuietly(message, re, event.getTime());
 			}
 		}
 	}
@@ -594,7 +597,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 						
 						// If the site is ready, submit the glidein job
 						updateState(GlideinState.SUBMITTED,
-								"Local job submitted",null);
+								"Local job submitted",null,event.getTime());
 						submitGlideinJob();
 						
 					} else {
@@ -602,7 +605,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 						// Otherwise, we need to wait for the site
 						updateState(GlideinState.WAITING, 
 								"Waiting for site to be "+ SiteState.READY, 
-								null);
+								null,event.getTime());
 						
 					}
 				} else {
@@ -618,7 +621,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				
 					// If we were waiting, then submit the job
 					updateState(GlideinState.SUBMITTED,
-							"Local job submitted",null);
+							"Local job submitted",null,event.getTime());
 					submitGlideinJob();
 					
 				}
@@ -640,7 +643,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				}
 				
 				// If the site failed, then the glidein will fail
-				failQuietly("Site failed",null);
+				failQuietly("Site failed",null,event.getTime());
 				
 			} break;
 			
@@ -648,7 +651,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				
 				GlideinState reqd = GlideinState.SUBMITTED;
 				if (reqd.equals(state)) {
-					updateState(GlideinState.QUEUED,"Glidein job queued",null);
+					updateState(GlideinState.QUEUED,"Glidein job queued",null,event.getTime());
 				} else {
 					warn("State was not "+reqd+" when event "+
 							code+" was received");	
@@ -659,7 +662,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			case RUNNING: {
 				
 				// Update state to running regardless
-				updateState(GlideinState.RUNNING,"Glidein job running",null);
+				updateState(GlideinState.RUNNING,"Glidein job running",null,event.getTime());
 				
 			} break;
 			
@@ -679,7 +682,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 					
 					// Otherwise, just delete it
 					updateState(GlideinState.DELETED,
-							"Glidein deleted",null);
+							"Glidein deleted",null,event.getTime());
 					delete();
 					
 				}
@@ -695,14 +698,14 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 					
 					info("Resubmitting glidein");
 					updateState(GlideinState.SUBMITTED,
-							"Local job submitted",null);
+							"Local job submitted",null,event.getTime());
 					submitGlideinJob();
 					
 				} else {
 					
 					// Otherwise, delete the glidein
 					updateState(GlideinState.DELETED,
-							"Glidein deleted",null);
+							"Glidein deleted",null,event.getTime());
 					delete();
 					
 				}
@@ -715,7 +718,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				// If the job was aborted, or a delete was requested, then
 				// just delete the glidein
 				updateState(GlideinState.DELETED,
-						"Glidein deleted",null);
+						"Glidein deleted",null,event.getTime());
 				delete();
 				
 			} break;
@@ -724,7 +727,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				
 				// If the job fails, then fail the glidein
 				failQuietly((String)event.getProperty("message"), 
-						(Exception)event.getProperty("exception"));
+						(Exception)event.getProperty("exception"),
+						event.getTime());
 				
 			} break;
 			
@@ -741,15 +745,13 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	public synchronized void recoverState() throws InitializeException
 	{
 		try {
-			
 			// Try to recover state
 			_recoverState();
-			
 		} catch (ResourceException re) {
 			try {
 				
 				// If recovery fails, try to update the state to failed
-				fail("State recovery failed",re);
+				fail("State recovery failed",re,Calendar.getInstance());
 				
 			} catch (ResourceException re2) {
 				
@@ -801,8 +803,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				
 			} else {
 				
-				// Otherwise set the state back to NEW
-				updateState(GlideinState.NEW, "Glidein created", null);
+				// Otherwise set the state to failed
+				fail("Unable to submit site",null,Calendar.getInstance());
 				
 			}
 			

@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Calendar;
 import java.util.LinkedList;
 
@@ -84,9 +85,18 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			stmt.setString(i++, glidein.getState().toString());
 			stmt.setString(i++, glidein.getShortMessage());
 			stmt.setString(i++, glidein.getLongMessage());
-			long time = System.currentTimeMillis();
-			stmt.setLong(i++, time);
-			stmt.setLong(i++, time);
+			Calendar submitted = glidein.getSubmitted();
+			if (submitted == null) {
+				stmt.setNull(i++, Types.INTEGER);
+			} else {
+				stmt.setLong(i++, submitted.getTimeInMillis());
+			}
+			Calendar lastUpdate = glidein.getLastUpdate();
+			if (lastUpdate == null) {
+				stmt.setNull(i++, Types.INTEGER);
+			} else {
+				stmt.setLong(i++, lastUpdate.getTimeInMillis());
+			}
 			stmt.setString(i++, glidein.getCondorHost());
 			stmt.setBoolean(i++, glidein.isResubmit());
 			if (stmt.executeUpdate()!=1) {
@@ -142,11 +152,6 @@ public class SQLiteGlideinDAO implements GlideinDAO
 		}
 	}
 	
-	public void store(Glidein glidein) throws DatabaseException
-	{
-		updateState(glidein.getId(), glidein.getState(), glidein.getShortMessage(), glidein.getLongMessage());
-	}
-	
 	public void delete(int glideinId) throws DatabaseException
 	{
 		Connection conn = null;
@@ -171,7 +176,7 @@ public class SQLiteGlideinDAO implements GlideinDAO
 		}
 	}
 	
-	public void updateState(int glideinId, GlideinState state, String shortMessage, String longMessage)
+	public void updateState(int glideinId, GlideinState state, String shortMessage, String longMessage, Calendar time)
 	throws DatabaseException
 	{
 		Connection conn = null;
@@ -183,7 +188,7 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			stmt.setString(i++, state.toString());
 			stmt.setString(i++, shortMessage);
 			stmt.setString(i++, longMessage);
-			stmt.setLong(i++, System.currentTimeMillis());
+			stmt.setLong(i++, time.getTimeInMillis());
 			stmt.setInt(i++, glideinId);
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to update glidein state: wrong number of db updates");

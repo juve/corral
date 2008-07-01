@@ -28,6 +28,7 @@ public abstract class BaseListener implements CondorEventListener
 	private static final Logger logger = Logger.getLogger(BaseListener.class);
 	private ResourceKey key = null;
 	private boolean aborted = false;
+	private CondorEvent lastEvent = null;
 	
 	public BaseListener(ResourceKey key)
 	{
@@ -45,6 +46,16 @@ public abstract class BaseListener implements CondorEventListener
 		this.key = key;
 	}
 	
+	public CondorEvent getLastEvent()
+	{
+		return lastEvent;
+	}
+	
+	public void setLastEvent(CondorEvent lastEvent)
+	{
+		this.lastEvent = lastEvent;
+	}
+	
 	public abstract void queued(CondorEvent event);
 	public abstract void running(CondorEvent event);
 	public abstract void terminated(CondorEvent event);
@@ -53,6 +64,8 @@ public abstract class BaseListener implements CondorEventListener
 	
 	public void handleEvent(CondorEvent event) 
 	{	
+		setLastEvent(event);
+		
 		switch(event.getEventCode())
 		{
 			case GRID_SUBMIT:

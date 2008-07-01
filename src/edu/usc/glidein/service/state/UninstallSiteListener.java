@@ -84,7 +84,8 @@ public class UninstallSiteListener extends BaseListener
 	{
 		// Generate failed event
 		try {
-			Event event = new SiteEvent(SiteEventCode.UNINSTALL_FAILED,getKey());
+			CondorEvent ce = getLastEvent();
+			Event event = new SiteEvent(SiteEventCode.UNINSTALL_FAILED,ce.getTime(),getKey());
 			event.setProperty("message", message);
 			event.setProperty("exception", exception);
 			EventQueue queue = EventQueue.getInstance();
@@ -101,7 +102,8 @@ public class UninstallSiteListener extends BaseListener
 		
 		// Generate success event
 		try {
-			Event event = new SiteEvent(SiteEventCode.UNINSTALL_SUCCESS,getKey());
+			CondorEvent ce = getLastEvent();
+			Event event = new SiteEvent(SiteEventCode.UNINSTALL_SUCCESS,ce.getTime(),getKey());
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {

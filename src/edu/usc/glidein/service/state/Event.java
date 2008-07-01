@@ -15,6 +15,7 @@
  */
 package edu.usc.glidein.service.state;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,11 +26,13 @@ public abstract class Event implements Runnable
 	private EventCode code;
 	private Map<String,Object> properties;
 	private ResourceKey key;
+	private Calendar time;
 	
-	public Event(EventCode code, ResourceKey key)
+	public Event(EventCode code, Calendar time, ResourceKey key)
 	{
 		this.code = code;
 		this.key = key;
+		this.time = time;
 		properties = new HashMap<String,Object>();
 	}
 
@@ -51,6 +54,16 @@ public abstract class Event implements Runnable
 	public void setKey(ResourceKey key)
 	{
 		this.key = key;
+	}
+	
+	public void setTime(Calendar time)
+	{
+		this.time = time;
+	}
+	
+	public Calendar getTime()
+	{
+		return time;
 	}
 	
 	public void setProperty(String key, Object value)

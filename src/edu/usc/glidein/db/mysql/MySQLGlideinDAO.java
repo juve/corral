@@ -22,7 +22,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.LinkedList;
-import java.util.TimeZone;
 
 import edu.usc.glidein.db.DatabaseException;
 import edu.usc.glidein.db.GlideinDAO;
@@ -67,7 +66,7 @@ public class MySQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost, resubmit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?,?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost, resubmit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
@@ -81,6 +80,18 @@ public class MySQLGlideinDAO implements GlideinDAO
 			stmt.setString(i++, glidein.getState().toString());
 			stmt.setString(i++, glidein.getShortMessage());
 			stmt.setString(i++, glidein.getLongMessage());
+			Calendar submitted = glidein.getSubmitted();
+			if (submitted == null) {
+				stmt.setTimestamp(i++, null);
+			} else {
+				stmt.setTimestamp(i++, new Timestamp(submitted.getTimeInMillis()));
+			}
+			Calendar lastUpdate = glidein.getLastUpdate();
+			if (lastUpdate == null) {
+				stmt.setTimestamp(i++, null);
+			} else {
+				stmt.setTimestamp(i++, new Timestamp(lastUpdate.getTimeInMillis()));
+			}
 			stmt.setString(i++, glidein.getCondorHost());
 			stmt.setBoolean(i++, glidein.isResubmit());
 			if (stmt.executeUpdate()!=1) {
@@ -136,11 +147,6 @@ public class MySQLGlideinDAO implements GlideinDAO
 		}
 	}
 	
-	public void store(Glidein glidein) throws DatabaseException
-	{
-		updateState(glidein.getId(), glidein.getState(), glidein.getShortMessage(), glidein.getLongMessage());
-	}
-	
 	public void delete(int glideinId) throws DatabaseException
 	{
 		Connection conn = null;
@@ -166,18 +172,19 @@ public class MySQLGlideinDAO implements GlideinDAO
 		}
 	}
 	
-	public void updateState(int glideinId, GlideinState state, String shortMessage, String longMessage)
+	public void updateState(int glideinId, GlideinState state, String shortMessage, String longMessage, Calendar time)
 	throws DatabaseException
 	{
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
 			conn = database.getConnection();
-			stmt = conn.prepareStatement("UPDATE glidein SET state=?, shortMessage=?, longMessage=?, lastUpdate=NOW() WHERE id=?");
+			stmt = conn.prepareStatement("UPDATE glidein SET state=?, shortMessage=?, longMessage=?, lastUpdate=? WHERE id=?");
 			int i = 1;
 			stmt.setString(i++, state.toString());
 			stmt.setString(i++, shortMessage);
 			stmt.setString(i++, longMessage);
+			stmt.setTimestamp(i++, new Timestamp(time.getTimeInMillis()));
 			stmt.setInt(i++, glideinId);
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to update glidein state: wrong number of db updates");
@@ -243,7 +250,7 @@ public class MySQLGlideinDAO implements GlideinDAO
 			rs = stmt.executeQuery();
 			while (rs.next()) {
 				GlideinState state = GlideinState.fromString(rs.getString("state"));
-				Calendar time = Calendar.getInstance(TimeZone.getDefault());
+				Calendar time = Calendar.getInstance();
 				time.setTime(rs.getTimestamp("time",time));
 				
 				GlideinHistoryEntry entry = new GlideinHistoryEntry();
@@ -311,14 +318,12 @@ public class MySQLGlideinDAO implements GlideinDAO
 			glidein.setShortMessage(rs.getString("shortMessage"));
 			glidein.setLongMessage(rs.getString("longMessage"));
 			
-			Calendar submitted = Calendar.getInstance(TimeZone.getDefault());
-			Timestamp submit = rs.getTimestamp("submitted",submitted);
-			submitted.setTime(submit);
+			Calendar submitted = Calendar.getInstance();
+			submitted.setTime(rs.getTimestamp("submitted"));
 			glidein.setSubmitted(submitted);
 			
-			Calendar lastUpdate = Calendar.getInstance(TimeZone.getDefault());
-			Timestamp last = rs.getTimestamp("lastUpdate",lastUpdate);
-			lastUpdate.setTime(last);
+			Calendar lastUpdate = Calendar.getInstance();
+			lastUpdate.setTime(rs.getTimestamp("lastUpdate"));
 			glidein.setLastUpdate(lastUpdate);
 			
 			glidein.setResubmit(rs.getBoolean("resubmit"));

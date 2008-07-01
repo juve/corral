@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Calendar;
 
 import javax.naming.NamingException;
 
@@ -127,6 +128,9 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		// Set state
 		site.setState(SiteState.NEW);
 		site.setShortMessage("Created");
+		Calendar time = Calendar.getInstance();
+		site.setLastUpdate(time);
+		site.setSubmitted(time);
 			
 		// Check for Condor version and set reasonable default
 		String ver = site.getCondorVersion();
@@ -156,8 +160,6 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			dao.create(site);
-			// Needed to get updated dates
-			site = dao.load(site.getId());
 			dao.insertHistory(site.getId(), site.getState(), site.getLastUpdate());
 		} catch (DatabaseException de) {
 			throw new ResourceException("Unable to create site", de);
@@ -202,7 +204,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		
 		// Schedule remove event
 		try {
-			Event event = new SiteEvent(code,getKey());
+			Event event = new SiteEvent(code,Calendar.getInstance(),getKey());
 			if (!force) {
 				DelegationResource delegationResource = 
 					DelegationUtil.getDelegationResource(credentialEPR);
@@ -235,7 +237,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			// Validate that there is enough time left on the credential
 			validateCredentialLifetime(credential);
 			
-			Event event = new SiteEvent(SiteEventCode.SUBMIT,getKey());
+			Event event = new SiteEvent(SiteEventCode.SUBMIT,Calendar.getInstance(),getKey());
 			event.setProperty("credential", credential);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
@@ -246,7 +248,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private void updateState(SiteState state, String shortMessage, String longMessage)
+	private void updateState(SiteState state, String shortMessage, String longMessage, Calendar time)
 	throws ResourceException
 	{
 		info("Changing state to "+state+": "+shortMessage);
@@ -255,14 +257,14 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		site.setState(state);
 		site.setShortMessage(shortMessage);
 		site.setLongMessage(longMessage);
+		site.setLastUpdate(time);
 		
 		// Update database
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
-			dao.updateState(site.getId(), state, shortMessage, longMessage);
-			site = dao.load(site.getId());
-			dao.insertHistory(site.getId(), site.getState(), site.getLastUpdate());
+			dao.updateState(site.getId(), state, shortMessage, longMessage, time);
+			dao.insertHistory(site.getId(), state, time);
 		} catch(DatabaseException de) {
 			throw new ResourceException("Unable to change state to "+state,de);
 		}
@@ -411,7 +413,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			for (int id : ids) {
 				ResourceKey key = AddressingUtil.getGlideinKey(id);
 				Event event = new GlideinEvent(
-						GlideinEventCode.REMOVE,key);
+						GlideinEventCode.REMOVE,site.getLastUpdate(),key);
 				queue.add(event);
 			}
 		} catch (NamingException ne) {
@@ -456,7 +458,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				} else {
 					throw new IllegalStateException("Unhandled state: "+state);
 				}
-				Event event = new GlideinEvent(code,key);
+				Event event = new GlideinEvent(code,site.getLastUpdate(),key);
 				queue.add(event);
 			}
 		} catch (NamingException ne) {
@@ -621,26 +623,26 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private void fail(String message, Exception exception) throws ResourceException
+	private void fail(String message, Exception exception, Calendar time) throws ResourceException
 	{
 		// Update status to FAILED
 		error("Failure: "+message,exception);
 		if (exception == null) {
-			updateState(SiteState.FAILED, message, null);
+			updateState(SiteState.FAILED, message, null, time);
 		} else {
 			CharArrayWriter caw = new CharArrayWriter();
 			exception.printStackTrace(new PrintWriter(caw));
-			updateState(SiteState.FAILED, message, caw.toString());
+			updateState(SiteState.FAILED, message, caw.toString(), time);
 		}
 		
 		// Notify glideins that site failed
 		notifyGlideinsOfFailed();
 	}
 	
-	private void failQuietly(String message, Exception exception)
+	private void failQuietly(String message, Exception exception, Calendar time)
 	{
 		try {
-			fail(message,exception);
+			fail(message,exception,time);
 		} catch (ResourceException re) {
 			error("Unable to change state to "+SiteState.FAILED,re);
 		}
@@ -658,9 +660,9 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			String message = re.getMessage();
 			int cause = message.indexOf("; nested exception is:");
 			if (cause > 0) {
-				failQuietly(message.substring(0, cause), re);
+				failQuietly(message.substring(0, cause), re, event.getTime());
 			} else {
-				failQuietly(message, re);
+				failQuietly(message, re, event.getTime());
 			}
 		}
 	}
@@ -686,7 +688,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				if (reqd.equals(state)) {
 					
 					// Change status to submitted
-					updateState(SiteState.STAGING, "Staging executables", null);
+					updateState(SiteState.STAGING, "Staging executables", null, event.getTime());
 						
 					// Store delegated credential
 					GlobusCredential credential = 
@@ -708,7 +710,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				if (reqd.equals(state)) {
 					
 					// Change status to READY
-					updateState(SiteState.READY, "Installed", null);
+					updateState(SiteState.READY, "Installed", null, event.getTime());
 					
 					// Notify any waiting glideins for this site
 					try {
@@ -729,7 +731,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				SiteState reqd = SiteState.STAGING;
 				if (reqd.equals(state)) {
 					failQuietly((String)event.getProperty("message"),
-							(Exception)event.getProperty("exception"));
+							(Exception)event.getProperty("exception"),
+							event.getTime());
 				} else {
 					warn("State was not "+reqd+" when "+code+" was recieved");
 				}
@@ -762,7 +765,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				if (hasGlideins()) {
 					
 					// Change state to EXITING
-					updateState(SiteState.EXITING, "Waiting for glideins", null);
+					updateState(SiteState.EXITING, "Waiting for glideins", null, event.getTime());
 					
 					// Cancel running glideins
 					cancelGlideins();
@@ -770,7 +773,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				} else {
 					
 					// Change state to REMOVING
-					updateState(SiteState.REMOVING, "Removing site", null);
+					updateState(SiteState.REMOVING, "Removing site", null, event.getTime());
 					
 					// Submit uninstall job
 					submitUninstallJob();
@@ -789,7 +792,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 						
 						// Change state
 						updateState(SiteState.REMOVING, 
-								"Removing site", null);
+								"Removing site", null, event.getTime());
 						
 						// Submit uninstall job
 						submitUninstallJob();
@@ -807,7 +810,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				
 				// Delete the site
 				updateState(SiteState.DELETED,
-						"Site deleted",null);
+						"Site deleted",null,event.getTime());
 				delete();
 				
 			} break;
@@ -817,7 +820,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				SiteState reqd = SiteState.REMOVING;
 				if (reqd.equals(state)) {
 					failQuietly((String)event.getProperty("message"),
-							(Exception)event.getProperty("exception"));
+							(Exception)event.getProperty("exception"),
+							event.getTime());
 				} else {
 					warn("Site "+site.getId()+" was not "+reqd+
 							" when "+code+" was recieved");
@@ -846,7 +850,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			try {
 				
 				// If recovery fails, try to update the state to failed
-				fail("State recovery failed",re);
+				fail("State recovery failed",re,Calendar.getInstance());
 				
 			} catch (ResourceException re2) {
 				
@@ -893,8 +897,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				
 			} else {
 				
-				// Otherwise set the state back to NEW
-				updateState(SiteState.NEW, "Site created", null);
+				// Otherwise fail the site
+				fail("Unable to recover site",null,Calendar.getInstance());
 				
 			}
 			
@@ -940,8 +944,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				// because we can't continue with removing without a
 				// credential, and we can't go back to ready because
 				// we can't be sure that the site is OK.
-				updateState(SiteState.FAILED, 
-						"State recovery failed", null);
+				updateState(SiteState.FAILED,"State recovery failed", 
+						null, Calendar.getInstance());
 				
 			}
 			

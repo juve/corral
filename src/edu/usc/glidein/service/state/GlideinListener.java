@@ -106,7 +106,8 @@ public class GlideinListener extends BaseListener
 	{
 		// Generate failure event
 		try {
-			Event event = new GlideinEvent(GlideinEventCode.JOB_FAILURE,getKey());
+			CondorEvent ce = getLastEvent();
+			Event event = new GlideinEvent(GlideinEventCode.JOB_FAILURE,ce.getTime(),getKey());
 			event.setProperty("message", message);
 			event.setProperty("exception", exception);
 			EventQueue queue = EventQueue.getInstance();
@@ -119,7 +120,8 @@ public class GlideinListener extends BaseListener
 	private void enqueue(GlideinEventCode code)
 	{
 		try {
-			Event event = new GlideinEvent(code,getKey());
+			CondorEvent ce = getLastEvent();
+			Event event = new GlideinEvent(code,ce.getTime(),getKey());
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {

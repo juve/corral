@@ -24,11 +24,13 @@ import edu.usc.glidein.stubs.types.GlideinState;
 public interface GlideinDAO
 {
 	public int create(Glidein glidein) throws DatabaseException;
-	public void store(Glidein glidein) throws DatabaseException;
 	public Glidein load(int glideinId) throws DatabaseException;
 	public void delete(int glideinId) throws DatabaseException;
-	public void updateState(int glideinId, GlideinState state, String shortMessage, String longMessage) throws DatabaseException;
+	public void updateState(int glideinId, GlideinState state, 
+			String shortMessage, String longMessage, Calendar time) 
+			throws DatabaseException;
 	public Glidein[] list(boolean longFormat) throws DatabaseException;
-	public void insertHistory(int glideinId, GlideinState state, Calendar time) throws DatabaseException;
+	public void insertHistory(int glideinId, GlideinState state, Calendar time)
+			throws DatabaseException;
 	public GlideinHistory getHistory(int glideinId) throws DatabaseException;
 }

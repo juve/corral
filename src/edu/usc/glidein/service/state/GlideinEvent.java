@@ -15,6 +15,8 @@
  */
 package edu.usc.glidein.service.state;
 
+import java.util.Calendar;
+
 import javax.naming.NamingException;
 
 import org.apache.log4j.Logger;
@@ -28,9 +30,9 @@ public class GlideinEvent extends Event
 {
 	private Logger logger;
 	
-	public GlideinEvent(GlideinEventCode code, ResourceKey key)
+	public GlideinEvent(GlideinEventCode code, Calendar time, ResourceKey key)
 	{
-		super(code,key);
+		super(code,time,key);
 		this.logger = Logger.getLogger(GlideinEvent.class);
 	}
 

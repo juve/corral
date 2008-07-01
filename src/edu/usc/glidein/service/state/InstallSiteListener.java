@@ -84,8 +84,9 @@ public class InstallSiteListener extends BaseListener
 	{
 		// Generate failed event
 		try {
+			CondorEvent ce = getLastEvent();
 			Event event = new SiteEvent(SiteEventCode.INSTALL_FAILED,
-					getKey());
+					ce.getTime(), getKey());
 			event.setProperty("message", message);
 			event.setProperty("exception", exception);
 			EventQueue queue = EventQueue.getInstance();
@@ -103,8 +104,9 @@ public class InstallSiteListener extends BaseListener
 		
 		// Generate success event
 		try {
+			CondorEvent ce = getLastEvent();
 			Event event = new SiteEvent(SiteEventCode.INSTALL_SUCCESS,
-					getKey());
+					ce.getTime(),getKey());
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {
