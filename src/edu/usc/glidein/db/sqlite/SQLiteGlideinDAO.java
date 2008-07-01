@@ -65,7 +65,7 @@ public class SQLiteGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost, resubmit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'),datetime('now'),?,?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost, resubmit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
@@ -84,6 +84,9 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			stmt.setString(i++, glidein.getState().toString());
 			stmt.setString(i++, glidein.getShortMessage());
 			stmt.setString(i++, glidein.getLongMessage());
+			long time = System.currentTimeMillis();
+			stmt.setLong(i++, time);
+			stmt.setLong(i++, time);
 			stmt.setString(i++, glidein.getCondorHost());
 			stmt.setBoolean(i++, glidein.isResubmit());
 			if (stmt.executeUpdate()!=1) {
@@ -175,11 +178,12 @@ public class SQLiteGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		try {
 			conn = database.getConnection();
-			stmt = conn.prepareStatement("UPDATE glidein SET state=?, shortMessage=?, longMessage=?, lastUpdate=datetime('now') WHERE id=?");
+			stmt = conn.prepareStatement("UPDATE glidein SET state=?, shortMessage=?, longMessage=?, lastUpdate=? WHERE id=?");
 			int i = 1;
 			stmt.setString(i++, state.toString());
 			stmt.setString(i++, shortMessage);
 			stmt.setString(i++, longMessage);
+			stmt.setLong(i++, System.currentTimeMillis());
 			stmt.setInt(i++, glideinId);
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to update glidein state: wrong number of db updates");
@@ -256,11 +260,13 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			glidein.setShortMessage(rs.getString("shortMessage"));
 			glidein.setLongMessage(rs.getString("longMessage"));
 			
-			String submit = rs.getString("submitted");
-			glidein.setSubmitted(database.parseDate(submit));
+			Calendar submitted = Calendar.getInstance();
+			submitted.setTimeInMillis(rs.getLong("submitted"));
+			glidein.setSubmitted(submitted);
 			
-			String last = rs.getString("lastUpdate");
-			glidein.setLastUpdate(database.parseDate(last));
+			Calendar lastUpdate = Calendar.getInstance();
+			lastUpdate.setTimeInMillis(rs.getLong("lastUpdate"));
+			glidein.setLastUpdate(lastUpdate);
 			
 			glidein.setResubmit(rs.getBoolean("resubmit"));
 			
@@ -285,7 +291,8 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			rs = stmt.executeQuery();
 			while (rs.next()) {
 				GlideinState state = GlideinState.fromString(rs.getString("state"));
-				Calendar time = database.parseDate(rs.getString("time"));
+				Calendar time = Calendar.getInstance();
+				time.setTimeInMillis(rs.getLong("time"));
 				
 				GlideinHistoryEntry entry = new GlideinHistoryEntry();
 				entry.setState(state);
@@ -315,7 +322,7 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			stmt = conn.prepareStatement("INSERT INTO glidein_history (glidein,state,time) VALUES (?,?,?)");
 			stmt.setInt(1,glideinId);
 			stmt.setString(2, state.toString());
-			stmt.setString(3, database.formatDate(time));
+			stmt.setLong(3, time.getTimeInMillis());
 			if (stmt.executeUpdate() != 1) {
 				throw new DatabaseException(
 						"Unable to insert glidein history: " +

@@ -76,7 +76,7 @@ public class SQLiteSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,?,datetime('now'),datetime('now'))");
+			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setString(i++, site.getName());
 			stmt.setString(i++, site.getInstallPath());
@@ -86,6 +86,9 @@ public class SQLiteSiteDAO implements SiteDAO
 			stmt.setString(i++, site.getState().toString());
 			stmt.setString(i++, site.getShortMessage());
 			stmt.setString(i++, site.getLongMessage());
+			long time = System.currentTimeMillis();
+			stmt.setLong(i++, time);
+			stmt.setLong(i++, time);
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create site: wrong number of db updates");
 			}
@@ -325,11 +328,12 @@ public class SQLiteSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		try {
 			conn = database.getConnection();
-			stmt = conn.prepareStatement("UPDATE site SET state=?, shortMessage=?, longMessage=?, lastUpdate=datetime('now') WHERE id=?");
+			stmt = conn.prepareStatement("UPDATE site SET state=?, shortMessage=?, longMessage=?, lastUpdate=? WHERE id=?");
 			int i = 1;
 			stmt.setString(i++, state.toString());
 			stmt.setString(i++, shortMessage);
 			stmt.setString(i++, longMessage);
+			stmt.setLong(i++, System.currentTimeMillis());
 			stmt.setInt(i++, siteId);
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to update site status: wrong number of db updates");
@@ -405,11 +409,13 @@ public class SQLiteSiteDAO implements SiteDAO
 			site.setShortMessage(rs.getString("shortMessage"));
 			site.setLongMessage(rs.getString("longMessage"));
 			
-			String submit = rs.getString("submitted");
-			site.setSubmitted(database.parseDate(submit));
+			Calendar submitted = Calendar.getInstance();
+			submitted.setTimeInMillis(rs.getLong("submitted"));
+			site.setSubmitted(submitted);
 			
-			String last = rs.getString("lastUpdate");
-			site.setLastUpdate(database.parseDate(last));
+			Calendar lastUpdate = Calendar.getInstance();
+			lastUpdate.setTimeInMillis(rs.getLong("lastUpdate"));
+			site.setLastUpdate(lastUpdate);
 			
 			return site;
 		} catch (SQLException sqle) {
@@ -484,7 +490,8 @@ public class SQLiteSiteDAO implements SiteDAO
 			rs = stmt.executeQuery();
 			while (rs.next()) {
 				SiteState state = SiteState.fromString(rs.getString("state"));
-				Calendar time = database.parseDate(rs.getString("time"));
+				Calendar time = Calendar.getInstance();
+				time.setTimeInMillis(rs.getLong("time"));
 				
 				SiteHistoryEntry entry = new SiteHistoryEntry();
 				entry.setState(state);
@@ -514,7 +521,7 @@ public class SQLiteSiteDAO implements SiteDAO
 			stmt = conn.prepareStatement("INSERT INTO site_history (site,state,time) VALUES (?,?,?)");
 			stmt.setInt(1,siteId);
 			stmt.setString(2, state.toString());
-			stmt.setString(3, database.formatDate(time));
+			stmt.setLong(3, time.getTimeInMillis());
 			if (stmt.executeUpdate() != 1) {
 				throw new DatabaseException(
 						"Unable to insert site history: " +
