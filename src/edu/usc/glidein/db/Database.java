@@ -18,7 +18,7 @@ package edu.usc.glidein.db;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-// TODO: Record event times in the database to match Condor event times
+// TODO: Combine SQL DAOs and eliminate duplicate code
 
 public abstract class Database
 {
