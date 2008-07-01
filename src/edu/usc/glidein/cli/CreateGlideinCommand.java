@@ -33,6 +33,8 @@ import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.GlideinUtil;
 import edu.usc.glidein.util.IOUtil;
 
+// TODO: Add the ability to read glidein specification from a file
+
 public class CreateGlideinCommand extends Command
 {
 	private Glidein glidein = null;

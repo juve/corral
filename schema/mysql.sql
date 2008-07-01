@@ -33,7 +33,7 @@ CREATE TABLE site (
 	state			VARCHAR(16) NOT NULL,				-- The current state (e.g. READY)
 	shortMessage	VARCHAR(256) NOT NULL,				-- A short status message
 	longMessage		TEXT,								-- A long status message (e.g. Stack trace)
-	submitted		DATETIME NOT NULL,					-- Time when site was submitted
+	created			DATETIME NOT NULL,					-- Time when site was created
 	lastUpdate		DATETIME NOT NULL,					-- Time when site was last updated
 	CONSTRAINT pk_site PRIMARY KEY (id)
 ) type=InnoDB;
@@ -86,7 +86,7 @@ CREATE TABLE glidein (
 	state				VARCHAR(16) NOT NULL,			-- The current state of the glidein (e.g. RUNNING)
 	shortMessage		VARCHAR(256) NOT NULL,			-- Short status message
 	longMessage			TEXT,							-- Long status message (e.g. stack trace)
-	submitted			DATETIME NOT NULL,				-- Date when glidein was submitted
+	created				DATETIME NOT NULL,				-- Date when glidein was created
 	lastUpdate			DATETIME NOT NULL,				-- Date when glidein was last updated
 	resubmit			BOOLEAN NOT NULL,				-- Should the glidein be resubmitted when it terminates?
 	CONSTRAINT pk_glidein PRIMARY KEY (id),

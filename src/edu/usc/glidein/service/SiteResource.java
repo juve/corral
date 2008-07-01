@@ -130,7 +130,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		site.setShortMessage("Created");
 		Calendar time = Calendar.getInstance();
 		site.setLastUpdate(time);
-		site.setSubmitted(time);
+		site.setCreated(time);
 			
 		// Check for Condor version and set reasonable default
 		String ver = site.getCondorVersion();
@@ -687,7 +687,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				SiteState reqd = SiteState.NEW;
 				if (reqd.equals(state)) {
 					
-					// Change status to submitted
+					// Change status to staging
 					updateState(SiteState.STAGING, "Staging executables", null, event.getTime());
 						
 					// Store delegated credential

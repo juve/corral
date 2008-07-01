@@ -77,7 +77,7 @@ public class SQLiteSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, submitted, lastUpdate) VALUES (?,?,?,?,?,?,?,?,?,?)");
+			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, created, lastUpdate) VALUES (?,?,?,?,?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setString(i++, site.getName());
 			stmt.setString(i++, site.getInstallPath());
@@ -87,11 +87,11 @@ public class SQLiteSiteDAO implements SiteDAO
 			stmt.setString(i++, site.getState().toString());
 			stmt.setString(i++, site.getShortMessage());
 			stmt.setString(i++, site.getLongMessage());
-			Calendar submitted = site.getSubmitted();
-			if (submitted == null) {
+			Calendar created = site.getCreated();
+			if (created == null) {
 				stmt.setNull(i++, Types.INTEGER);
 			} else {
-				stmt.setLong(i++, submitted.getTimeInMillis());
+				stmt.setLong(i++, created.getTimeInMillis());
 			}
 			Calendar lastUpdate = site.getLastUpdate();
 			if (lastUpdate == null) {
@@ -414,9 +414,9 @@ public class SQLiteSiteDAO implements SiteDAO
 			site.setShortMessage(rs.getString("shortMessage"));
 			site.setLongMessage(rs.getString("longMessage"));
 			
-			Calendar submitted = Calendar.getInstance();
-			submitted.setTimeInMillis(rs.getLong("submitted"));
-			site.setSubmitted(submitted);
+			Calendar created = Calendar.getInstance();
+			created.setTimeInMillis(rs.getLong("created"));
+			site.setCreated(created);
 			
 			Calendar lastUpdate = Calendar.getInstance();
 			lastUpdate.setTimeInMillis(rs.getLong("lastUpdate"));

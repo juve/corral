@@ -131,7 +131,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		glidein.setShortMessage("Created");
 		Calendar time = Calendar.getInstance();
 		glidein.setLastUpdate(time);
-		glidein.setSubmitted(time);
+		glidein.setCreated(time);
 		
 		// Save in the database
 		try {

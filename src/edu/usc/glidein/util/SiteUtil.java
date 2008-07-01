@@ -25,9 +25,9 @@ public class SiteUtil
 		out.printf("id = %s\n", site.getId());
 		out.printf("name = %s\n",site.getName());
 		
-		Calendar submitted = (Calendar)site.getSubmitted().clone();
-		submitted.setTimeZone(TimeZone.getDefault());
-		out.printf("submitted = %tc\n", submitted);
+		Calendar created = (Calendar)site.getCreated().clone();
+		created.setTimeZone(TimeZone.getDefault());
+		out.printf("created = %tc\n", created);
 		
 		Calendar lastUpdate = (Calendar)site.getLastUpdate().clone();
 		lastUpdate.setTimeZone(TimeZone.getDefault());

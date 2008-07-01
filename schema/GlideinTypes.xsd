@@ -56,7 +56,7 @@
 			<xsd:element name="state" type="glidein:SiteState" default="NEW"/>
 			<xsd:element name="shortMessage" type="xsd:string" nillable="true"/>
 			<xsd:element name="longMessage" type="xsd:string" nillable="true"/>
-			<xsd:element name="submitted" type="xsd:dateTime" nillable="true"/>
+			<xsd:element name="created" type="xsd:dateTime" nillable="true"/>
 			<xsd:element name="lastUpdate" type="xsd:dateTime" nillable="true"/>
 		</xsd:sequence>
 	</xsd:complexType>
@@ -110,7 +110,7 @@
 			<xsd:element name="state" type="glidein:GlideinState" default="NEW"/>
 			<xsd:element name="shortMessage" type="xsd:string" nillable="true"/>
 			<xsd:element name="longMessage" type="xsd:string" nillable="true"/>
-			<xsd:element name="submitted" type="xsd:dateTime" nillable="true"/>
+			<xsd:element name="created" type="xsd:dateTime" nillable="true"/>
 			<xsd:element name="lastUpdate" type="xsd:dateTime" nillable="true"/>
 			<xsd:element name="resubmit" type="xsd:boolean" default="false"/>
 		</xsd:sequence>

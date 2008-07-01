@@ -171,6 +171,7 @@ public class CreateSiteCommand extends Command
 			case xml:
 			case classic:
 			default:
+				// TODO: Add the ability to read Pegasus site catalog formats
 				throw new CommandException("Sorry, "+catalogFormat+
 						" format catalogs are not yet supported");
 		}

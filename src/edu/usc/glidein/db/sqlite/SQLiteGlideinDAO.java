@@ -66,7 +66,7 @@ public class SQLiteGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, submitted, lastUpdate, condorHost, resubmit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, created, lastUpdate, condorHost, resubmit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
@@ -85,11 +85,11 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			stmt.setString(i++, glidein.getState().toString());
 			stmt.setString(i++, glidein.getShortMessage());
 			stmt.setString(i++, glidein.getLongMessage());
-			Calendar submitted = glidein.getSubmitted();
-			if (submitted == null) {
+			Calendar created = glidein.getCreated();
+			if (created == null) {
 				stmt.setNull(i++, Types.INTEGER);
 			} else {
-				stmt.setLong(i++, submitted.getTimeInMillis());
+				stmt.setLong(i++, created.getTimeInMillis());
 			}
 			Calendar lastUpdate = glidein.getLastUpdate();
 			if (lastUpdate == null) {
@@ -265,9 +265,9 @@ public class SQLiteGlideinDAO implements GlideinDAO
 			glidein.setShortMessage(rs.getString("shortMessage"));
 			glidein.setLongMessage(rs.getString("longMessage"));
 			
-			Calendar submitted = Calendar.getInstance();
-			submitted.setTimeInMillis(rs.getLong("submitted"));
-			glidein.setSubmitted(submitted);
+			Calendar created = Calendar.getInstance();
+			created.setTimeInMillis(rs.getLong("created"));
+			glidein.setCreated(created);
 			
 			Calendar lastUpdate = Calendar.getInstance();
 			lastUpdate.setTimeInMillis(rs.getLong("lastUpdate"));

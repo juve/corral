@@ -142,7 +142,7 @@ public class ListGlideinCommand extends Command
 			System.out.printf("%-8s", "COUNT");
 			System.out.printf("%-8s", "HOSTS");
 			System.out.printf("%-8s", "TIME");
-			System.out.printf("%-15s", "SUBMITTED");
+			System.out.printf("%-15s", "CREATED");
 			System.out.printf("%-15s", "LAST UPDATE");
 			System.out.printf("%-10s", "RESUBMIT");
 			System.out.printf("%-10s", "STATE");
@@ -156,9 +156,9 @@ public class ListGlideinCommand extends Command
 				System.out.printf("%-8d", g.getHostCount());
 				System.out.printf("%-8d", g.getWallTime());
 				
-				Calendar submitted = (Calendar)g.getSubmitted().clone();
-				submitted.setTimeZone(TimeZone.getDefault());
-				System.out.printf("%1$tm-%1$td %1$TR    ",submitted);
+				Calendar created = (Calendar)g.getCreated().clone();
+				created.setTimeZone(TimeZone.getDefault());
+				System.out.printf("%1$tm-%1$td %1$TR    ",created);
 				
 				Calendar lastUpdate = (Calendar)g.getLastUpdate().clone();
 				lastUpdate.setTimeZone(TimeZone.getDefault());

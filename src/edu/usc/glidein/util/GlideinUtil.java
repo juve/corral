@@ -30,9 +30,9 @@ public class GlideinUtil
 		out.printf("wallTime = %d\n", glidein.getWallTime());
 		out.printf("idleTime = %d\n", glidein.getIdleTime());
 		
-		Calendar submitted = glidein.getSubmitted();
-		submitted.setTimeZone(TimeZone.getDefault());
-		out.printf("submitted = %tc\n",submitted);
+		Calendar created = glidein.getCreated();
+		created.setTimeZone(TimeZone.getDefault());
+		out.printf("created = %tc\n",created);
 		
 		Calendar lastUpdate = glidein.getLastUpdate();
 		lastUpdate.setTimeZone(TimeZone.getDefault());

@@ -129,7 +129,7 @@ public class ListSiteCommand extends Command
 		} else {
 			System.out.printf("%-8s","ID");
 			System.out.printf("%-20s","NAME");
-			System.out.printf("%-15s","SUBMITTED");
+			System.out.printf("%-15s","CREATED");
 			System.out.printf("%-15s","LAST UPDATE");
 			System.out.printf("%-10s","STATE");
 			System.out.printf("%s","MESSAGE");
@@ -138,9 +138,9 @@ public class ListSiteCommand extends Command
 				System.out.printf("%-8d",site.getId());
 				System.out.printf("%-20s",site.getName());
 				
-				Calendar submitted = (Calendar)site.getSubmitted().clone();
-				submitted.setTimeZone(TimeZone.getDefault());
-				System.out.printf("%1$tm-%1$td %1$TR    ",submitted);
+				Calendar created = (Calendar)site.getCreated().clone();
+				created.setTimeZone(TimeZone.getDefault());
+				System.out.printf("%1$tm-%1$td %1$TR    ",created);
 				
 				Calendar lastUpdate = (Calendar)site.getLastUpdate().clone();
 				lastUpdate.setTimeZone(TimeZone.getDefault());

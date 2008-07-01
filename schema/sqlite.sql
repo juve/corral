@@ -33,7 +33,7 @@ CREATE TABLE site (
 	state			TEXT NOT NULL,		-- The current state (e.g. READY)
 	shortMessage	TEXT NOT NULL,		-- A short status message
 	longMessage		TEXT,				-- A long status message (e.g. Stack trace)
-	submitted		INTEGER NOT NULL,	-- Time when site was submitted (unix time in ms)
+	created			INTEGER NOT NULL,	-- Time when site was created (unix time in ms)
 	lastUpdate		INTEGER NOT NULL	-- Time when site was last updated (unix time in ms)
 );
 
@@ -83,7 +83,7 @@ CREATE TABLE glidein (
 	state			TEXT NOT NULL,		-- The current state of the glidein (e.g. RUNNING)
 	shortMessage	TEXT NOT NULL,		-- Short status message
 	longMessage		TEXT,				-- Long status message (e.g. stack trace)
-	submitted		INTEGER NOT NULL,	-- Date when glidein was submitted (unix time in ms)
+	created			INTEGER NOT NULL,	-- Date when glidein was created (unix time in ms)
 	lastUpdate		INTEGER NOT NULL,	-- Date when glidein was last updated (unix time in ms)
 	resubmit		INTEGER NOT NULL	-- Should the glidein be resubmitted when it terminates? (1 true, 0 false)
 );
