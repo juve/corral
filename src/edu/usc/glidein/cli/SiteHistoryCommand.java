@@ -28,6 +28,8 @@ import edu.usc.glidein.service.SiteNames;
 import edu.usc.glidein.stubs.types.SiteHistory;
 import edu.usc.glidein.stubs.types.SiteHistoryEntry;
 
+// TODO: Allow multiple history records to be returned at the same time
+
 public class SiteHistoryCommand extends Command
 {
 	private List<Integer> ids;

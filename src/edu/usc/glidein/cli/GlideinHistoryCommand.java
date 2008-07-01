@@ -28,6 +28,8 @@ import edu.usc.glidein.service.GlideinNames;
 import edu.usc.glidein.stubs.types.GlideinHistory;
 import edu.usc.glidein.stubs.types.GlideinHistoryEntry;
 
+// TODO: Allow multiple history records to be returned at the same time
+
 public class GlideinHistoryCommand extends Command
 {
 	private List<Integer> ids;
