@@ -138,7 +138,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			glidein = dao.load(glidein.getId());
 			dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
 		} catch (DatabaseException dbe) {
-			throw new ResourceException(dbe);
+			throw new ResourceException("Unable to create glidein",dbe);
 		}
 		
 		// Set glidein
@@ -154,7 +154,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			GlideinDAO dao = db.getGlideinDAO();
 			setGlidein(dao.load(id));
 		} catch(DatabaseException de) {
-			throw new ResourceException(de);
+			throw new ResourceException("Unable to load glidein",de);
 		}
 	}
 	
@@ -205,9 +205,9 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			EventQueue queue = EventQueue.getInstance(); 
 			queue.add(event);
 		} catch (NamingException ne) {
-			throw new ResourceException("Unable to submit glidein: "+ne.getMessage(),ne);
+			throw new ResourceException("Unable to get event queue",ne);
 		} catch (DelegationException de) {
-			throw new ResourceException("Unable to submit glidein: "+de.getMessage(),de);
+			throw new ResourceException("Unable to retrieve delegated credential",de);
 		}
 	}
 	
@@ -245,8 +245,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		try {
 			config = ServiceConfiguration.getInstance();
 		} catch (NamingException ne) {
-			throw new ResourceException("Unable to submit glideing job: " +
-					"Unable to get configuration",ne);
+			throw new ResourceException("Unable to get service configuration",ne);
 		}
 		
 		// Create job directory
@@ -318,8 +317,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				String cfg = Base64.fromBase64(glidein.getCondorConfig());
 				IOUtil.write(cfg, new File(job.getJobDirectory(),configFile));
 			} catch (IOException ioe) {
-				throw new ResourceException("Unable to submit glidein job: " +
-						"Error writing glidein_condor_config",ioe);
+				throw new ResourceException("Error writing glidein_condor_config",ioe);
 			}
 		}
 		job.addInputFile(configFile);
@@ -340,8 +338,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			Condor condor = Condor.getInstance();
 			condor.submitJob(job);
 		} catch (CondorException ce) {
-			throw new ResourceException("Unable to submit glidein job: " +
-					"Submit failed",ce);
+			throw new ResourceException("Unable to submit glidein job",ce);
 		}
 	}
 	
@@ -399,10 +396,10 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			Condor.getInstance().cancelJob(jobid);
 		} catch (IOException ioe) {
 			throw new ResourceException(
-					"Unable to cancel glidein job: Unable to read job id",ioe);
+					"Unable to read job id",ioe);
 		} catch (CondorException ce) {
 			throw new ResourceException(
-					"Unable to cancel glidein job: condor_rm failed",ce);
+					"Unable to cancel glidein job",ce);
 		}
 	}
 	
@@ -414,7 +411,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.delete(glidein.getId());
 		} catch(DatabaseException de) {
-			throw new ResourceException(de);
+			throw new ResourceException("Unable to delete glidein",de);
 		}
 	}
 	
@@ -554,7 +551,17 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		try {
 			_handleEvent(event);
 		} catch (ResourceException re) {
-			failQuietly(re.getMessage(), re);
+			// RemoteException tacks the cause on to the end of
+			// the message. We don't want that in the database.
+			// Instead, the database stores the entire stack trace
+			// in the long message.
+			String message = re.getMessage();
+			int cause = message.indexOf("; nested exception is:");
+			if (cause > 0) {
+				failQuietly(message.substring(0, cause), re);
+			} else {
+				failQuietly(message, re);
+			}
 		}
 	}
 	

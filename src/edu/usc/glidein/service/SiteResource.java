@@ -160,7 +160,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			site = dao.load(site.getId());
 			dao.insertHistory(site.getId(), site.getState(), site.getLastUpdate());
 		} catch (DatabaseException de) {
-			throw new ResourceException(de);
+			throw new ResourceException("Unable to create site", de);
 		}
 		
 		// Set site
@@ -176,7 +176,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			SiteDAO dao = db.getSiteDAO();
 			setSite(dao.load(id));
 		} catch(DatabaseException de) {
-			throw new ResourceException(de);
+			throw new ResourceException("Unable to load site",de);
 		}
 	}
 	
@@ -264,8 +264,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			site = dao.load(site.getId());
 			dao.insertHistory(site.getId(), site.getState(), site.getLastUpdate());
 		} catch(DatabaseException de) {
-			throw new ResourceException(
-					"Unable to change state to "+state+": "+de.getMessage(),de);
+			throw new ResourceException("Unable to change state to "+state,de);
 		}
 	}
 	
@@ -388,7 +387,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			SiteDAO dao = db.getSiteDAO();
 			return dao.hasGlideins(site.getId());
 		} catch(DatabaseException de) {
-			throw new ResourceException(de);
+			throw new ResourceException("Unable to check for glideins",de);
 		}
 	}
 	
@@ -403,7 +402,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			SiteDAO dao = db.getSiteDAO();
 			ids = dao.getGlideinIds(site.getId());
 		} catch(DatabaseException de) {
-			throw new ResourceException(de);
+			throw new ResourceException("Unable to get glidein ids",de);
 		}
 		
 		// Create a remove event for each glidein
@@ -416,8 +415,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				queue.add(event);
 			}
 		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get queue: "+
-					ne.getMessage(),ne);
+			throw new ResourceException("Unable to get event queue",ne);
 		}
 	}
 	
@@ -442,7 +440,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			SiteDAO dao = db.getSiteDAO();
 			ids = dao.getGlideinIds(site.getId());
 		} catch(DatabaseException de) {
-			throw new ResourceException(de);
+			throw new ResourceException("Unable to get glidein ids",de);
 		}
 		
 		// Create a ready event for each glidein
@@ -474,8 +472,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			String jobid = readJobId(getInstallDirectory());
 			Condor.getInstance().cancelJob(jobid);
 		} catch (CondorException ce) {
-			throw new ResourceException(
-				"Unable to cancel install job: condor_rm failed",ce);
+			throw new ResourceException("Unable to cancel install job",ce);
 		}
 	}
 	
@@ -599,7 +596,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			SiteDAO dao = db.getSiteDAO();
 			dao.delete(site.getId());
 		} catch(DatabaseException de) {
-			throw new ResourceException(de);
+			throw new ResourceException("Unable to delete site",de);
 		}
 	}
 	
@@ -654,7 +651,17 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		try {
 			_handleEvent(event);
 		} catch(ResourceException re) {
-			failQuietly(re.getMessage(), re);
+			// RemoteException tacks the cause on to the end of
+			// the message. We don't want that in the database.
+			// Instead, the database stores the entire stack trace
+			// in the long message.
+			String message = re.getMessage();
+			int cause = message.indexOf("; nested exception is:");
+			if (cause > 0) {
+				failQuietly(message.substring(0, cause), re);
+			} else {
+				failQuietly(message, re);
+			}
 		}
 	}
 	
