@@ -71,9 +71,8 @@ import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.CredentialUtil;
 import edu.usc.glidein.util.IOUtil;
 
-// TODO: Add REMOVING state for aborted glideins
-
-public class GlideinResource implements Resource, ResourceIdentifier, PersistenceCallback, ResourceProperties
+public class GlideinResource implements Resource, ResourceIdentifier, 
+	PersistenceCallback, ResourceProperties
 {
 	private Logger logger = Logger.getLogger(GlideinResource.class);
 	private SimpleResourcePropertySet resourceProperties;
@@ -116,9 +115,48 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	private void setResourceProperties()
 	{
 		try {
-			resourceProperties = new SimpleResourcePropertySet(GlideinNames.RESOURCE_PROPERTIES);
-			resourceProperties.add(new ReflectionResourceProperty(GlideinNames.RP_GLIDEIN_ID,"Id",glidein));
-			// TODO: Set the rest of the resource properties, or don't
+			resourceProperties = new SimpleResourcePropertySet(
+					GlideinNames.RESOURCE_PROPERTIES);
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_ID,"id",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_SITE,"site",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_CONDOR_HOST,"condorHost",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_COUNT,"count",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_HOST_COUNT,"hostCount",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_WALL_TIME,"wallTime",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_NUM_CPUS,"numCpus",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_CONDOR_CONFIG,"condorConfig",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_GCB_BROKER,"gcbBroker",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_IDLE_TIME,"idleTime",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_CONDOR_DEBUG,"condorDebug",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_STATE,"state",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_SHORT_MESSAGE,"shortMessage",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_LONG_MESSAGE,"longMessage",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_CREATED,"created",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_LAST_UPDATE,"lastUpdate",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_RESUBMIT,"resubmit",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_RESUBMITS,"resubmits",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_UNTIL,"until",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_SUBMITS,"submits",glidein));
 		} catch(Exception e) {
 			throw new RuntimeException("Unable to set glidein resource properties",e);
 		}
@@ -137,6 +175,10 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		glidein.setSubmits(0);
 		
 		// Validate glidein
+		
+		// Wall time must be >= 2 minutes because when we submit the glidein
+		// we are going to subtract 1 minute to allow 1 minute for the glidein
+		// to shut itself down before the local scheduler kills it
 		if (glidein.getWallTime() < 2) {
 			throw new ResourceException("Wall time must be >= 2 minutes");
 		}
@@ -615,6 +657,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		GlideinEventCode code = (GlideinEventCode) event.getCode();
 		
 		// If the glidein was deleted, then don't process any more events
+		// This is here just in case someone gets a reference to the resource
+		// before we have a chance to remove it from the resource home
 		if (GlideinState.DELETED.equals(state)) {
 			warn("Unable to process event "+code+": "+
 					"Glidein has been deleted");
@@ -658,13 +702,11 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			
 			case SITE_READY: {
 				
+				// If we were waiting, then submit the job
 				if (GlideinState.WAITING.equals(state)) {
-				
-					// If we were waiting, then submit the job
 					updateState(GlideinState.SUBMITTED,
 							"Local job submitted",null,event.getTime());
 					submitGlideinJob();
-					
 				}
 				
 			} break;
@@ -719,6 +761,9 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				if (GlideinState.SUBMITTED.equals(state) || 
 						GlideinState.RUNNING.equals(state) || 
 						GlideinState.QUEUED.equals(state)) {
+					
+					updateState(GlideinState.REMOVING, 
+							"Cancelling job",null,event.getTime());
 					
 					// If a glidein job has been submitted cancel the job
 					cancelGlideinJob();
@@ -920,6 +965,20 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			job.addListener(listener);
 			CondorEventGenerator gen = new CondorEventGenerator(job);
 			gen.start();
+			
+		} else if (GlideinState.REMOVING.equals(state)) {
+			
+			File jobDir = getJobDirectory();
+			CondorJob job = new CondorJob(jobDir);
+			
+			// If the log is still there, then try to cancel the job
+			if (job.getLog().exists()) {
+				try {
+					cancelGlideinJob();
+				} catch (ResourceException re) {
+					warn("Unable to cancel job on recovery",re);
+				}
+			}
 			
 		} else if (GlideinState.FAILED.equals(state)) {
 		
