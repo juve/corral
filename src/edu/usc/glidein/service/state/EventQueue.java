@@ -61,7 +61,7 @@ public class EventQueue implements Initializable
 	
 	public static class EventQueueThreadFactory implements ThreadFactory 
 	{
-		private String namePrefix = "EventQueue-";
+		private String namePrefix = "EventQueueThread-";
 		private ThreadGroup group;
 		private AtomicInteger threadNumber = new AtomicInteger(1);
 		
