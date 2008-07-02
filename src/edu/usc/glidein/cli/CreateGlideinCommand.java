@@ -58,7 +58,7 @@ public class CreateGlideinCommand extends Command
 				  .setOption("c")
 				  .setLongOption("count")
 				  .setUsage("-c [--count] <n>")
-				  .setDescription("Number of processors (default: 1)")
+				  .setDescription("Number of processes (default: 1)")
 				  .hasArgument()
 		);
 		options.add(
