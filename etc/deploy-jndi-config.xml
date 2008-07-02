@@ -53,11 +53,11 @@
                 </parameter>
                 <parameter>
                 	<name>user</name>
-                	<value>juve</value>
+                	<value>scott</value>
                 </parameter>
                 <parameter>
                 	<name>password</name>
-                	<value>Mini14</value>
+                	<value>tiger</value>
                 </parameter>
                 <parameter>
                 	<name>autoInstall</name>
