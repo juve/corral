@@ -25,10 +25,7 @@ import org.apache.commons.cli.CommandLine;
 import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.api.SiteFactoryService;
 import edu.usc.glidein.service.SiteNames;
-import edu.usc.glidein.stubs.types.SiteHistory;
 import edu.usc.glidein.stubs.types.SiteHistoryEntry;
-
-// TODO: Allow multiple history records to be returned at the same time
 
 public class SiteHistoryCommand extends Command
 {
@@ -48,49 +45,53 @@ public class SiteHistoryCommand extends Command
 	{
 		/* Check for specific arguments */
 		String[] args = cmdln.getArgs();
-		if (args.length==0) {
-			throw new CommandException(getUsage());
-		} else {
-			for (String arg : args) {
-				if (arg.matches("[1-9][0-9]*")) {
-					int id = Integer.parseInt(arg);
-					ids.add(id);
-				} else {
-					System.out.println("Invalid site id: "+arg);
-				}
+		for (String arg : args) {
+			if (arg.matches("[1-9][0-9]*")) {
+				int id = Integer.parseInt(arg);
+				ids.add(id);
+			} else {
+				throw new CommandException("Invalid site id: "+arg);
 			}
 		}
 	}
 	
 	public void execute() throws CommandException
 	{
-		for (int id : ids) {
-			try {
-				SiteFactoryService factory = new SiteFactoryService(
-						getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
-				factory.setDescriptor(getClientSecurityDescriptor());
-				printHistory(factory.getHistory(id));
-			} catch (GlideinException ge) {
-				System.out.println(ge.getMessage());
-				if (isDebug()) ge.printStackTrace();
-			}
+		
+		try {
+			int[] _ids = new int[ids.size()];
+			int i = 0;
+			for (int id : ids) _ids[i++] = id;
+				
+			SiteFactoryService factory = new SiteFactoryService(
+					getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
+			factory.setDescriptor(getClientSecurityDescriptor());
+			printHistory(factory.getHistory(_ids));
+		} catch (GlideinException ge) {
+			System.out.println(ge.getMessage());
+			if (isDebug()) ge.printStackTrace();
 		}
 	}
 	
-	public void printHistory(SiteHistory history) throws CommandException
+	public void printHistory(SiteHistoryEntry[] history) throws CommandException
 	{
-		System.out.printf("Site %d\n\n",history.getSiteId());
+		if (history == null) {
+			if (isDebug()) System.out.println("No history");
+			return;
+		}
+		
+		System.out.printf("%-8s","ID");
 		System.out.printf("%-10s","STATE");
 		System.out.printf("%s","TIME");
 		System.out.printf("\n");
-		for (SiteHistoryEntry entry : history.getHistory()) {
+		for (SiteHistoryEntry entry : history) {
+			System.out.printf("%-8s", entry.getSiteId());
 			System.out.printf("%-10s",entry.getState().toString());
 			Calendar time = (Calendar)entry.getTime().clone();
 			time.setTimeZone(TimeZone.getDefault());
 			System.out.printf("%1$TF %1$TT",time);
 			System.out.printf("\n");
 		}
-		System.out.println();
 	}
 	
 	public String getName()

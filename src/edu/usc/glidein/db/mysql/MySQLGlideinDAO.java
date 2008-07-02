@@ -27,7 +27,6 @@ import edu.usc.glidein.db.DatabaseException;
 import edu.usc.glidein.db.GlideinDAO;
 import edu.usc.glidein.db.JDBCUtil;
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinHistory;
 import edu.usc.glidein.stubs.types.GlideinHistoryEntry;
 import edu.usc.glidein.stubs.types.GlideinState;
 
@@ -235,31 +234,49 @@ public class MySQLGlideinDAO implements GlideinDAO
 		}
 	}
 	
-	public GlideinHistory getHistory(int glideinId) throws DatabaseException
+	public GlideinHistoryEntry[] getHistory(int[] glideinIds) throws DatabaseException
 	{
-		GlideinHistory hist = new GlideinHistory();
-		hist.setGlideinId(glideinId);
 		LinkedList<GlideinHistoryEntry> entries = new LinkedList<GlideinHistoryEntry>();
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
 			conn = database.getConnection();
-			stmt = conn.prepareStatement("SELECT * FROM glidein_history WHERE glidein=?");
-			stmt.setInt(1,glideinId);
+			
+			StringBuilder sql = new StringBuilder();
+			sql.append("SELECT * FROM glidein_history");
+			if(glideinIds != null && glideinIds.length > 0) {
+				sql.append(" WHERE glidein in (");
+				for (int i=1; i<=glideinIds.length; i++) {
+					sql.append("?");
+					if (i<glideinIds.length) sql.append(",");
+				}
+				sql.append(")");
+			}
+			sql.append(" ORDER BY time");
+			
+			stmt = conn.prepareStatement(sql.toString());
+			if(glideinIds != null && glideinIds.length > 0) {
+				for (int i=1; i<=glideinIds.length; i++)
+					stmt.setInt(i,glideinIds[i-1]);
+			}
+			
 			rs = stmt.executeQuery();
 			while (rs.next()) {
+				int glideinId = rs.getInt("glidein");
 				GlideinState state = GlideinState.fromString(rs.getString("state"));
 				Calendar time = Calendar.getInstance();
 				time.setTime(rs.getTimestamp("time",time));
 				
 				GlideinHistoryEntry entry = new GlideinHistoryEntry();
+				entry.setGlideinId(glideinId);
 				entry.setState(state);
 				entry.setTime(time);
 				
 				entries.add(entry);
 			}
-			hist.setHistory(entries.toArray(new GlideinHistoryEntry[0]));
+			
+			return entries.toArray(new GlideinHistoryEntry[0]);
 		} catch (SQLException sqle) {
 			throw new DatabaseException("Unable to get glidein history",sqle);
 		} finally {
@@ -267,8 +284,6 @@ public class MySQLGlideinDAO implements GlideinDAO
 			JDBCUtil.closeQuietly(stmt);
 			JDBCUtil.closeQuietly(conn);
 		}
-		
-		return hist;
 	}
 	
 	public void insertHistory(int glideinId, GlideinState state, Calendar time)

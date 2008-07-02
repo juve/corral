@@ -33,6 +33,7 @@ import edu.usc.glidein.db.GlideinDAO;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinHistory;
 import edu.usc.glidein.stubs.types.Glideins;
+import edu.usc.glidein.stubs.types.Identifiers;
 import edu.usc.glidein.util.AddressingUtil;
 
 public class GlideinFactoryService
@@ -97,13 +98,13 @@ public class GlideinFactoryService
 		return glideins;
 	}
 	
-	public GlideinHistory getHistory(int glideinId) throws RemoteException
+	public GlideinHistory getHistory(Identifiers ids) throws RemoteException
 	{
-		GlideinHistory history = null;
+		GlideinHistory history = new GlideinHistory();
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
-			history = dao.getHistory(glideinId);
+			history.setEntries(dao.getHistory(ids.getIds()));
 		} catch (Throwable t) {
 			logAndRethrow("Unable to get glidein history", t);
 		}

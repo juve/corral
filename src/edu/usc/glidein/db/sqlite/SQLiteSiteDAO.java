@@ -30,7 +30,6 @@ import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteHistory;
 import edu.usc.glidein.stubs.types.SiteHistoryEntry;
 import edu.usc.glidein.stubs.types.SiteState;
 
@@ -480,31 +479,49 @@ public class SQLiteSiteDAO implements SiteDAO
 		}
 	}
 	
-	public SiteHistory getHistory(int siteId) throws DatabaseException
+	public SiteHistoryEntry[] getHistory(int[] siteIds) throws DatabaseException
 	{
-		SiteHistory hist = new SiteHistory();
-		hist.setSiteId(siteId);
 		LinkedList<SiteHistoryEntry> entries = new LinkedList<SiteHistoryEntry>();
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
 			conn = database.getConnection();
-			stmt = conn.prepareStatement("SELECT * FROM site_history WHERE site=?");
-			stmt.setInt(1,siteId);
+			
+			StringBuilder sql = new StringBuilder();
+			sql.append("SELECT * FROM site_history");
+			if(siteIds != null && siteIds.length > 0) {
+				sql.append(" WHERE site in (");
+				for (int i=1; i<=siteIds.length; i++) {
+					sql.append("?");
+					if (i<siteIds.length) sql.append(",");
+				}
+				sql.append(")");
+			}
+			sql.append(" ORDER BY time");
+			
+			stmt = conn.prepareStatement(sql.toString());
+			if(siteIds != null && siteIds.length > 0) {
+				for (int i=1; i<=siteIds.length; i++)
+					stmt.setInt(i,siteIds[i-1]);
+			}
+			
 			rs = stmt.executeQuery();
 			while (rs.next()) {
+				int siteId = rs.getInt("site");
 				SiteState state = SiteState.fromString(rs.getString("state"));
 				Calendar time = Calendar.getInstance();
 				time.setTimeInMillis(rs.getLong("time"));
 				
 				SiteHistoryEntry entry = new SiteHistoryEntry();
+				entry.setSiteId(siteId);
 				entry.setState(state);
 				entry.setTime(time);
 				
 				entries.add(entry);
 			}
-			hist.setHistory(entries.toArray(new SiteHistoryEntry[0]));
+			
+			return entries.toArray(new SiteHistoryEntry[0]);
 		} catch (SQLException sqle) {
 			throw new DatabaseException("Unable to get site history",sqle);
 		} finally {
@@ -512,8 +529,6 @@ public class SQLiteSiteDAO implements SiteDAO
 			JDBCUtil.closeQuietly(stmt);
 			JDBCUtil.closeQuietly(conn);
 		}
-		
-		return hist;
 	}
 	
 	public void insertHistory(int siteId, SiteState state, Calendar time)

@@ -29,6 +29,7 @@ import org.globus.wsrf.utils.AddressingUtils;
 
 import edu.usc.glidein.db.Database;
 import edu.usc.glidein.db.SiteDAO;
+import edu.usc.glidein.stubs.types.Identifiers;
 import edu.usc.glidein.stubs.types.SiteHistory;
 import edu.usc.glidein.stubs.types.Sites;
 import edu.usc.glidein.stubs.types.Site;
@@ -87,13 +88,13 @@ public class SiteFactoryService
 		return sites;
 	}
 	
-	public SiteHistory getHistory(int siteId) throws RemoteException
+	public SiteHistory getHistory(Identifiers ids) throws RemoteException
 	{
-		SiteHistory history = null;
+		SiteHistory history = new SiteHistory();
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
-			history =  dao.getHistory(siteId);
+			history.setEntries(dao.getHistory(ids.getIds()));
 		} catch (Throwable t) {
 			logAndRethrow("Unable to get site history", t);
 		}

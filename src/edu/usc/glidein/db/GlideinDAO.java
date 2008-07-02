@@ -18,7 +18,7 @@ package edu.usc.glidein.db;
 import java.util.Calendar;
 
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinHistory;
+import edu.usc.glidein.stubs.types.GlideinHistoryEntry;
 import edu.usc.glidein.stubs.types.GlideinState;
 
 public interface GlideinDAO
@@ -32,5 +32,5 @@ public interface GlideinDAO
 	public Glidein[] list(boolean longFormat) throws DatabaseException;
 	public void insertHistory(int glideinId, GlideinState state, Calendar time)
 			throws DatabaseException;
-	public GlideinHistory getHistory(int glideinId) throws DatabaseException;
+	public GlideinHistoryEntry[] getHistory(int[] glideinIds) throws DatabaseException;
 }

@@ -234,6 +234,9 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.updateState(glidein.getId(), state, shortMessage, longMessage, time);
+			// TODO: Prevent duplicate history entries during state recovery
+			// This may be done by preventing handleEvent from processing the same
+			// event twice.
 			dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
 		} catch(DatabaseException de) {
 			throw new ResourceException("Unable to update state to "+state,de);

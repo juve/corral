@@ -25,14 +25,11 @@ import org.apache.commons.cli.CommandLine;
 import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.api.GlideinFactoryService;
 import edu.usc.glidein.service.GlideinNames;
-import edu.usc.glidein.stubs.types.GlideinHistory;
 import edu.usc.glidein.stubs.types.GlideinHistoryEntry;
-
-// TODO: Allow multiple history records to be returned at the same time
 
 public class GlideinHistoryCommand extends Command
 {
-	private List<Integer> ids;
+	private LinkedList<Integer> ids;
 	
 	public GlideinHistoryCommand()
 	{
@@ -48,49 +45,52 @@ public class GlideinHistoryCommand extends Command
 	{		
 		/* Remaining arguments */
 		String[] args = cmdln.getArgs();
-		if (args.length==0) {
-			throw new CommandException(getUsage());
-		} else {
-			for (String arg : args) {
-				if (arg.matches("[1-9][0-9]*")) {
-					int id = Integer.parseInt(arg);
-					ids.add(id);
-				} else {
-					System.out.println("Invalid glidein id: "+arg);
-				}
+		for (String arg : args) {
+			if (arg.matches("[1-9][0-9]*")) {
+				int id = Integer.parseInt(arg);
+				ids.add(id);
+			} else {
+				throw new CommandException("Invalid glidein id: "+arg);
 			}
 		}
 	}
 
 	public void execute() throws CommandException
 	{
-		for (int id : ids) {
-			try {
-				GlideinFactoryService factory = new GlideinFactoryService(
-						getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
-				factory.setDescriptor(getClientSecurityDescriptor());
-				printHistory(factory.getHistory(id));
-			} catch (GlideinException ge) {
-				System.out.println(ge.getMessage());
-				if (isDebug()) ge.printStackTrace();
-			}
+		try {
+			int[] _ids = new int[ids.size()];
+			int i = 0;
+			for (int id : ids) _ids[i++] = id;
+			
+			GlideinFactoryService factory = new GlideinFactoryService(
+					getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
+			factory.setDescriptor(getClientSecurityDescriptor());
+			printHistory(factory.getHistory(_ids));
+		} catch (GlideinException ge) {
+			System.out.println(ge.getMessage());
+			if (isDebug()) ge.printStackTrace();
 		}
 	}
 	
-	public void printHistory(GlideinHistory history) throws CommandException
+	public void printHistory(GlideinHistoryEntry[] history) throws CommandException
 	{
-		System.out.printf("Glidein %d\n\n",history.getGlideinId());
+		if (history == null) {
+			if (isDebug()) System.out.println("No history");
+			return;
+		}
+		
+		System.out.printf("%-8s", "ID");
 		System.out.printf("%-10s","STATE");
 		System.out.printf("%s","TIME");
 		System.out.printf("\n");
-		for (GlideinHistoryEntry entry : history.getHistory()) {
+		for (GlideinHistoryEntry entry : history) {
+			System.out.printf("%-8s", entry.getGlideinId());
 			System.out.printf("%-10s",entry.getState().toString());
 			Calendar time = (Calendar)entry.getTime().clone();
 			time.setTimeZone(TimeZone.getDefault());
 			System.out.printf("%1$TF %1$TT",time);
 			System.out.printf("\n");
 		}
-		System.out.println();
 	}
 	
 	public String getName()

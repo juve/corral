@@ -27,6 +27,8 @@ import edu.usc.glidein.stubs.GlideinFactoryPortType;
 import edu.usc.glidein.stubs.service.GlideinFactoryServiceAddressingLocator;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinHistory;
+import edu.usc.glidein.stubs.types.GlideinHistoryEntry;
+import edu.usc.glidein.stubs.types.Identifiers;
 import edu.usc.glidein.util.AddressingUtil;
 
 public class GlideinFactoryService extends BaseService
@@ -72,11 +74,12 @@ public class GlideinFactoryService extends BaseService
 		}
 	}
 	
-	public GlideinHistory getHistory(int glideinId) throws GlideinException
+	public GlideinHistoryEntry[] getHistory(int[] glideinIds) throws GlideinException
 	{
 		try {
 			GlideinFactoryPortType glidein = getPort();
-			return glidein.getHistory(glideinId);
+			GlideinHistory history = glidein.getHistory(new Identifiers(glideinIds));
+			return history.getEntries();
 		} catch (RemoteException re) {
 			throw new GlideinException("Unable to get glidein history: "+
 					re.getMessage(),re);

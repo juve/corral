@@ -24,9 +24,6 @@
 			<xsd:import
 				namespace="http://www.usc.edu/glidein/GlideinTypes"
 				schemaLocation="GlideinTypes.xsd" />
-				
-			<xsd:element name="getHistoryRequest" type="xsd:int"/>
-			<xsd:element name="getHistoryResponse" type="glidein:SiteHistory"/>
 			
 		</xsd:schema>
 	</types>
@@ -50,10 +47,10 @@
 	</message>
 	
 	<message name="getHistoryInputMessage">
-		<part name="request" element="tns:getHistoryRequest"/>
+		<part name="request" type="glidein:Identifiers"/>
 	</message>
 	<message name="getHistoryOutputMessage">
-		<part name="response" element="tns:getHistoryResponse"/>
+		<part name="response" type="glidein:SiteHistory"/>
 	</message>
 	
 	<!--============================================================

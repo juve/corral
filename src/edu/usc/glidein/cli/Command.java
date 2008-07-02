@@ -36,6 +36,8 @@ import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 import org.globus.wsrf.impl.security.util.AuthUtil;
 import org.globus.wsrf.security.Constants;
 
+//TODO: Add the ability to read command-line arguments from a file
+
 public abstract class Command
 {
 	static { Util.registerTransport(); }

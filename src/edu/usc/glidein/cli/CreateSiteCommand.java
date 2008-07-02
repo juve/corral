@@ -37,6 +37,8 @@ import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.util.INI;
 import edu.usc.glidein.util.SiteUtil;
 
+// TODO: Allow all site parameters to be specified on the command-line
+
 public class CreateSiteCommand extends Command
 {
 	private File catalogFile = null;
