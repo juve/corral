@@ -71,6 +71,8 @@ import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.CredentialUtil;
 import edu.usc.glidein.util.IOUtil;
 
+// TODO: Add REMOVING state for aborted glideins
+
 public class GlideinResource implements Resource, ResourceIdentifier, PersistenceCallback, ResourceProperties
 {
 	private Logger logger = Logger.getLogger(GlideinResource.class);
@@ -139,18 +141,40 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			throw new ResourceException("Wall time must be >= 2 minutes");
 		}
 		
-		// Save in the database
-		try {
-			Database db = Database.getDatabase();
-			GlideinDAO dao = db.getGlideinDAO();
-			dao.create(glidein);
-			dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
-		} catch (DatabaseException dbe) {
-			throw new ResourceException("Unable to create glidein",dbe);
-		}
+		// Get site or fail
+		SiteResource siteResource = getSiteResource(glidein.getSiteId());
+		Site site = siteResource.getSite();
 		
-		// Set glidein
-		setGlidein(glidein);
+		// Synchronize on the site resource to prevent state changes while
+		// we are checking it and saving the glidein
+		synchronized (siteResource) {
+			
+			// Check to make sure the site is in an 
+			// appropriate state for creating a glidein
+			SiteState siteState = site.getState();
+			if (SiteState.FAILED.equals(siteState) || 
+				SiteState.EXITING.equals(siteState) ||
+				SiteState.REMOVING.equals(siteState)) {
+				
+				throw new ResourceException(
+						"Site cannot be in "+siteState+
+						" when creating a glidein");
+				
+			}
+		
+			// Save in the database
+			try {
+				Database db = Database.getDatabase();
+				GlideinDAO dao = db.getGlideinDAO();
+				dao.create(glidein);
+				dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
+			} catch (DatabaseException dbe) {
+				throw new ResourceException("Unable to create glidein",dbe);
+			}
+			
+			// Set glidein
+			setGlidein(glidein);
+		}
 	}
 
 	public void load(ResourceKey key) throws ResourceException
@@ -235,9 +259,6 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.updateState(glidein.getId(), state, shortMessage, longMessage, time);
-			// TODO: Prevent duplicate history entries during state recovery
-			// This may be done by preventing handleEvent from processing the same
-			// event twice.
 			dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
 		} catch(DatabaseException de) {
 			throw new ResourceException("Unable to update state to "+state,de);
@@ -248,7 +269,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	{
 		info("Submitting glidein job");
 		
-		SiteResource siteResource = getSiteResource();
+		SiteResource siteResource = getSiteResource(glidein.getSiteId());
 		Site site = siteResource.getSite();
 		
 		// Get configuration
@@ -382,15 +403,15 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 	
 	private boolean siteIsReady() throws ResourceException
 	{
-		SiteResource resource = getSiteResource();
+		SiteResource resource = getSiteResource(glidein.getSiteId());
 		SiteState state = resource.getSite().getState();
 		return SiteState.READY.equals(state);
 	}
 	
-	private SiteResource getSiteResource() throws ResourceException
+	private SiteResource getSiteResource(int siteId) throws ResourceException
 	{
 		try {
-			ResourceKey key = AddressingUtil.getSiteKey(glidein.getSiteId());
+			ResourceKey key = AddressingUtil.getSiteKey(siteId);
 			SiteResourceHome home = SiteResourceHome.getInstance();
 			SiteResource resource = (SiteResource)home.find(key);
 			return resource;
@@ -671,7 +692,8 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				
 				GlideinState reqd = GlideinState.SUBMITTED;
 				if (reqd.equals(state)) {
-					updateState(GlideinState.QUEUED,"Glidein job queued",null,event.getTime());
+					updateState(GlideinState.QUEUED,
+							"Glidein job queued",null,event.getTime());
 				} else {
 					warn("State was not "+reqd+" when event "+
 							code+" was received");	
@@ -681,8 +703,14 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			
 			case RUNNING: {
 				
-				// Update state to running regardless
-				updateState(GlideinState.RUNNING,"Glidein job running",null,event.getTime());
+				if (GlideinState.SUBMITTED.equals(state) || 
+						GlideinState.QUEUED.equals(state)) {
+					
+					// Update state to running
+					updateState(GlideinState.RUNNING,
+							"Glidein job running",null,event.getTime());
+					
+				}
 				
 			} break;
 			
@@ -711,22 +739,33 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			
 			case JOB_SUCCESS: {
 				
-				// In order to resubmit, the glidein should be resubmit, the
-				// site should be in ready status, and the credential should be
-				// valid
-				if (shouldResubmit() && siteIsReady() && credentialIsValid()) {
+				GlideinState reqd = GlideinState.RUNNING;
+				if (reqd.equals(state)) {
 					
-					info("Resubmitting glidein");
-					updateState(GlideinState.SUBMITTED,
-							"Local job submitted",null,event.getTime());
-					submitGlideinJob();
+					// In order to resubmit, the glidein should be resubmit,
+					// the site should be in ready status, and the credential
+					// should be valid
+					if (shouldResubmit() && siteIsReady() && 
+							credentialIsValid()) {
+						
+						info("Resubmitting glidein");
+						updateState(GlideinState.SUBMITTED,
+								"Local job submitted",null,event.getTime());
+						submitGlideinJob();
+						
+					} else {
+						
+						// Otherwise, delete the glidein
+						updateState(GlideinState.DELETED,
+								"Glidein deleted",null,event.getTime());
+						delete();
+						
+					}
 					
 				} else {
 					
-					// Otherwise, delete the glidein
-					updateState(GlideinState.DELETED,
-							"Glidein deleted",null,event.getTime());
-					delete();
+					warn("Glidein was not in "+reqd+" state when "+
+							code+" was received");
 					
 				}
 				
