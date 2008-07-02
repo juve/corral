@@ -145,7 +145,7 @@ public class CreateGlideinCommand extends Command
 				  		"indefinitely until the user removes it. The optional argument allows the user\n" +
 				  		"to specify either the maximum number of times to resubmit the glidein, or a date,\n" +
 				  		"in 'YYYY-MM-DD HH24:MM:SS' format, when to stop resubmitting the glidein. Dates must\n" +
-				  		"be quoted on the command-line and are assumed to be relative to the client's time zone." +
+				  		"be quoted on the command-line and are assumed to be relative to the client's time zone.\n" +
 				  		"By default the service will keep resubmitting the glidein until the user's certificate\n" +
 				  		"expires, or the glidein fails.")
 				  .hasOptionalArgument()
