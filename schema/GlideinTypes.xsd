@@ -96,6 +96,7 @@
 			<xsd:enumeration value="SUBMITTED"/>	<!-- Job submitted to Condor locally -->
 			<xsd:enumeration value="QUEUED"/>		<!-- Job queued remotely -->
 			<xsd:enumeration value="RUNNING"/>		<!-- Job running remotely -->
+			<xsd:enumeration value="REMOVING"/>		<!-- Job is being removed -->
 			<xsd:enumeration value="FAILED"/>		<!-- Glidein failed -->
 			<xsd:enumeration value="DELETED"/>		<!-- Glidein has been deleted -->
 		</xsd:restriction>
