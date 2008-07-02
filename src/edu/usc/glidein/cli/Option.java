@@ -28,6 +28,7 @@ public class Option
 	private String option = null;
 	private String longOption = null;
 	private boolean argument = false;
+	private boolean optionalArgument = false;
 	
 	public Option() { }
 
@@ -75,26 +76,48 @@ public class Option
 		return longOption;
 	}
 	
-	public Option hasArgument() {
+	public Option hasArgument()
+	{
 		this.argument = true;
 		return this;
 	}
 	
-	public Option hasArgument(boolean argument) {
+	public Option hasArgument(boolean argument)
+	{
 		this.argument = argument;
 		return this;
 	}
 	
-	public boolean getArgument() {
+	public boolean getArgument()
+	{
 		return argument;
+	}
+	
+	public Option hasOptionalArgument()
+	{
+		this.optionalArgument = true;
+		return this;
+	}
+	
+	public Option hasOptionalArgument(boolean optionalArgument)
+	{
+		this.optionalArgument = optionalArgument;
+		return this;
+	}
+	
+	public boolean getOptionalArgument()
+	{
+		return optionalArgument;
 	}
 	
 	public org.apache.commons.cli.Option buildOption()
 	{
+		org.apache.commons.cli.OptionBuilder.hasOptionalArgs();
 		org.apache.commons.cli.Option opt = 
 			new org.apache.commons.cli.Option(
 					option,longOption,argument,description);
+		opt.setOptionalArg(optionalArgument);
+		if (optionalArgument) opt.setArgs(1);
 		return opt;
-		
 	}
 }
