@@ -58,7 +58,7 @@ public class CreateGlideinCommand extends Command
 				  .setOption("c")
 				  .setLongOption("count")
 				  .setUsage("-c [--count] <n>")
-				  .setDescription("Number of processes (default: 1)")
+				  .setDescription("Total number of processes across all hosts (default: = host-count)")
 				  .hasArgument()
 		);
 		options.add(
@@ -83,7 +83,7 @@ public class CreateGlideinCommand extends Command
 				  .setOption("i")
 				  .setLongOption("idle-time")
 				  .setUsage("-i [--idle-time] <t>")
-				  .setDescription("Glidein max idle time in minutes (default: wallTime)")
+				  .setDescription("Glidein max idle time in minutes (default: wall-time)")
 				  .hasArgument()
 		);
 		options.add(
@@ -186,13 +186,6 @@ public class CreateGlideinCommand extends Command
 		
 		
 		/* Options ***********************************************************/
-		//count c
-		if (cmdln.hasOption("c")) {
-			int count = Integer.parseInt(cmdln.getOptionValue("count"));
-			glidein.setCount(count);
-		} else {
-			glidein.setCount(1);
-		}
 		
 		//host-count hc
 		if (cmdln.hasOption("hc")) {
@@ -200,6 +193,14 @@ public class CreateGlideinCommand extends Command
 			glidein.setHostCount(hostCount);
 		} else {
 			glidein.setHostCount(1);
+		}
+		
+		//count c
+		if (cmdln.hasOption("c")) {
+			int count = Integer.parseInt(cmdln.getOptionValue("count"));
+			glidein.setCount(count);
+		} else {
+			glidein.setCount(glidein.getHostCount());
 		}
 		
 		//num-cpus n
