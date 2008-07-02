@@ -264,9 +264,6 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			dao.updateState(site.getId(), state, shortMessage, longMessage, time);
-			// TODO: Prevent duplicate history entries during state recovery
-			// This may be done by preventing handleEvent from processing the same
-			// event twice.
 			dao.insertHistory(site.getId(), state, time);
 		} catch(DatabaseException de) {
 			throw new ResourceException("Unable to change state to "+state,de);
@@ -802,8 +799,6 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 						
 					}
 					
-				} else {
-					/* This is expected to happen frequently */
 				}
 				
 			} break;
