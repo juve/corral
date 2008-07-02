@@ -29,7 +29,7 @@ public class GlideinNames
 	public static final QName RESOURCE_PROPERTIES = new QName(SERVICE_NS, "GlideinResourceProperties");
 	
 	public static final QName RP_ID = new QName(SERVICE_NS, "Id");
-	public static final QName RP_SITE = new QName(SERVICE_NS, "Site");
+	public static final QName RP_SITE = new QName(SERVICE_NS, "SiteId");
 	public static final QName RP_CONDOR_HOST = new QName(SERVICE_NS, "CondorHost");
 	public static final QName RP_COUNT = new QName(SERVICE_NS, "Count");
 	public static final QName RP_HOST_COUNT = new QName(SERVICE_NS, "HostCount");

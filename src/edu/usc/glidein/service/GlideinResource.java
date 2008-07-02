@@ -117,10 +117,11 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		try {
 			resourceProperties = new SimpleResourcePropertySet(
 					GlideinNames.RESOURCE_PROPERTIES);
+			
 			resourceProperties.add(new ReflectionResourceProperty(
 					GlideinNames.RP_ID,"id",glidein));
 			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_SITE,"site",glidein));
+					GlideinNames.RP_SITE,"siteId",glidein));
 			resourceProperties.add(new ReflectionResourceProperty(
 					GlideinNames.RP_CONDOR_HOST,"condorHost",glidein));
 			resourceProperties.add(new ReflectionResourceProperty(
