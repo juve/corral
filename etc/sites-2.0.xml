@@ -1,0 +1,38 @@
+<sitecatalog xmlns="http://pegasus.isi.edu/schema/sitecatalog" version="2.0"
+		xsi:schemaLocation="http://pegasus.isi.edu/schema/sitecatalog http://pegasus.isi.edu/schema/sc-2.0.xsd">
+	
+	<site handle="ncsa-mercury" 
+		  gridlaunch="/gpfs_scratch1/nopurge/SCEC/CyberShake2007/pegasus/pegasus-2.1.0-20070813/bin/kickstart" 
+		  sysinfo="INTEL32::LINUX">
+		  
+		<profile namespace="env" key="GLOBUS_LOCATION">/usr/projects/Pegasus/SOFTWARE/globus/default/</profile>
+		<profile namespace="env" key="LD_LIBRARY_PATH">/usr/projects/Pegasus/SOFTWARE/globus/default/lib</profile>
+		<!-- profile namespace="env" key="PEGASUS_HOME">/usr/projects/Pegasus/SOFTWARE/pegasus/default</profile -->
+		<profile namespace="env" key="PEGASUS_HOME">/gpfs_scratch1/nopurge/SCEC/CyberShake2007/pegasus/pegasus-2.1.0-20070813</profile>
+		<profile namespace="condor" key="universe">vanilla</profile>
+		<profile namespace="condor" key="requirements">(FileSystemDomain=="ncsa.teragrid.org")&amp;&amp;(Arch=="IA64")</profile>
+		<profile namespace="pegasus" key="style">glidein</profile>
+		
+		<profile namespace="pegasus" key="glidein.installPath">/home/geovault-00/juve/glidein</profile>
+		<profile namespace="pegasus" key="glidein.localPath">/home/geovault-00/juve/glidein/local</profile>
+		<profile namespace="pegasus" key="glidein.condorVersion">7.0.0</profile>
+		<!-- <profile namespace="pegasus" key="glidein.condorPackage">7.0.0-ia64-Linux-2.4-glibc2.2</profile> -->
+		<profile namespace="pegasus" key="glidein.stagingService">gt2 dynamic.usc.edu/jobmanager-fork</profile>
+		<profile namespace="pegasus" key="glidein.stagingService.project"></profile>
+		<profile namespace="pegasus" key="glidein.stagingService.queue"></profile>
+		<profile namespace="pegasus" key="glidein.glideinService">gt2 dynamic.usc.edu/jobmanager-pbs</profile>
+		<profile namespace="pegasus" key="glidein.glideinService.project">nqi</profile>
+		<profile namespace="pegasus" key="glidein.glideinService.queue">dque</profile>
+		<profile namespace="pegasus" key="glidein.environment">_condor_CONDOR_ADMIN=juve@usc.edu</profile>
+		
+		<lrc url="rls://intensity.usc.edu"/>
+		
+		<gridftp url="gsiftp://gridftp-hg.ncsa.teragrid.org" storage="/gpfs_scratch1/tera3d/CyberShake2007/storage" major="2" minor="4" patch="3"/>
+		
+		<jobmanager universe="vanilla" url="grid-hg.ncsa.teragrid.org/jobmanager-pbs" major="2" minor="4" patch="3"/>
+		<jobmanager universe="transfer" url="grid-hg.ncsa.teragrid.org/jobmanager-fork" major="2" minor="4" patch="3"/>
+		
+		<workdirectory>/gpfs_scratch1/tera3d/CyberShake2007/execdir</workdirectory>
+	</site>
+	
+</sitecatalog>

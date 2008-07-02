@@ -16,10 +16,7 @@
 package edu.usc.glidein.cli;
 
 import java.io.File;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.commons.cli.CommandLine;
@@ -29,12 +26,12 @@ import org.globus.gsi.GlobusCredentialException;
 import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.api.SiteFactoryService;
 import edu.usc.glidein.api.SiteService;
+import edu.usc.glidein.catalog.SiteCatalog;
+import edu.usc.glidein.catalog.SiteCatalogException;
+import edu.usc.glidein.catalog.SiteCatalogFactory;
+import edu.usc.glidein.catalog.SiteCatalogFormat;
 import edu.usc.glidein.service.SiteNames;
-import edu.usc.glidein.stubs.types.EnvironmentVariable;
-import edu.usc.glidein.stubs.types.ExecutionService;
-import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.util.INI;
 import edu.usc.glidein.util.SiteUtil;
 
 // TODO: Allow all site parameters to be specified on the command-line
@@ -46,12 +43,6 @@ public class CreateSiteCommand extends Command
 	private String siteName = null;
 	private GlobusCredential credential;
 	private boolean verbose;
-	
-	private static enum SiteCatalogFormat {
-		ini,
-		xml,
-		classic
-	};
 	
 	public void addOptions(List<Option> options)
 	{
@@ -69,7 +60,7 @@ public class CreateSiteCommand extends Command
 				  .setOption("f")
 				  .setLongOption("catalog-format")
 				  .setUsage("-f [--catalog-format] <format>")
-				  .setDescription("The format of the site catalog (one of: ini, xml, classic; default: ini)")
+				  .setDescription("The format of the site catalog (one of: 'ini', or 'xml'; \ndefault: determined by extension)")
 				  .hasArgument()
 		);
 		
@@ -120,15 +111,21 @@ public class CreateSiteCommand extends Command
 		}
 				
 		/* Catalog format */
-		String format = cmdln.getOptionValue("catalog-format","ini");
-		try {
-			catalogFormat = SiteCatalogFormat.valueOf(format);
-		} catch (Exception e) {
-			throw new CommandException("Invalid catalog format: "+format);
+		if (cmdln.hasOption("f")) {
+			String format = cmdln.getOptionValue("catalog-format");
+			try {
+				catalogFormat = SiteCatalogFormat.valueOf(format.toUpperCase());
+			} catch (Exception e) {
+				throw new CommandException("Invalid catalog format: "+format);
+			}
 		}
 				
-		/* The chosen site name (if any) */
-		siteName = cmdln.getOptionValue("site-name");
+		/* The site to create */
+		if (cmdln.hasOption("n")) {
+			siteName = cmdln.getOptionValue("site-name");
+		} else {
+			throw new CommandException("Missing site-name argument");
+		}
 		
 		/* Get proxy credential */
 		if (cmdln.hasOption("C")) {
@@ -158,169 +155,63 @@ public class CreateSiteCommand extends Command
 	
 	public void execute() throws CommandException
 	{
-		createSites(extractSites(catalogFile,catalogFormat,siteName));
+		createSite(getSite(catalogFile,catalogFormat,siteName));
 	}
 
-	public List<Site> extractSites(File catalogFile, SiteCatalogFormat catalogFormat, String site)
+	public Site getSite(File catalogFile, SiteCatalogFormat catalogFormat, String siteName)
 	throws CommandException
 	{
-		if (isDebug()) System.out.printf("Reading sites from '%s'...\n",catalogFile.getName());
-		List<Site> sites;
-		switch (catalogFormat) {
-			case ini:
-				sites = extractINISites(catalogFile, site);
-				break;
-			case xml:
-			case classic:
-			default:
-				// TODO: Add the ability to read Pegasus site catalog formats
-				throw new CommandException("Sorry, "+catalogFormat+
-						" format catalogs are not yet supported");
-		}
-		if (isDebug()) System.out.println("Done reading sites.");
-		return sites;
-	}
-
-	public List<Site> extractINISites(File iniFile, String site) throws CommandException
-	{
-		List<Site> sites = new LinkedList<Site>();
-		INI ini = new INI();
+		if (isDebug()) System.out.printf("Reading site from '%s'...\n",catalogFile.getName());
+		Site site = null;
 		try {
-			ini.read(iniFile);
-		} catch (Exception e) {
-			throw new CommandException("Error reading INI catalog file. " +
-					"Are you sure it is the right format? " +
-					"Try using --catalog-format.\n", e);
-		}
-		if (site == null) {
-			for (String name : ini.getSections()) {
-				sites.add(extractINISite(ini,name));
-			}
-		} else {
-			if (ini.hasSection(site)) {
-				sites.add(extractINISite(ini,site));
+			SiteCatalog catalog = null;
+			if (catalogFormat == null) {
+				catalog = SiteCatalogFactory.getSiteCatalog(catalogFile);
 			} else {
-				throw new CommandException("Site '"+site+"' not found in site catalog");
+				catalog = SiteCatalogFactory.getSiteCatalog(catalogFile,catalogFormat);
 			}
+			site = catalog.getSite(siteName);
+		} catch (SiteCatalogException sce) {
+			throw new CommandException("Unable to read site from catalog",sce);
 		}
-		return sites;
-	}
-	
-	public Site extractINISite(INI ini, String name) throws CommandException
-	{
-		if (isDebug()) System.out.printf("Reading site '%s'... ",name);
-		Site s = new Site();
-		s.setName(name);
-		s.setInstallPath(getINIValue(ini,name,"installPath"));
-		s.setLocalPath(getINIValue(ini,name,"localPath"));
-		s.setCondorPackage(getINIValue(ini,name,"condorPackage"));
-		s.setCondorVersion(getINIValue(ini,name,"condorVersion"));
-		
-		/* Staging service */
-		try {
-			String staging = getINIValue(ini,name,"stagingService");
-			if (staging == null) {
-				throw new CommandException("Missing required parameter 'stagingService' " +
-						"for site '"+name+"'");
-			}
-			String[] comp = staging.trim().split("[ ]", 2);
-			ExecutionService stagingService = new ExecutionService();
-			stagingService.setProject(getINIValue(ini,name,"project"));
-			stagingService.setQueue(getINIValue(ini,name,"queue"));
-			stagingService.setServiceType(ServiceType.fromString(comp[0].toUpperCase()));
-			stagingService.setServiceContact(comp[1]);
-			s.setStagingService(stagingService);
-		} catch (Exception e) {
-			throw new CommandException("Unable to create staging service for site '"+name+"'. " +
-					"Are you sure you used the right format for stagingService?");
-		}
-		
-		/* Glidein service */
-		try {
-			String glidein = getINIValue(ini,name,"glideinService");
-			if (glidein == null) {
-				throw new CommandException("Missing required parameter 'glideinService' " +
-						"for site '"+name+"'");
-			}
-			String[] comp = glidein.trim().split("[ ]", 2);
-			ExecutionService glideinService = new ExecutionService();
-			glideinService.setProject(getINIValue(ini,name,"project"));
-			glideinService.setQueue(getINIValue(ini,name,"queue"));
-			glideinService.setServiceType(ServiceType.fromString(comp[0].toUpperCase()));
-			glideinService.setServiceContact(comp[1]);
-			s.setGlideinService(glideinService);
-		} catch (Exception e) {
-			throw new CommandException("Unable to create glidein service for site '"+name+"'. " +
-					"Are you sure you used the right format for glideinService?");
-		}
-		
-		/* Environment */
-		String env = getINIValue(ini,name,"environment");
-		if (env!=null) {
-			List<EnvironmentVariable> envs = new LinkedList<EnvironmentVariable>();
-			Pattern p = Pattern.compile("([^=]+)=([^:]+):?");
-			Matcher m = p.matcher(env);
-			while (m.find()) {
-				EnvironmentVariable e = new EnvironmentVariable();
-				e.setVariable(m.group(1));
-				e.setValue(m.group(2));
-				envs.add(e);
-			}
-			s.setEnvironment(envs.toArray(new EnvironmentVariable[0]));
-		}
-		
-		if (isDebug()) System.out.println("done.");
-		return s;
+		if (isDebug()) System.out.println("Done reading site.");
+		return site;
 	}
 
-	private String getINIValue(INI ini, String site, String key)
+	public void createSite(Site site) throws CommandException
 	{
-		String value = ini.getString(site, key, null);
-		if (value == null) {
-			value = ini.getString(key, null);
-		}
-		if (value != null) {
-			value = value.trim();
-		}
-		return value;
-	}
-
-	public void createSites(List<Site> sites) throws CommandException
-	{
-		if (isDebug()) System.out.printf("Creating sites...\n");
+		if (isDebug()) System.out.printf("Creating site...\n");
 		
 		// Delegate credential
 		EndpointReferenceType credentialEPR = delegateCredential(credential);
 		
-		// Create sites
-		for (Site site : sites) {
-			try {
-				// Create site
-				SiteFactoryService factory = new SiteFactoryService(
-						getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
-				factory.setDescriptor(getClientSecurityDescriptor());
-				EndpointReferenceType epr = factory.createSite(site);
-				
-				// Get instance
-				SiteService instance = new SiteService(epr);
-				instance.setDescriptor(getClientSecurityDescriptor());
-				
-				// If verbose, print details
-				if (verbose) {
-					site = instance.getSite();
-					SiteUtil.print(site);
-					System.out.println();
-				}
-
-				// Submit the new site
-				instance.submit(credentialEPR);
-				
-			} catch (GlideinException ge) {
-				throw new CommandException("Unable to create site: "+
-						site.getName()+": "+ge.getMessage(),ge);
+		try {
+			// Create site
+			SiteFactoryService factory = new SiteFactoryService(
+					getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
+			factory.setDescriptor(getClientSecurityDescriptor());
+			EndpointReferenceType epr = factory.createSite(site);
+			
+			// Get instance
+			SiteService instance = new SiteService(epr);
+			instance.setDescriptor(getClientSecurityDescriptor());
+			
+			// If verbose, print details
+			if (verbose) {
+				site = instance.getSite();
+				SiteUtil.print(site);
+				System.out.println();
 			}
+
+			// Submit the new site
+			instance.submit(credentialEPR);
+			
+		} catch (GlideinException ge) {
+			throw new CommandException("Unable to create site: "+
+					site.getName()+": "+ge.getMessage(),ge);
 		}
-		if (isDebug()) System.out.printf("Done creating sites.\n");
+		
+		if (isDebug()) System.out.printf("Done creating site.\n");
 	}
 
 	public String getName()
