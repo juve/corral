@@ -13,14 +13,14 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package edu.usc.glidein.db.sqlite;
+package edu.usc.glidein.db.sql;
 
-import edu.usc.glidein.db.sql.SQLSiteDAO;
+import java.sql.Connection;
 
-public class SQLiteSiteDAO extends SQLSiteDAO
-{	
-	public SQLiteSiteDAO(SQLiteDatabase db)
-	{
-		super(db);
-	}
+import edu.usc.glidein.db.Database;
+import edu.usc.glidein.db.DatabaseException;
+
+public abstract class SQLDatabase extends Database
+{
+	public abstract Connection getConnection() throws DatabaseException;
 }

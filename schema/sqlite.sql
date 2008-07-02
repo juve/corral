@@ -85,7 +85,10 @@ CREATE TABLE glidein (
 	longMessage		TEXT,				-- Long status message (e.g. stack trace)
 	created			INTEGER NOT NULL,	-- Date when glidein was created (unix time in ms)
 	lastUpdate		INTEGER NOT NULL,	-- Date when glidein was last updated (unix time in ms)
-	resubmit		INTEGER NOT NULL	-- Should the glidein be resubmitted when it terminates? (1 true, 0 false)
+	resubmit		INTEGER NOT NULL,	-- Should the glidein be resubmitted when it terminates? (1 true, 0 false)
+	resubmits		INTEGER,			-- Number of times to resubmit
+	until			INTEGER,			-- Date to resubmit until (unix time in ms)
+	submits			INTEGER	NOT NULL	-- Total number of times this glidein has be submitted
 );
 
 /**

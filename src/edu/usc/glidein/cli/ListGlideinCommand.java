@@ -139,9 +139,8 @@ public class ListGlideinCommand extends Command
 			System.out.printf("%-8s", "ID");
 			System.out.printf("%-20s", "SITE");
 			System.out.printf("%-20s", "CONDOR HOST");
-			System.out.printf("%-8s", "COUNT");
-			System.out.printf("%-8s", "HOSTS");
-			System.out.printf("%-8s", "TIME");
+			System.out.printf("%-8s", "SLOTS");
+			System.out.printf("%-8s", "WTIME");
 			System.out.printf("%-15s", "CREATED");
 			System.out.printf("%-15s", "LAST UPDATE");
 			System.out.printf("%-10s", "STATE");
@@ -151,15 +150,14 @@ public class ListGlideinCommand extends Command
 				System.out.printf("%-8d",g.getId());
 				System.out.printf("%-20s", ""+g.getSiteName()+" ("+g.getSiteId()+")");
 				System.out.printf("%-20s",g.getCondorHost());
-				System.out.printf("%-8d", g.getCount());
-				System.out.printf("%-8d", g.getHostCount());
+				System.out.printf("%-8d", (g.getCount()*g.getNumCpus()));
 				System.out.printf("%-8d", g.getWallTime());
 				
-				Calendar created = (Calendar)g.getCreated().clone();
+				Calendar created = g.getCreated();
 				created.setTimeZone(TimeZone.getDefault());
 				System.out.printf("%1$tm-%1$td %1$TR    ",created);
 				
-				Calendar lastUpdate = (Calendar)g.getLastUpdate().clone();
+				Calendar lastUpdate = g.getLastUpdate();
 				lastUpdate.setTimeZone(TimeZone.getDefault());
 				System.out.printf("%1$tm-%1$td %1$TR    ",lastUpdate);
 				

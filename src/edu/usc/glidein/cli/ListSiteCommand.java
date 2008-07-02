@@ -138,11 +138,11 @@ public class ListSiteCommand extends Command
 				System.out.printf("%-8d",site.getId());
 				System.out.printf("%-20s",site.getName());
 				
-				Calendar created = (Calendar)site.getCreated().clone();
+				Calendar created = site.getCreated();
 				created.setTimeZone(TimeZone.getDefault());
 				System.out.printf("%1$tm-%1$td %1$TR    ",created);
 				
-				Calendar lastUpdate = (Calendar)site.getLastUpdate().clone();
+				Calendar lastUpdate = site.getLastUpdate();
 				lastUpdate.setTimeZone(TimeZone.getDefault());
 				System.out.printf("%1$tm-%1$td %1$TR    ",lastUpdate);
 				

@@ -17,6 +17,9 @@ package edu.usc.glidein.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.List;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
@@ -33,11 +36,9 @@ import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.GlideinUtil;
 import edu.usc.glidein.util.IOUtil;
 
-// TODO: Expand resubmit options to allow either N resubmits or until a given date
-// TODO: Validate credential for N resubmits or until a given date resubmits
-
 public class CreateGlideinCommand extends Command
 {
+	public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	private Glidein glidein = null;
 	private GlobusCredential credential = null;
 	private boolean verbose;
@@ -139,9 +140,15 @@ public class CreateGlideinCommand extends Command
 			Option.create()
 				  .setOption("r")
 				  .setLongOption("resubmit")
-				  .setUsage("-r [--resubmit]")
+				  .setUsage("-r [--resubmit] [number|date]")
 				  .setDescription("Resubmit the glidein when it expires. The glidein will be resubmitted\n" +
-				  		"indefinitely until the cert expires or the user removes it.")
+				  		"indefinitely until the user removes it. The optional argument allows the user\n" +
+				  		"to specify either the maximum number of times to resubmit the glidein, or a date,\n" +
+				  		"in 'YYYY-MM-DD HH24:MM:SS' format, when to stop resubmitting the glidein. Dates must\n" +
+				  		"be quoted on the command-line and are assumed to be relative to the client's time zone." +
+				  		"By default the service will keep resubmitting the glidein until the user's certificate\n" +
+				  		"expires, or the glidein fails.")
+				  .hasOptionalArgument()
 		);
 		options.add(
 			Option.create()
@@ -264,6 +271,46 @@ public class CreateGlideinCommand extends Command
 		/* Resubmit the glidein when it expires */
 		if (cmdln.hasOption("r")) {
 			glidein.setResubmit(true);
+			String value = cmdln.getOptionValue("r");
+			long timeLeft = credential.getTimeLeft() * 1000;
+			long timeRequired = glidein.getWallTime() * 60 * 1000;
+			
+			if (value != null) {
+				if (value.matches("[0-9]+")) {
+					int resubmits = Integer.parseInt(value);
+					if (resubmits <= 0 || resubmits > 128) {
+						throw new CommandException(
+								"Resubmits must be between 0 and 128");
+					}
+					timeRequired = resubmits * glidein.getWallTime() * 60 * 1000;
+					glidein.setResubmits(resubmits);
+				} else {
+					Calendar until = Calendar.getInstance();
+					Calendar now = Calendar.getInstance();
+					try {
+						SimpleDateFormat parser = new SimpleDateFormat(DATE_FORMAT);
+						until.setTime(parser.parse(value));
+					} catch (ParseException pe) {
+						throw new CommandException(
+								"Invalid resubmit option: "+value);
+					}
+					if (until.before(now)) {
+						throw new CommandException(
+								"Resubmit date should be in the future");
+					}
+					timeRequired = until.getTimeInMillis() - now.getTimeInMillis();
+					glidein.setUntil(until);
+				}
+			}
+			if (isDebug()) {
+				System.out.println("Time Left: "+timeLeft+" ms");
+				System.out.println("Time Required: "+timeRequired+" ms");
+			}
+			if (timeLeft < timeRequired) {
+				throw new CommandException(
+						"Not enough time left on credential for " +
+						"specified run time (including resubmits)");
+			}
 		} else {
 			glidein.setResubmit(false);
 		}

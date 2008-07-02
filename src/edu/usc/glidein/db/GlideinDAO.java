@@ -33,4 +33,5 @@ public interface GlideinDAO
 	public void insertHistory(int glideinId, GlideinState state, Calendar time)
 			throws DatabaseException;
 	public GlideinHistoryEntry[] getHistory(int[] glideinIds) throws DatabaseException;
+	public void incrementSubmits(int glideinId) throws DatabaseException;
 }

@@ -25,18 +25,32 @@ public class SiteUtil
 		out.printf("id = %s\n", site.getId());
 		out.printf("name = %s\n",site.getName());
 		
-		Calendar created = (Calendar)site.getCreated().clone();
-		created.setTimeZone(TimeZone.getDefault());
-		out.printf("created = %tc\n", created);
+		Calendar created = site.getCreated();
+		if (created == null) {
+			out.printf("created = null\n");
+		} else {
+			created.setTimeZone(TimeZone.getDefault());
+			out.printf("created = %tc\n",created);
+		}
 		
-		Calendar lastUpdate = (Calendar)site.getLastUpdate().clone();
-		lastUpdate.setTimeZone(TimeZone.getDefault());
-		out.printf("lastUpdate = %tc\n", lastUpdate);
+		Calendar lastUpdate = site.getLastUpdate();
+		if (lastUpdate == null) {
+			out.printf("lastUpdate = null\n");
+		} else {
+			lastUpdate.setTimeZone(TimeZone.getDefault());
+			out.printf("lastUpdate = %tc\n",lastUpdate);
+		}
 		
 		out.printf("state = %s\n", site.getState().toString());
 		out.printf("shortMessage = %s\n", site.getShortMessage());
-		out.printf("longMessage = %s\n", site.getLongMessage());
-		
+		String longMessage = site.getLongMessage();
+		if (longMessage == null) {
+			out.printf("longMessage = null\n");
+		} else {
+			out.printf("longMessage = <<END\n");
+			out.printf(longMessage);
+			out.printf("\nEND\n");
+		}
 		out.printf("installPath = %s\n", site.getInstallPath());
 		out.printf("localPath = %s\n", site.getLocalPath());
 		out.printf("condorVersion = %s\n", site.getCondorVersion());

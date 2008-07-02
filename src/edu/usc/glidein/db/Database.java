@@ -18,8 +18,6 @@ package edu.usc.glidein.db;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-// TODO: Combine SQL DAOs and eliminate duplicate code
-
 public abstract class Database
 {
 	public static Database getDatabase() throws DatabaseException

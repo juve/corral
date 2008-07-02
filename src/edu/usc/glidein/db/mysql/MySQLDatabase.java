@@ -26,14 +26,14 @@ import java.sql.Statement;
 import org.apache.log4j.Logger;
 import org.globus.wsrf.jndi.Initializable;
 
-import edu.usc.glidein.db.Database;
 import edu.usc.glidein.db.DatabaseException;
 import edu.usc.glidein.db.GlideinDAO;
 import edu.usc.glidein.db.JDBCUtil;
 import edu.usc.glidein.db.SiteDAO;
+import edu.usc.glidein.db.sql.SQLDatabase;
 import edu.usc.glidein.util.IOUtil;
 
-public class MySQLDatabase extends Database implements Initializable
+public class MySQLDatabase extends SQLDatabase implements Initializable
 {
 	public static final Logger logger = Logger.getLogger(MySQLDatabase.class);
 	public static final String DB_DRIVER = "com.mysql.jdbc.Driver";

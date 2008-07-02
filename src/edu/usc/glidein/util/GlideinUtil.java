@@ -31,19 +31,43 @@ public class GlideinUtil
 		out.printf("idleTime = %d\n", glidein.getIdleTime());
 		
 		Calendar created = glidein.getCreated();
-		created.setTimeZone(TimeZone.getDefault());
-		out.printf("created = %tc\n",created);
+		if (created == null) {
+			out.printf("created = null\n");
+		} else {
+			created.setTimeZone(TimeZone.getDefault());
+			out.printf("created = %tc\n",created);
+		}
 		
 		Calendar lastUpdate = glidein.getLastUpdate();
-		lastUpdate.setTimeZone(TimeZone.getDefault());
-		out.printf("lastUpdate = %tc\n",lastUpdate);
+		if (lastUpdate == null) {
+			out.printf("lastUpdate = null\n");
+		} else {
+			lastUpdate.setTimeZone(TimeZone.getDefault());
+			out.printf("lastUpdate = %tc\n",lastUpdate);
+		}
 		
 		out.printf("state = %s\n",glidein.getState().toString());
 		out.printf("shortMessage = %s\n",glidein.getShortMessage());
-		out.printf("longMessage = %s\n",glidein.getLongMessage());
-		
+		String longMessage = glidein.getLongMessage();
+		if (longMessage == null) {
+			out.printf("longMessage = null\n");
+		} else {
+			out.printf("longMessage = <<END\n");
+			out.printf(longMessage);
+			out.printf("\nEND\n");
+		}
 		out.printf("condorDebug = %s\n", glidein.getCondorDebug());
 		out.printf("gcbBroker = %s\n", glidein.getGcbBroker());
+		out.printf("submits = %s\n", glidein.getSubmits());
 		out.printf("resubmit = %s\n", glidein.isResubmit());
+		out.printf("resubmits = %s\n", glidein.getResubmits());
+		
+		Calendar until = glidein.getUntil();
+		if (until == null) {
+			out.printf("until = null\n");
+		} else {
+			until.setTimeZone(TimeZone.getDefault());
+			out.printf("until = %tc\n",until);
+		}
 	}
 }

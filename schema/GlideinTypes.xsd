@@ -121,6 +121,9 @@
 			<xsd:element name="created" type="xsd:dateTime" nillable="true"/>
 			<xsd:element name="lastUpdate" type="xsd:dateTime" nillable="true"/>
 			<xsd:element name="resubmit" type="xsd:boolean" default="false"/>
+			<xsd:element name="resubmits" type="xsd:int" default="0"/>
+			<xsd:element name="until" type="xsd:dateTime" nillable="true"/>
+			<xsd:element name="submits" type="xsd:int" default="0"/>
 		</xsd:sequence>
 	</xsd:complexType>
 	

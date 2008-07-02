@@ -132,6 +132,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		Calendar time = Calendar.getInstance();
 		glidein.setLastUpdate(time);
 		glidein.setCreated(time);
+		glidein.setSubmits(0);
 		
 		// Validate glidein
 		if (glidein.getWallTime() < 2) {
@@ -350,6 +351,16 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 			condor.submitJob(job);
 		} catch (CondorException ce) {
 			throw new ResourceException("Unable to submit glidein job",ce);
+		}
+		
+		// Increment the number of submits
+		try {
+			Database db = Database.getDatabase();
+			GlideinDAO dao = db.getGlideinDAO();
+			dao.incrementSubmits(glidein.getId());
+			glidein.setSubmits(glidein.getSubmits()+1);
+		} catch(DatabaseException de) {
+			throw new ResourceException("Unable to load glidein",de);
 		}
 	}
 	
@@ -703,7 +714,7 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 				// In order to resubmit, the glidein should be resubmit, the
 				// site should be in ready status, and the credential should be
 				// valid
-				if (glidein.isResubmit() && siteIsReady() && credentialIsValid()) {
+				if (shouldResubmit() && siteIsReady() && credentialIsValid()) {
 					
 					info("Resubmitting glidein");
 					updateState(GlideinState.SUBMITTED,
@@ -751,6 +762,46 @@ public class GlideinResource implements Resource, ResourceIdentifier, Persistenc
 		}
 	}
 	
+	private boolean shouldResubmit()
+	{
+		// If the glidein should be resubmitted
+		if (glidein.isResubmit()) {
+			
+			// If resubmits is set
+			int resubmits = glidein.getResubmits();
+			if (resubmits>0) {
+				// If the total number of submits is less 
+				// than or equal to  the number of resubmits
+				// then we should resubmit
+				int submits = glidein.getSubmits();
+				if (submits<=resubmits) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+			
+			// If until is set
+			Calendar until = glidein.getUntil();
+			if (until != null) {
+				// If until is in the future, we should resubmit
+				Calendar now = Calendar.getInstance();
+				if (until.after(now)) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+			
+			// Otherwise, we should resubmit
+			return true;
+		} else {
+			
+			// Otherwise we don't resubmit
+			return false;
+		}
+	}
+
 	public synchronized void recoverState() throws InitializeException
 	{
 		try {
