@@ -112,10 +112,55 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	private void setResourceProperties()
 	{
 		try {
-			resourceProperties = new SimpleResourcePropertySet(SiteNames.RESOURCE_PROPERTIES);
+			resourceProperties = new SimpleResourcePropertySet(
+					SiteNames.RESOURCE_PROPERTIES);
+			
 			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_SITE_ID,"Id",site));
-			// TODO: Set the rest of the resource properties, or don't
+					SiteNames.RP_ID,"id",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_NAME,"name",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_INSTALL_PATH,"installPath",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_LOCAL_PATH,"localPath",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_CONDOR_PACKAGE,"condorPackage",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_CONDOR_VERSION,"condorVersion",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_STATE,"state",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_SHORT_MESSAGE,"shortMessage",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_LONG_MESSAGE,"longMessage",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_CREATED,"created",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_LAST_UPDATE,"lastUpdate",site));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_STAGING_SERVICE_CONTACT,
+					"serviceContact",site.getStagingService()));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_STAGING_SERVICE_TYPE,
+					"serviceType",site.getStagingService()));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_STAGING_PROJECT,
+					"project",site.getStagingService()));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_STAGING_QUEUE,
+					"queue",site.getStagingService()));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_GLIDEIN_SERVICE_CONTACT,
+					"serviceContact",site.getGlideinService()));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_GLIDEIN_SERVICE_TYPE,
+					"serviceType",site.getGlideinService()));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_GLIDEIN_PROJECT,
+					"project",site.getGlideinService()));
+			resourceProperties.add(new ReflectionResourceProperty(
+					SiteNames.RP_GLIDEIN_QUEUE,
+					"queue",site.getGlideinService()));
 		} catch (Exception e) {
 			throw new RuntimeException("Unable to set site resource properties",e);
 		}
@@ -673,6 +718,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		SiteEventCode code = (SiteEventCode)event.getCode();
 		
 		// If the site was deleted, then we can just ignore the event
+		// This is here just in case someone gets a reference to the resource
+		// before we have a chance to remove it from the resource home
 		if (SiteState.DELETED.equals(state)) {
 			warn("Unable to process event "+code+": "+
 					"Site has been deleted");
