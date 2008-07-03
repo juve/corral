@@ -2,21 +2,15 @@ package edu.usc.glidein.catalog;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import edu.usc.glidein.stubs.types.EnvironmentVariable;
-import edu.usc.glidein.stubs.types.ExecutionService;
-import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
+import edu.usc.glidein.util.SiteUtil;
 
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.parsers.SAXParser;
@@ -48,89 +42,12 @@ public class PegasusSiteCatalog implements SiteCatalog
 		if (properties == null) {
 			throw new SiteCatalogException("Site "+name+" not found");
 		} else {
-			return createSite(properties);
-		}
-	}
-	
-	private String getRequired(Properties p, String key) 
-	throws SiteCatalogException
-	{
-		String value = p.getProperty(key);
-		if (value == null || "".equals(value)) {
-			throw new SiteCatalogException(
-					"Missing required attribute "+key);
-		}
-		return value.trim();
-	}
-	
-	private Site createSite(Properties p) throws SiteCatalogException
-	{
-		Site s = new Site();
-		
-		String name = getRequired(p,"name");
-		s.setName(name);
-		
-		s.setInstallPath(getRequired(p,"installPath"));
-		s.setLocalPath(getRequired(p,"localPath"));
-		
-		String condorPackage = p.getProperty("condorPackage");
-		String condorVersion = p.getProperty("condorVersion");
-		if (condorPackage == null && condorVersion == null) {
-			throw new SiteCatalogException(
-					"Must specify either condorPackage or condorVersion");
-		} else {
-			s.setCondorPackage(condorPackage);
-			s.setCondorVersion(condorVersion);
-		}
-		
-		/* Staging service */
-		try {
-			String staging = getRequired(p,"stagingService");
-			String[] comp = staging.trim().split("[ ]", 2);
-			ExecutionService stagingService = new ExecutionService();
-			stagingService.setProject(p.getProperty("stagingService.project"));
-			stagingService.setQueue(p.getProperty("stagingService.queue"));
-			stagingService.setServiceType(ServiceType.fromString(comp[0].toUpperCase()));
-			stagingService.setServiceContact(comp[1]);
-			s.setStagingService(stagingService);
-		} catch (Exception e) {
-			throw new SiteCatalogException("Unable to create staging service " +
-					"for site '"+name+"'. Are you sure you used the right " +
-					"format for stagingService?");
-		}
-		
-		/* Glidein service */
-		try {
-			String glidein = getRequired(p,"glideinService");
-			String[] comp = glidein.trim().split("[ ]", 2);
-			ExecutionService glideinService = new ExecutionService();
-			glideinService.setProject(p.getProperty("glideinService.project"));
-			glideinService.setQueue(p.getProperty("glideinService.queue"));
-			glideinService.setServiceType(ServiceType.fromString(comp[0].toUpperCase()));
-			glideinService.setServiceContact(comp[1]);
-			s.setGlideinService(glideinService);
-		} catch (Exception e) {
-			throw new SiteCatalogException("Unable to create glidein service " +
-					"for site '"+name+"'. Are you sure you used the right " +
-					"format for glideinService?");
-		}
-		
-		/* Environment */
-		String env = p.getProperty("environment");
-		if (env!=null) {
-			List<EnvironmentVariable> envs = new LinkedList<EnvironmentVariable>();
-			Pattern pat = Pattern.compile("([^=]+)=([^:]+):?");
-			Matcher mat = pat.matcher(env);
-			while (mat.find()) {
-				EnvironmentVariable e = new EnvironmentVariable();
-				e.setVariable(mat.group(1));
-				e.setValue(mat.group(2));
-				envs.add(e);
+			try {
+				return SiteUtil.createSite(properties);
+			} catch (Exception e) {
+				throw new SiteCatalogException("Unable to create site: "+e.getMessage(),e);
 			}
-			s.setEnvironment(envs.toArray(new EnvironmentVariable[0]));
 		}
-		
-		return s;
 	}
 	
 	private void addSiteProperties(Properties properties) 
