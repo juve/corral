@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <title>Glidein Service Manual</title>
+  
+  <chapter>
+    <title>Overview</title>
+    <section>
+      <title>Introduction</title>
+      <para></para>
+    </section>
+    <section>
+      <title>What is a Glidein?</title>
+      <para></para>
+    </section>
+    <section>
+      <title>What is a Grid Service?</title>
+      <para></para>
+    </section>
+  </chapter>
+  
+  <chapter>
+    <title>User's Manual</title>
+    <section>
+      <title>Introduction</title>
+      <para></para>
+    </section>
+    <section>
+      <title>The glidein command</title>
+      <para></para>
+    </section>
+  </chapter>
+  
+  <chapter>
+    <title>Administrator's Manual</title>
+    <section>
+      <title>Introduction</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Installation</title>
+      <para></para>
+    </section>
+    <section>
+      <title>Configuration</title>
+      <para></para>
+    </section>
+  </chapter>
+</book>
