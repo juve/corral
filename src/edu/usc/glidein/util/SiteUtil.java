@@ -2,10 +2,16 @@ package edu.usc.glidein.util;
 
 import java.io.PrintStream;
 import java.util.Calendar;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
+import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
 
 public class SiteUtil
@@ -89,5 +95,84 @@ public class SiteUtil
 			out.printf("glideinService.project = %s\n", glideinService.getProject());
 			out.printf("glideinService.queue = %s\n", glideinService.getQueue());
 		}
+	}
+	
+	private static String getRequired(Properties p, String key, String name) throws Exception
+	{
+		String value = p.getProperty(key);
+		if (value == null || "".equals(value)) {
+			throw new Exception("Missing "+key);
+		}
+		return value.trim();
+	}
+	
+	public static Site createSite(Properties p) throws Exception
+	{
+		Site s = new Site();
+		
+		String name = getRequired(p,"name","site name");
+		s.setName(name);
+		
+		s.setInstallPath(getRequired(p,"installPath","install path"));
+		s.setLocalPath(getRequired(p,"localPath","install path"));
+		
+		String condorPackage = p.getProperty("condorPackage");
+		String condorVersion = p.getProperty("condorVersion");
+		if (condorPackage == null && condorVersion == null) {
+			throw new Exception(
+					"Must specify either condor package or condor version");
+		} else {
+			s.setCondorPackage(condorPackage);
+			s.setCondorVersion(condorVersion);
+		}
+		
+		/* Staging service */
+		try {
+			String staging = getRequired(p,"stagingService","staging service");
+			String[] comp = staging.trim().split("[ ]", 2);
+			ExecutionService stagingService = new ExecutionService();
+			stagingService.setProject(p.getProperty("stagingService.project"));
+			stagingService.setQueue(p.getProperty("stagingService.queue"));
+			stagingService.setServiceType(ServiceType.fromString(comp[0].toUpperCase()));
+			stagingService.setServiceContact(comp[1]);
+			s.setStagingService(stagingService);
+		} catch (Exception e) {
+			throw new Exception("Unable to create staging service " +
+					"for site '"+name+"'. Are you sure you used the right " +
+					"format for the staging service?");
+		}
+		
+		/* Glidein service */
+		try {
+			String glidein = getRequired(p,"glideinService","glidein service");
+			String[] comp = glidein.trim().split("[ ]", 2);
+			ExecutionService glideinService = new ExecutionService();
+			glideinService.setProject(p.getProperty("glideinService.project"));
+			glideinService.setQueue(p.getProperty("glideinService.queue"));
+			glideinService.setServiceType(ServiceType.fromString(comp[0].toUpperCase()));
+			glideinService.setServiceContact(comp[1]);
+			s.setGlideinService(glideinService);
+		} catch (Exception e) {
+			throw new Exception("Unable to create glidein service " +
+					"for site '"+name+"'. Are you sure you used the right " +
+					"format for the glidein service?");
+		}
+		
+		/* Environment */
+		String env = p.getProperty("environment");
+		if (env!=null) {
+			List<EnvironmentVariable> envs = new LinkedList<EnvironmentVariable>();
+			Pattern pat = Pattern.compile("([^=]+)=([^:]+):?");
+			Matcher mat = pat.matcher(env);
+			while (mat.find()) {
+				EnvironmentVariable e = new EnvironmentVariable();
+				e.setVariable(mat.group(1));
+				e.setValue(mat.group(2));
+				envs.add(e);
+			}
+			s.setEnvironment(envs.toArray(new EnvironmentVariable[0]));
+		}
+		
+		return s;
 	}
 }
