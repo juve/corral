@@ -105,7 +105,7 @@ public abstract class BaseListener implements CondorEventListener
 						// We are just going to log this because we may be 
 						// recovering the state of a job that has already 
 						// been aborted 
-						logger.error("Unable to abort failed job: "+
+						logger.warn("Unable to abort failed job: "+
 								event.getJob().getJobId(),ce);
 					}
 				}
