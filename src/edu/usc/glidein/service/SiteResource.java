@@ -176,29 +176,73 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		Calendar time = Calendar.getInstance();
 		site.setLastUpdate(time);
 		site.setCreated(time);
-			
-		// Check for Condor version and set reasonable default
-		String ver = site.getCondorVersion();
-		ver = "".equalsIgnoreCase(ver) ? null : ver;
-		String pkg = site.getCondorPackage();
-		pkg = "".equalsIgnoreCase(pkg) ? null : pkg;
-		if (ver==null && pkg==null) {
-			site.setCondorVersion("7.0.0");
-		}
+		
+		// Must have staging service
+		ExecutionService stagingService = site.getStagingService();
+		if (stagingService == null)
+			throw new ResourceException("Must provide staging service");
+		
+		// Must have glidein service
+		ExecutionService glideinService = site.getGlideinService();
+		if (glideinService == null)
+			throw new ResourceException("Must provide glidein service");
 		
 		// Eliminate empty strings
-		ExecutionService glideinService = site.getGlideinService();
+		if ("".equals(site.getName()))
+			site.setName(null);
+		
+		if ("".equals(site.getCondorVersion()))
+			site.setCondorVersion(null);
+		
+		if ("".equals(site.getCondorPackage()))
+			site.setCondorPackage(null);
+		
+		if ("".equals(glideinService.getServiceContact()))
+			glideinService.setServiceContact(null);
+		
 		if ("".equals(glideinService.getQueue()))
 			glideinService.setQueue(null);
+		
 		if ("".equals(glideinService.getProject()))
 			glideinService.setProject(null);
 		
-		// Eliminate empty strings
-		ExecutionService stagingService = site.getStagingService();
+		if ("".equals(stagingService.getServiceContact()))
+			stagingService.setServiceContact(null);
+		
 		if ("".equals(stagingService.getQueue()))
 			stagingService.setQueue(null);
+		
 		if ("".equals(stagingService.getProject()))
 			stagingService.setProject(null);
+		
+		// Must have name
+		if (site.getName() == null)
+			throw new ResourceException("Site must have name");
+		
+		// Check glidein service
+		if (glideinService.getServiceContact() == null || 
+				glideinService.getServiceType() == null)
+			throw new ResourceException("Invalid glidein service: " +
+					"must specify service contact and service type");
+		
+		// Check staging service
+		if (stagingService.getServiceContact() == null || 
+				stagingService.getServiceType() == null)
+			throw new ResourceException("Invalid staging service: " +
+					"must specify service contact and service type");
+		
+		// Must specify condorPackage or condorVersion
+		if (site.getCondorPackage() == null && site.getCondorVersion() == null)
+			throw new ResourceException(
+					"Must specify condor package or condor version");
+		
+		// Check install path
+		if (site.getInstallPath() == null)
+			throw new ResourceException("Must specify install path");
+		
+		// Check local path
+		if (site.getLocalPath() == null) 
+			throw new ResourceException("Must specify local path");
 		
 		// Save site in database
 		try {
