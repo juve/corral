@@ -264,7 +264,7 @@ public class INI
 	private boolean isValidIdentifier(String id)
 	{
 		if(id==null || id.length()==0) return false;
-		if(id.matches("[a-zA-Z0-9][-_a-zA-Z0-9]*")) return true;
+		if(id.matches("[a-zA-Z0-9][-_a-zA-Z0-9\\.]*")) return true;
 		return false;
 	}
 	
