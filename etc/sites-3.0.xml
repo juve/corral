@@ -1,14 +1,14 @@
 <sitecatalog xmlns="http://pegasus.isi.edu/schema/sitecatalog" version="3.0"
 		xsi:schemaLocation="http://pegasus.isi.edu/schema/sitecatalog http://pegasus.isi.edu/schema/sc-3.0.xsd">
 
-	<site handle="isi_viz" arch="x86" os="LINUX">
+	<site handle="ncsa-mercury" arch="ia64" os="LINUX" >
 		
 		<!-- describe  the various jobmanagers -->
-		<grid type="gt2" contact="viz-login.isi.edu/jobmanager-fork" scheduler="Fork" jobtype="auxillary"/>
-		<grid type="gt4" contact="https://viz-login.isi.edu:8080/grid/services/ManagedJobFactoryService" scheduler="PBS" jobtype="compute"/>
-		<grid type="gt2" contact="viz-login.isi.edu/jobmanager-pbs" scheduler="PBS" jobtype="auxillary"/>
+		<grid type="gt2" contact="grid-hg.ncsa.teragrid.org/jobmanager-fork" scheduler="Fork" jobtype="transfer"/>
+		<grid type="gt2" contact="grid-hg.ncsa.teragrid.org/jobmanager-pbs" scheduler="PBS" jobtype="compute"/>
 		
 		<!-- describe the head node filesystem layout -->
+		<!-- None of this stuff is correct
 		<head-fs>
 			<scratch>
 				<local>
@@ -46,8 +46,10 @@
 			</storage>
 			<profile namespace="pegasus" key="JAVA_HOME">/nfs/software/java/default</profile>
 		</head-fs>
+		-->
 		
 		<!-- describe the worker node filesystem layout -->
+		<!-- None of this stuff is correct
 		<worker-fs>
 			<scratch>
 				<local>
@@ -79,24 +81,22 @@
 			</storage>
 			<profile namespace="pegasus" key="JAVA_HOME">/tmp/local/java</profile>
 		</worker-fs>
-
-		<replica-catalog type="RLS" url="rls://viz-login.isi.edu">
-			<alias name="isi"/>
-			<alias name="ligo_isi"/>
-			<connection key="ignore.lrc">rls://sukhna.isi.edu</connection>
+		-->
+		
+		<replica-catalog type="RLS" url="rls://intensity.usc.edu">
+			<alias name="intensity"/>
+			<alias name="cybershake_intensity"/>
 		</replica-catalog>
 		
 		<profile namespace="pegasus" key="style">gt2</profile>
 		<profile namespace="env" key="PEGASUS_HOME">/nfs/home/software/pegasus</profile>
 		
-		<profile namespace="pegasus" key="glidein.installPath">/home/geovault-00/juve/glidein</profile>
-		<profile namespace="pegasus" key="glidein.localPath">/home/geovault-00/juve/glidein/local</profile>
+		<profile namespace="pegasus" key="glidein.installPath">/home/ac/juve/glidein</profile>
+		<profile namespace="pegasus" key="glidein.localPath">/gpfs_scratch1/juve/glidein</profile>
 		<profile namespace="pegasus" key="glidein.condorVersion">7.0.0</profile>
 		<!-- <profile namespace="pegasus" key="glidein.condorPackage">7.0.0-ia64-Linux-2.4-glibc2.2</profile> -->
-		<profile namespace="pegasus" key="glidein.stagingService">gt2 dynamic.usc.edu/jobmanager-fork</profile>
-		<profile namespace="pegasus" key="glidein.stagingService.project"></profile>
-		<profile namespace="pegasus" key="glidein.stagingService.queue"></profile>
-		<profile namespace="pegasus" key="glidein.glideinService">gt2 dynamic.usc.edu/jobmanager-pbs</profile>
+		<profile namespace="pegasus" key="glidein.stagingService">gt2 grid-hg.ncsa.teragrid.org/jobmanager-fork</profile>
+		<profile namespace="pegasus" key="glidein.glideinService">gt2 grid-hg.ncsa.teragrid.org/jobmanager-pbs</profile>
 		<profile namespace="pegasus" key="glidein.glideinService.project">nqi</profile>
 		<profile namespace="pegasus" key="glidein.glideinService.queue">dque</profile>
 		<profile namespace="pegasus" key="glidein.environment">_condor_CONDOR_ADMIN=juve@usc.edu</profile>
