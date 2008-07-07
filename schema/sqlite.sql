@@ -88,7 +88,8 @@ CREATE TABLE glidein (
 	resubmit		INTEGER NOT NULL,	-- Should the glidein be resubmitted when it terminates? (1 true, 0 false)
 	resubmits		INTEGER,			-- Number of times to resubmit
 	until			INTEGER,			-- Date to resubmit until (unix time in ms)
-	submits			INTEGER	NOT NULL	-- Total number of times this glidein has be submitted
+	submits			INTEGER	NOT NULL,	-- Total number of times this glidein has be submitted
+	rsl				TEXT				-- Globus RSL or XML to override other parameters
 );
 
 /**

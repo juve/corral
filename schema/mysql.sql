@@ -92,6 +92,7 @@ CREATE TABLE glidein (
 	resubmits			INTEGER,						-- Number of times to resubmit
 	until				DATETIME,						-- Date to resubmit until
 	submits				INTEGER NOT NULL,				-- Total number of times this glidein has be submitted
+	rsl					TEXT,							-- Globus RSL or XML to override other parameters
 	CONSTRAINT pk_glidein PRIMARY KEY (id),
 	CONSTRAINT fk_glidein_01 FOREIGN KEY (site) REFERENCES site(id) ON DELETE SET NULL
 ) type=InnoDB;
