@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
-import org.apache.commons.cli.CommandLine;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 

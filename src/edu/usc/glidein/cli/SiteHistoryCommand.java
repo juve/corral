@@ -20,8 +20,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
-import org.apache.commons.cli.CommandLine;
-
 import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.api.SiteFactoryService;
 import edu.usc.glidein.service.SiteNames;

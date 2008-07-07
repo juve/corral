@@ -22,11 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
 import org.globus.axis.util.Util;
 import org.globus.delegation.DelegationException;
 import org.globus.delegation.DelegationUtil;
@@ -35,8 +30,6 @@ import org.globus.wsrf.impl.security.authorization.Authorization;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 import org.globus.wsrf.impl.security.util.AuthUtil;
 import org.globus.wsrf.security.Constants;
-
-//TODO: Add the ability to read command-line arguments from a file
 
 public abstract class Command
 {
@@ -142,6 +135,17 @@ public abstract class Command
 				  .setUsage("-anon [--anonymous]")
 				  .setDescription("Enable anonymous authentication")
 		);
+		options.add(
+			Option.create()
+				  .setOption("af")
+				  .setLongOption("argument-file")
+				  .setUsage("-af [--argument-file] <file>")
+				  .setDescription("The name of a file containing command-line arguments. Format is the same as regular \n" +
+				  		"command-line arguments except carriage returns are allowed without being escaped and lines \n" +
+				  		"beginning with # are ignored.")
+				  .hasArgument()
+		);
+		
 		
 		// Add command-specific options
 		addOptions(options);
@@ -209,20 +213,8 @@ public abstract class Command
 
 	public void invoke(String[] args) throws CommandException
 	{
-		// Construct options collection
-		Options ops = new Options();
-		for (Option option :  options) {
-			ops.addOption(option.buildOption());
-		}
-		
-		// Parse common arguments
-		CommandLine cmdln = null;
-		try {
-			CommandLineParser parser = new PosixParser();
-			cmdln = parser.parse(ops, args);
-		} catch (ParseException pe) {
-			throw new CommandException("Invalid argument: "+pe.getMessage());
-		}
+		// Parse command line args
+		CommandLine cmdln = CommandLine.parse(options, args);
 		
 		// Set common arguments
 		

@@ -18,8 +18,6 @@ package edu.usc.glidein.cli;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.cli.CommandLine;
-
 import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.api.GlideinService;
 import edu.usc.glidein.service.GlideinNames;

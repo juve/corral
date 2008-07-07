@@ -19,7 +19,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
-import org.apache.commons.cli.CommandLine;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 

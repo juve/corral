@@ -17,8 +17,6 @@ package edu.usc.glidein.cli;
 
 import java.util.List;
 
-import org.apache.commons.cli.CommandLine;
-
 public class HelpCommand extends Command
 {
 	private String[] commands;
