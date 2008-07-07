@@ -30,4 +30,8 @@ INSTALLING THE GLIDEIN GRID SERVICE
    Note: If you have problems authenticating, make sure your container is set
          up with a valid host certificate. You can look at the output of
          'glidein help ls' to determine what the correct parameters are to
-         get the security working correctly. (Hint: 'glidein ls -authz none')
+         get the security working correctly. (Hint: 'glidein ls -authz none').
+         You can set the cert to use by modifying the file:
+         $GLOBUS_LOCATION/etc/globus_wsrf_core/global_security_descriptor.xml
+         For local testing you can just comment out <credential/> and add:
+         <proxy-file value="/path/to/user/proxy/file"/>
