@@ -17,13 +17,14 @@ package edu.usc.glidein.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
-import org.apache.commons.cli.CommandLine;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
@@ -41,10 +42,10 @@ public class CreateGlideinCommand extends Command
 	public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	private Glidein glidein = null;
 	private GlobusCredential credential = null;
-	private boolean verbose;
+	private boolean verbose = false;
 	
 	public void addOptions(List<Option> options)
-	{
+	{	
 		options.add(
 			Option.create()
 				  .setOption("s")
@@ -94,12 +95,13 @@ public class CreateGlideinCommand extends Command
 				  .setDescription("Number of cpus for condor to report")
 				  .hasArgument()
 		);
+		String defaultCondorHost = getDefaultCondorHost();
 		options.add(
 			Option.create()
 				  .setOption("ch")
 				  .setLongOption("condor-host")
 				  .setUsage("-ch [--condor-host] <name:port>")
-				  .setDescription("Condor central manager to report to")
+				  .setDescription("Condor central manager to report to"+(defaultCondorHost==null?"":" (default: "+defaultCondorHost+")"))
 				  .hasArgument()
 							 
 		);
@@ -108,7 +110,7 @@ public class CreateGlideinCommand extends Command
 				  .setOption("cd")	
 				  .setLongOption("condor-debug")
 				  .setUsage("-cd [--condor-debug] <ops>")
-				  .setDescription("Condor DaemonCore debugging options (csv)")
+				  .setDescription("Comma-separated list of Condor daemon debugging options (e.x. 'D_JOB,D_MACHINE'")
 				  .hasArgument()
 				
 		);
@@ -177,15 +179,21 @@ public class CreateGlideinCommand extends Command
 		int siteId = Integer.parseInt(cmdln.getOptionValue("site"));
 		glidein.setSiteId(siteId);
 		
-		//condor-host ch
-		if (!cmdln.hasOption("ch")) {
-			throw new CommandException("Missing required argument: condor-host");
-		}
-		String condorHost = cmdln.getOptionValue("condor-host");
-		glidein.setCondorHost(condorHost);
-		
 		
 		/* Options ***********************************************************/
+		
+		//condor-host ch
+		if (cmdln.hasOption("ch")) {
+			String condorHost = cmdln.getOptionValue("condor-host");
+			glidein.setCondorHost(condorHost);
+		} else {
+			String defaultCondorHost = getDefaultCondorHost();
+			if (defaultCondorHost == null) {
+				throw new CommandException("Missing required argument: condor-host");
+			} else {
+				glidein.setCondorHost(defaultCondorHost);
+			}
+		}
 		
 		//host-count hc
 		if (cmdln.hasOption("hc")) {
@@ -376,6 +384,17 @@ public class CreateGlideinCommand extends Command
 	
 	public String getUsage()
 	{
-		return "Usage: create-glidein --site <site> --condor-host <host>";
+		return "Usage: create-glidein --site <site>";
+	}
+	
+	private String getDefaultCondorHost()
+	{
+		// Set the default condor host
+		try {
+			InetAddress addr = InetAddress.getLocalHost();
+			return addr.getHostName();
+		}  catch (UnknownHostException uhe) {
+			return null;
+		}
 	}
 }
