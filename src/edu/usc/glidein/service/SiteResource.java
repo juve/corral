@@ -425,14 +425,32 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			job.setGridType(CondorGridType.GT4);
 		}
 		job.setGridContact(stagingService.getServiceContact());
-		job.setProject(stagingService.getProject());
-		job.setQueue(stagingService.getQueue());
+		
+		// Set rsl/xml
+		if (ServiceType.GT2.equals(stagingService.getServiceType())) {
+			// GT2 uses globus_rsl
+			StringBuilder rsl = new StringBuilder();
+			if(stagingService.getProject() != null)
+				rsl.append("(project="+stagingService.getProject()+")");
+			if(stagingService.getQueue() != null)
+				rsl.append("(queue="+stagingService.getQueue()+")");
+			rsl.append("(maxTime=5)"); // No more than 5 mins
+			job.setGlobusRSL(rsl.toString());
+		} else {
+			// GT4 uses globus_xml
+			StringBuilder xml = new StringBuilder();
+			if(stagingService.getProject() != null)
+				xml.append("<project>"+stagingService.getProject()+"</project>");
+			if(stagingService.getQueue() != null)
+				xml.append("<queue>"+stagingService.getQueue()+"</queue>");
+			xml.append("<maxTime>5</maxTime>"); // No more than 5 mins
+			job.setGlobusXML(xml.toString());
+		}
 		
 		// Set glidein_install executable
 		String install = config.getInstall();
 		job.setExecutable(install);
 		job.setLocalExecutable(true);
-		job.setMaxTime(300); // Not longer than 5 mins
 		
 		// Set credential
 		GlobusCredential cred = loadCredential();
@@ -641,14 +659,32 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			job.setGridType(CondorGridType.GT4);
 		}
 		job.setGridContact(stagingService.getServiceContact());
-		job.setProject(stagingService.getProject());
-		job.setQueue(stagingService.getQueue());
+		
+		// Set rsl/xml
+		if (ServiceType.GT2.equals(stagingService.getServiceType())) {
+			// GT2 uses globus_rsl
+			StringBuilder rsl = new StringBuilder();
+			if(stagingService.getProject() != null)
+				rsl.append("(project="+stagingService.getProject()+")");
+			if(stagingService.getQueue() != null)
+				rsl.append("(queue="+stagingService.getQueue()+")");
+			rsl.append("(maxTime=5)"); // No more than 5 mins
+			job.setGlobusRSL(rsl.toString());
+		} else {
+			// GT4 uses globus_xml
+			StringBuilder xml = new StringBuilder();
+			if(stagingService.getProject() != null)
+				xml.append("<project>"+stagingService.getProject()+"</project>");
+			if(stagingService.getQueue() != null)
+				xml.append("<queue>"+stagingService.getQueue()+"</queue>");
+			xml.append("<maxTime>5</maxTime>"); // No more than 5 mins
+			job.setGlobusXML(xml.toString());
+		}
 		
 		// Set glidein_uninstall executable
 		String uninstall = config.getUninstall();
 		job.setExecutable(uninstall);
 		job.setLocalExecutable(true);
-		job.setMaxTime(300); // Not longer than 5 mins
 		
 		GlobusCredential cred = loadCredential();
 		if (validateCredentialLifetime(cred)) {

@@ -70,7 +70,7 @@ public class SQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, created, lastUpdate, condorHost, resubmit, submits, resubmits, until) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, created, lastUpdate, condorHost, resubmit, submits, resubmits, until, rsl) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
@@ -106,6 +106,7 @@ public class SQLGlideinDAO implements GlideinDAO
 			} else {
 				stmt.setTimestamp(i++, new Timestamp(until.getTimeInMillis()));
 			}
+			stmt.setString(i++, glidein.getRsl());
 			
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create glidein: wrong number of db updates");
@@ -144,7 +145,7 @@ public class SQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("SELECT g.*, s.name siteName FROM glidein g, site s WHERE g.id=? AND g.site=s.id");
+			stmt = connection.prepareStatement("SELECT g.*, s.name as siteName FROM glidein g, site s WHERE g.id=? AND g.site=s.id");
 			stmt.setInt(1, glideinId);
 			rs = stmt.executeQuery();
 			if (rs.next()) {
@@ -234,7 +235,7 @@ public class SQLGlideinDAO implements GlideinDAO
 		LinkedList<Glidein> results = new LinkedList<Glidein>();
 		try {
 			// Join to get the site name
-			stmt = connection.prepareStatement("SELECT g.*, s.name siteName FROM glidein g, site s WHERE g.site=s.id");
+			stmt = connection.prepareStatement("SELECT g.*, s.name as siteName FROM glidein g, site s WHERE g.site=s.id");
 			rs = stmt.executeQuery();
 			while (rs.next()) {
 				results.add(newGlidein(rs));
@@ -367,6 +368,8 @@ public class SQLGlideinDAO implements GlideinDAO
 				_until.setTime(until);
 				glidein.setUntil(_until);
 			}
+			glidein.setRsl(rs.getString("rsl"));
+			
 			return glidein;
 		} catch (SQLException sqle) {
 			throw new DatabaseException("Unable to create Glidein object",sqle);

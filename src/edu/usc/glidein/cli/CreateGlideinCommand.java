@@ -159,6 +159,19 @@ public class CreateGlideinCommand extends Command
 				  .setUsage("-v [--verbose]")
 				  .setDescription("Show details about the new glidein")
 		);
+		options.add(
+			Option.create()
+				  .setOption("rsl")
+				  .setLongOption("globus-rsl")
+				  .setUsage("-rsl [--globus-rsl]")
+				  .setDescription("The Globus RSL (GT2) or XML (GT4) to use for this job. This parameter will \n" +
+				  		"override any values specified for count, host-count, wall-time and any project or queue \n" +
+				  		"specified for the site's glidein execution service. You should include (jobType=multiple) \n" +
+				  		"if you specify this parameter. Also be aware that the output of the list-glidein command \n" +
+				  		"won't accurately reflect the parameters for the job as the output of that command is based \n" +
+				  		"on the values of the regular parameters.")
+				  .hasArgument()
+		);
 	}
 	
 	public void setArguments(CommandLine cmdln) throws CommandException
@@ -330,6 +343,9 @@ public class CreateGlideinCommand extends Command
 		} else {
 			verbose = false;
 		}
+		
+		/* RSL */
+		glidein.setRsl(cmdln.getOptionValue("rsl",null));
 	}
 	
 	public void execute() throws CommandException

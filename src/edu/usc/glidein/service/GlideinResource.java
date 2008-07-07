@@ -158,6 +158,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 					GlideinNames.RP_UNTIL,"until",glidein));
 			resourceProperties.add(new ReflectionResourceProperty(
 					GlideinNames.RP_SUBMITS,"submits",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_RSL,"rsl",glidein));
 		} catch(Exception e) {
 			throw new RuntimeException("Unable to set glidein resource properties",e);
 		}
@@ -204,6 +206,9 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 						" when creating a glidein");
 				
 			}
+			
+			// Set the name
+			glidein.setSiteName(site.getName());
 		
 			// Save in the database
 			try {
@@ -332,25 +337,54 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		
 		// Set jobmanager info
 		ExecutionService glideinService = site.getGlideinService();
-		if(ServiceType.GT2.equals(glideinService.getServiceType()))
+		if(ServiceType.GT2.equals(glideinService.getServiceType())) {
 			job.setGridType(CondorGridType.GT2);
-		else
+		} else {
 			job.setGridType(CondorGridType.GT4);
+		}
 		job.setGridContact(glideinService.getServiceContact());
-		job.setProject(glideinService.getProject());
-		job.setQueue(glideinService.getQueue());
+		
+		// Set rsl/xml
+		if (glidein.getRsl() == null) {
+			if (ServiceType.GT2.equals(glideinService.getServiceType())) {
+				// GT2 uses globus_rsl
+				StringBuilder rsl = new StringBuilder();
+				if(glideinService.getProject() != null)
+					rsl.append("(project="+glideinService.getProject()+")");
+				if(glideinService.getQueue() != null)
+					rsl.append("(queue="+glideinService.getQueue()+")");
+				rsl.append("(hostCount="+glidein.getHostCount()+")");
+				rsl.append("(count="+glidein.getCount()+")");
+				rsl.append("(jobType=multiple)");
+				rsl.append("(maxTime="+glidein.getWallTime()+")");
+				job.setGlobusRSL(rsl.toString());
+			} else {
+				// GT4 uses globus_xml
+				StringBuilder xml = new StringBuilder();
+				xml.append("<count>"+glidein.getCount()+"</count>");
+				xml.append("<hostCount>"+glidein.getHostCount()+"</hostCount>");
+				if(glideinService.getProject() != null)
+					xml.append("<project>"+glideinService.getProject()+"</project>");
+				if(glideinService.getQueue() != null)
+					xml.append("<queue>"+glideinService.getQueue()+"</queue>");
+				xml.append("<maxTime>"+glidein.getWallTime()+"</maxTime>");
+				xml.append("<jobType>multiple</jobType>");
+				job.setGlobusXML(xml.toString());
+			}
+		} else {
+			if (ServiceType.GT2.equals(glideinService.getServiceType())) {
+				// GT2 uses globus_rsl
+				job.setGlobusRSL(glidein.getRsl());
+			} else {
+				// GT4 uses globus_xml
+				job.setGlobusXML(glidein.getRsl());
+			}
+		}
 		
 		// Set glidein executable
 		String run = config.getRun();
 		job.setExecutable(run);
 		job.setLocalExecutable(true);
-		
-		// Set number of processes
-		job.setHostCount(glidein.getHostCount());
-		job.setCount(glidein.getCount());
-		
-		// Set job runtime
-		job.setMaxTime(glidein.getWallTime());
 		
 		// Add environment
 		EnvironmentVariable env[] = site.getEnvironment();
@@ -372,7 +406,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			job.addArgument("-idleTime "+glidein.getIdleTime());
 		if(glidein.getCondorDebug()!=null)
 		{
-			String[] debug = glidein.getCondorDebug().split("[ ,]+");
+			String[] debug = glidein.getCondorDebug().split("[ ,;:]+");
 			for(String level : debug)
 				job.addArgument("-debug "+level);
 		}
@@ -544,7 +578,9 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 	
 	private File getJobDirectory() throws ResourceException
 	{
-		return new File(getWorkingDirectory(),"job");
+		File jobDirectory = new File(getWorkingDirectory(),"job");
+		if (!jobDirectory.exists()) jobDirectory.mkdir();
+		return jobDirectory;
 	}
 	
 	private File getWorkingDirectory() throws ResourceException

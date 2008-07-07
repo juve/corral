@@ -48,4 +48,5 @@ public class GlideinNames
 	public static final QName RP_RESUBMITS = new QName(SERVICE_NS, "Resubmits");
 	public static final QName RP_UNTIL = new QName(SERVICE_NS, "Until");
 	public static final QName RP_SUBMITS = new QName(SERVICE_NS, "Submits");
+	public static final QName RP_RSL = new QName(SERVICE_NS, "Rsl");
 }

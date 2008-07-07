@@ -34,8 +34,6 @@ import edu.usc.glidein.service.SiteNames;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.util.SiteUtil;
 
-// TODO : Allow the user to specify rsl
-
 public class CreateSiteCommand extends Command
 {
 	private File catalogFile = null;

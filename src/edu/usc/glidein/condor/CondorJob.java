@@ -18,7 +18,6 @@ package edu.usc.glidein.condor;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.Writer;
 import java.util.HashMap;
@@ -121,31 +120,6 @@ public class CondorJob implements Serializable
 	private String gridContact;
 	
 	/**
-	 * Project for accounting
-	 */
-	private String project;
-	
-	/**
-	 * Target queue
-	 */
-	private String queue;
-	
-	/**
-	 * Number of hosts
-	 */
-	private int hostCount;
-	
-	/**
-	 * Total number of processes
-	 */
-	private int count;
-	
-	/**
-	 * Max runtime (walltime or cputime) of the application in minutes.
-	 */
-	private int maxTime;
-	
-	/**
 	 * Files to transfer from the submit machine to the remote machine
 	 */
 	private List<String> inputFiles;
@@ -166,6 +140,16 @@ public class CondorJob implements Serializable
 	private String remoteDirectory;
 	
 	/**
+	 * globus_rsl
+	 */
+	private String globusRSL;
+	
+	/**
+	 * globus_xml
+	 */
+	private String globusXML;
+	
+	/**
 	 * Create a job with a given job directory and set of parameters
 	 * @param jobDirectory The directory where the files for this job 
 	 * should be created
@@ -184,11 +168,8 @@ public class CondorJob implements Serializable
 		this.inputFiles = new LinkedList<String>();
 		this.outputFiles = new LinkedList<String>();
 		this.localExecutable = false;
-		this.hostCount = 1;
-		this.count = 1;
-		this.queue = null;
-		this.project = null;
-		this.maxTime = 1;
+		this.globusRSL = null;
+		this.globusXML = null;
 	}
 	
 	public void addListener(CondorEventListener listener)
@@ -388,54 +369,24 @@ public class CondorJob implements Serializable
 		this.localExecutable = localExecutable;
 	}
 	
-	public String getProject()
+	public void setGlobusRSL(String globusRSL)
 	{
-		return project;
-	}
-
-	public void setProject(String project)
-	{
-		this.project = project;
-	}
-
-	public String getQueue()
-	{
-		return queue;
-	}
-
-	public void setQueue(String queue)
-	{
-		this.queue = queue;
-	}
-
-	public int getHostCount()
-	{
-		return hostCount;
-	}
-
-	public void setHostCount(int hostCount)
-	{
-		this.hostCount = hostCount;
-	}
-
-	public int getCount()
-	{
-		return count;
-	}
-
-	public void setCount(int count)
-	{
-		this.count = count;
+		this.globusRSL = globusRSL;
 	}
 	
-	public void setMaxTime(int maxTime)
+	public String getGlobusRSL()
 	{
-		this.maxTime = maxTime;
+		return globusRSL;
 	}
 	
-	public int getMaxTime()
+	public void setGlobusXML(String globusXML)
 	{
-		return this.maxTime;
+		this.globusXML = globusXML;
+	}
+	
+	public String getGlobusXML()
+	{
+		return globusXML;
 	}
 	
 	public boolean hasCredential()
@@ -509,32 +460,17 @@ public class CondorJob implements Serializable
 			out.write("transfer_output = True\n");
 			out.write("transfer_error = True\n");
 			
-			if(getGridType() == CondorGridType.GT2)
-			{
-				// Set globus_rsl
+			// Set globus_rsl
+			if (getGlobusRSL()!=null) {
 				out.write("globus_rsl = ");
-				if(getProject() != null)
-					out.write("(project="+getProject()+")");
-				if(getQueue() != null)
-					out.write("(queue="+getQueue()+")");
-				out.write("(hostCount="+getHostCount()+")");
-				out.write("(count="+getCount()+")");
-				out.write("(jobType=multiple)");
-				out.write("(maxTime="+getMaxTime()+")");
+				out.write(getGlobusRSL());
 				out.write("\n");
 			}
-			else if(getGridType() == CondorGridType.GT4)
-			{
-				// Set globus_xml
+			
+			// Set globus_xml
+			if (getGlobusXML()!=null) {
 				out.write("globus_xml = ");
-				out.write("<count>"+getCount()+"</count>");
-				out.write("<hostCount>"+getHostCount()+"</hostCount>");
-				if(getProject() != null)
-					out.write("<project>"+getProject()+"</project>");
-				if(getQueue() != null)
-					out.write("<queue>"+getQueue()+"</queue>");
-				out.write("<maxTime>"+getMaxTime()+"</maxTime>");
-				out.write("<jobType>multiple</jobType>");
+				out.write(getGlobusXML());
 				out.write("\n");
 			}
 			
@@ -681,32 +617,6 @@ public class CondorJob implements Serializable
 		// Delete the log file if it exists
 		if (log.exists()) {
 			log.delete();
-		}
-	}
-	
-	public static void main(String[] args)
-	{	
-		try 
-		{
-			CondorJob job = new CondorJob(new File("/tmp"));
-			job.setUniverse(CondorUniverse.GRID);
-			job.setGridType(CondorGridType.GT2);
-			job.setGridContact("tg-login.sdsc.teragrid.org/jobmanager-pbs");
-			job.setExecutable("/bin/ls");
-			job.setHostCount(1);
-			job.setCount(1);
-			job.setMaxTime(300);
-			job.setProject(null);
-			job.setQueue(null);
-			job.setRequirements(null);
-			job.setRemoteDirectory(null);
-			job.setLocalExecutable(false);
-			job.writeSubmitScript(new PrintWriter(System.out));
-		}
-		catch(Exception ioe)
-		{
-			ioe.printStackTrace();
-			System.exit(1);
 		}
 	}
 }

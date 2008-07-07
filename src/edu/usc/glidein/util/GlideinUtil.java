@@ -69,5 +69,6 @@ public class GlideinUtil
 			until.setTimeZone(TimeZone.getDefault());
 			out.printf("until = %tc\n",until);
 		}
+		out.printf("rsl = %s\n", glidein.getRsl());
 	}
 }
