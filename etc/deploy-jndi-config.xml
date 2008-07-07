@@ -2,13 +2,16 @@
 <jndiConfig xmlns="http://wsrf.globus.org/jndi/config">
 
 	<global>
-		<!-- Use an SQLite database												-->
-        <!-- 																    -->
-        <!-- Parameters:														-->
-        <!-- 	databaseFile	- Path to the SQLite database file				-->
-        <!-- 	autoInstall		- Should we allow the database to install 		-->
-        <!--					  itself automatically?							-->
-       	<!-- 	schemaFile	- The path to the database creation script			-->
+		<!-- Use an SQLite database											-->
+        <!-- 																-->
+        <!-- Parameters:													-->
+        <!-- 	databaseFile	- Path to the SQLite database file. Relative-->
+        <!--                      paths are relative to GLOBUS_LOCATION.    -->
+        <!-- 	autoInstall		- Should we allow the database to install 	-->
+        <!--					  itself automatically?						-->
+       	<!-- 	schemaFile		- The path to the database creation script.	-->
+       	<!-- 					  Relative paths are relative to			--> 
+       	<!--					  GLOBUS_LOCATION 							-->
 		<resource name="glidein/Database"
 				  type="edu.usc.glidein.db.sqlite.SQLiteDatabase">
             <resourceParams>
@@ -30,15 +33,16 @@
                 </parameter>
             </resourceParams>
         </resource>
-        <!-- Use a MySQL database                                               -->
-        <!-- 																    -->
-        <!-- Parameters:														-->
-        <!-- 	url			- The MySQL Database URL							--> 
-        <!-- 	user		- The MySQL Databse user							-->
-        <!-- 	password	- The MySQL user's password							-->
-        <!-- 	autoInstall	- Should we allow the database to install itself	--> 
-        <!-- 				  automatically?									-->
-       	<!-- 	schemaFile	- The path to the database creation script			-->
+        <!-- Use a MySQL database											-->
+        <!-- 																-->
+        <!-- Parameters:													-->
+        <!-- 	url			- The MySQL Database URL						--> 
+        <!-- 	user		- The MySQL Databse user						-->
+        <!-- 	password	- The MySQL user's password						-->
+        <!-- 	autoInstall	- Should we allow the database to install itself--> 
+        <!-- 				  automatically?								-->
+       	<!-- 	schemaFile	- The path to the database creation script.		-->
+       	<!-- 				  Relative paths are relative to GLOBUS_LOCATION-->
         <!-- 
 		<resource name="glidein/Database" 
 				  type="edu.usc.glidein.db.mysql.MySQLDatabase">
@@ -70,12 +74,14 @@
             </resourceParams>
         </resource>
         -->
-        <!-- Condor configuration											 -->
-        <!-- 																 -->
-        <!-- Parameters:													 -->
-        <!-- 	factory			- BeanFactory used to create object			 -->
-        <!-- 	condorHome		- Directory where condor is installed		 -->
-        <!-- 	codnorConfig	- Path to the condor configuration file		 -->
+        <!-- Condor configuration											-->
+        <!-- 																-->
+        <!-- Parameters:													-->
+        <!-- 	factory			- BeanFactory used to create object			-->
+        <!-- 	condorHome		- Directory where condor is installed.		-->
+        <!-- 					  Relative paths are relative to the servers-->
+        <!--					  working directory.						-->
+        <!-- 	codnorConfig	- Path to the condor configuration file		-->
         <resource name="glidein/Condor" 
         		  type="edu.usc.glidein.condor.Condor">
             <resourceParams>
@@ -93,18 +99,28 @@
                 </parameter>
             </resourceParams>
         </resource>
-        <!-- Glidein service configuration									 -->
-        <!-- 																 -->
-        <!-- Parameters:													 -->
-        <!-- 	factory				- BeanFactory used to instantiate object -->
-        <!-- 	install				- Path to the site install shell script	 -->
-        <!-- 	uninstall			- Path to the site uninstall shell script-->
-        <!-- 	run					- Path to the glidein run shell script	 -->
-        <!-- 	glideinServerURLs	- List of URLs to retrieve glidein 		 -->
-        <!-- 						  binaries from (comma-separated list)	 -->
-        <!-- 	glideinCondorConfig	- Default glidein config file			 -->
-        <!-- 	workingDirectory	- Directory to store working files. URLs -->
-        <!-- 						  are considered in the order specified  -->
+        <!-- Glidein service configuration									-->
+        <!-- 																-->
+        <!-- Parameters:													-->
+        <!-- 	factory				- BeanFactory used to instantiate object-->
+        <!-- 	install				- Path to the site install shell script.-->
+        <!-- 						  Relative paths are relative to		-->
+        <!-- 						  GLOBUS_LOCATION						-->
+        <!-- 	uninstall			- Path to the site uninstall shell		--> 
+        <!-- 						  script. Relative paths are relative 	-->
+        <!-- 						  to GLOBUS_LOCATION.					-->
+        <!-- 	run					- Path to the glidein run shell script.	-->
+        <!-- 						  Relative paths are relative to 		-->
+        <!-- 						  GLOBUS_LOCATION						-->
+        <!-- 	glideinServerURLs	- List of URLs to retrieve glidein 		-->
+        <!-- 						  binaries from (comma-separated list).	-->
+        <!-- 						  URLs are considered in the order 		-->
+        <!-- 						  specified.							-->
+        <!-- 	glideinCondorConfig	- Default glidein config file. Relative	-->
+        <!-- 						  paths are relative to GLOBUS_LOCATION -->
+        <!-- 	workingDirectory	- Directory to store working files.		-->
+        <!-- 						  Relative paths are relative to		-->
+        <!-- 						  GLOBUS_LOCATION.						-->
         <resource name="glidein/ServiceConfiguration" 
         		  type="edu.usc.glidein.service.ServiceConfiguration">
             <resourceParams>
