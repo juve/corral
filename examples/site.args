@@ -14,3 +14,4 @@
 --glidein-service 'gt2 grid-hg.ncsa.teragrid.org/jobmanager-pbs'
 --glidein-service-project nqi
 --glidein-service-queue dque
+--verbose
