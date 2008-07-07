@@ -15,3 +15,7 @@
 #--condor-config /etc/condor/condor_config.glidein
 #--resubmit 2
 --verbose
+# RSL for GT2
+#--globus-rsl "(project=nqi)(queue=dque)(hostCount=1)(count=1)(jobType=multiple)(maxTime=5)"
+# XML for GT4
+#--globus-rsl "<count>1</count><hostCount>1</hostCount><project>nqi</project><queue>dque</queue><maxTime>5</maxTime><jobType>multiple</jobType>"
