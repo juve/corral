@@ -1,4 +1,6 @@
-INSTALLING THE GLIDEIN GRID SERVICE
+======================
+Installing the service
+======================
 
 1. Set your GLOBUS_LOCATION environment variable to point to the globus 
    directory where you want to install the service.
@@ -6,17 +8,26 @@ INSTALLING THE GLIDEIN GRID SERVICE
 2. Make sure ant (> 1.7) and java (> 1.5) are on your path
 
 3. Run:
+
 	$ ant deploy
+	
+   Note: If you run 'ant deploy' after you update the jndi-config.xml file
+   as directed in the next step, it will override your configuration changes.
+   If you want the ability to deploy multiple times then edit 
+   etc/jndi-config.xml in the distribution directory instead. This file will
+   be copied to the path given in the next step when you run 'ant deploy'.
 	
 4. Edit $GLOBUS_LOCATION/etc/glidein_service/jndi-config.xml.
 
    4.1 Make sure the Database configuration points to a valid database.
        The glidein service supports both SQLite and MySQL databases.
        It will automatically install tables if pointed at a valid database
-       instance.
+       instance. The default uses SQLite and should not require any
+       configuration changes to work.
        
    4.2 Make sure the Condor configuration points to Condor. The service
        uses a local Condor central manager to submit staging and glidein jobs.
+       The paths should be absolute.
 
 5. Restart your globus container
 
@@ -28,10 +39,13 @@ INSTALLING THE GLIDEIN GRID SERVICE
 	$ glidein ls -authz none
 
    Note: If you have problems authenticating, make sure your container is set
-         up with a valid host certificate. You can look at the output of
-         'glidein help ls' to determine what the correct parameters are to
-         get the security working correctly. (Hint: 'glidein ls -authz none').
-         You can set the cert to use by modifying the file:
-         $GLOBUS_LOCATION/etc/globus_wsrf_core/global_security_descriptor.xml
-         For local testing you can just comment out <credential/> and add:
-         <proxy-file value="/path/to/user/proxy/file"/>
+   up with a valid host certificate. You can look at the output of 
+   'glidein help ls' to determine what the correct parameters are to get the
+   security working the way you want. (Hint: Try 'glidein ls -authz none'). 
+   You can set the cert to be used by the container by modifying the file:
+   
+      $GLOBUS_LOCATION/etc/globus_wsrf_core/global_security_descriptor.xml
+   
+   For local testing you can just comment out <credential/> and add:
+   
+      <proxy-file value="/path/to/user/proxy/file"/>

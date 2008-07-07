@@ -1,0 +1,38 @@
+===================================
+Release Notes for version 1.0-alpha
+===================================
+
+This is the initial release of the glidein service to be used for testing and
+evaluation. If there are any questions or problems please email Gideon Juve
+<juve@usc.edu>.
+
+
+NEW FEATURES
+------------
+1) Create sites, including staging of Condor executables and automatic
+   identification of architecture, operating system, and glibc version.
+
+2) List current sites, including detailed format.
+
+3) Remove sites, including the removal of all staged executables and log files.
+
+4) Create glideins, with the ability to specify custom config files, and to
+   submit glideins repeatedly N times or until a specified date.
+   
+5) List current glideins, including detailed format.
+
+6) Remove glideins, uncluding the removal of log files.
+
+7) State change history for both glideins and sites.
+
+8) Persistent storage in either SQLite or MySQL.
+
+
+BUGS FIXED
+----------
+1) All of the major bugs found in development have been fixed.
+
+
+KNOWN BUGS
+-----------
+1) There are no known bugs in this release!
