@@ -47,6 +47,10 @@ public class ServiceConfiguration
 	public void setInstall(String install)
 	{
 		this.install = new File(install);
+		if (!this.install.isAbsolute()) {
+			this.install = new File(
+					System.getProperty("GLOBUS_LOCATION"),install);
+		}
 	}
 
 	public String getUninstall()
@@ -57,6 +61,10 @@ public class ServiceConfiguration
 	public void setUninstall(String uninstall)
 	{
 		this.uninstall = new File(uninstall);
+		if (!this.uninstall.isAbsolute()) {
+			this.uninstall = new File(
+					System.getProperty("GLOBUS_LOCATION"),uninstall);
+		}
 	}
 
 	public String getRun()
@@ -67,6 +75,10 @@ public class ServiceConfiguration
 	public void setRun(String run)
 	{
 		this.run = new File(run);
+		if (!this.run.isAbsolute()) {
+			this.run = new File(
+					System.getProperty("GLOBUS_LOCATION"),run);
+		}
 	}
 
 	public String[] getStagingURLs()
@@ -105,6 +117,10 @@ public class ServiceConfiguration
 	public void setGlideinCondorConfig(String glideinCondorConfig)
 	{
 		this.glideinCondorConfig = new File(glideinCondorConfig);
+		if (!this.glideinCondorConfig.isAbsolute()) {
+			this.glideinCondorConfig = new File(
+					System.getProperty("GLOBUS_LOCATION"),glideinCondorConfig);
+		}
 	}
 
 	public String getWorkingDirectory()
@@ -115,5 +131,9 @@ public class ServiceConfiguration
 	public void setWorkingDirectory(String workingDirectory)
 	{
 		this.workingDirectory = new File(workingDirectory);
+		if (!this.workingDirectory.isAbsolute()) {
+			this.workingDirectory = new File(
+					System.getProperty("GLOBUS_LOCATION"),workingDirectory);
+		}
 	}
 }

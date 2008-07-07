@@ -43,7 +43,6 @@ public class SQLiteDatabase extends SQLDatabase implements Initializable
 	private boolean autoInstall = false;
 	private boolean initialized = false;
 	
-	
 	public SQLiteDatabase() { }
 	
 	public void initialize() throws Exception
@@ -167,6 +166,10 @@ public class SQLiteDatabase extends SQLDatabase implements Initializable
 	public void setDatabaseFile(String databaseFile)
 	{
 		this.databaseFile = new File(databaseFile);
+		if (!this.databaseFile.isAbsolute()) {
+			this.databaseFile = new File(
+					System.getProperty("GLOBUS_LOCATION"),databaseFile);
+		}
 	}
 
 	public String getSchemaFile()
@@ -177,6 +180,10 @@ public class SQLiteDatabase extends SQLDatabase implements Initializable
 	public void setSchemaFile(String schemaFile)
 	{
 		this.schemaFile = new File(schemaFile);
+		if (!this.schemaFile.isAbsolute()) {
+			this.schemaFile = new File(
+					System.getProperty("GLOBUS_LOCATION"),schemaFile);
+		}
 	}
 
 	public boolean isAutoInstall()
