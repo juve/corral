@@ -1,0 +1,17 @@
+# This is an argument file for the create-glidein command. All lines beginning
+# with # are ignored. Newlines are also ignored. To use this file:
+#
+#   $ glidein create-glidein --site <SITE> --argument-file glidein.args
+#
+
+--count 1
+--host-count 1
+--num-cpus 2
+--wall-time 60
+#--idle-time 5
+#--condor-host juve.usc.edu
+#--condor-debug D_JOB,D_MACHINE
+#--gcb-broker 192.168.1.1
+#--condor-config /etc/condor/condor_config.glidein
+#--resubmit 2
+--verbose

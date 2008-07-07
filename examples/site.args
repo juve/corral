@@ -1,0 +1,16 @@
+# This is an argument file for the create-site command. All lines beginning
+# with # are ignored. Newlines are also ignored. To use this file:
+#
+#   $ glidein create-site --argument-file site.args
+#
+
+--site-name ncsa-mercury
+--condor-version 7.0.0
+#--condor-package 7.0.0-ia64-Linux-2.4-glibc2.2
+--environment _condor_CONDOR_ADMIN=juve@usc.edu
+--install-path /home/ac/juve/glidein
+--local-path /gpfs_scratch1/juve/glidein
+--staging-service 'gt2 grid-hg.ncsa.teragrid.org/jobmanager-fork'
+--glidein-service 'gt2 grid-hg.ncsa.teragrid.org/jobmanager-pbs'
+--glidein-service-project nqi
+--glidein-service-queue dque
