@@ -58,7 +58,8 @@ public class CreateSiteCommand extends Command
 				  .setOption("f")
 				  .setLongOption("catalog-format")
 				  .setUsage("-f [--catalog-format] <format>")
-				  .setDescription("The format of the site catalog (one of: 'ini', or 'xml'; \ndefault: determined by extension)")
+				  .setDescription("The format of the site catalog (one of: 'ini', or 'xml'; \n" +
+				  				  "default: determined by extension)")
 				  .hasArgument()
 		);
 		
@@ -76,7 +77,8 @@ public class CreateSiteCommand extends Command
 				  .setOption("C")
 				  .setLongOption("credential")
 				  .setUsage("-C [--credential] <file>")
-				  .setDescription("The user's credential as a proxy file. If not specified the Globus default is used.")
+				  .setDescription("The user's credential as a proxy file. If not specified the \n" +
+				  				  "Globus default is used.")
 				  .hasArgument()
 		);
 		
@@ -103,7 +105,8 @@ public class CreateSiteCommand extends Command
 				  .setOption("lp")
 				  .setLongOption("local-path")
 				  .setUsage("-lp [--local-path] <path>")
-				  .setDescription("This is the remote path where log files, etc. are placed (i.e. scratch)")
+				  .setDescription("This is the remote path where log files, etc. are placed \n" +
+				  				  "(i.e. local scratch)")
 				  .hasArgument()
 		);
 		
@@ -170,7 +173,8 @@ public class CreateSiteCommand extends Command
 				  .setOption("cv")
 				  .setLongOption("condor-version")
 				  .setUsage("-cv [--condor-version] <ver>")
-				  .setDescription("The version of Condor to setup on the remote site. (e.x '7.0.0')")
+				  .setDescription("The version of Condor to setup on the remote site. \n" +
+				  				  "(e.x '7.0.0')")
 				  .hasArgument()
 		);
 		
@@ -179,10 +183,11 @@ public class CreateSiteCommand extends Command
 				  .setOption("cp")
 				  .setLongOption("condor-package")
 				  .setUsage("-cp [--condor-package] <pkg>")
-				  .setDescription("The package name to download. This overrides condor-version. Don't use condor-package \n" +
-				  				  "unless you know what you are doing. (e.x. '7.0.0-ia64-Linux-2.4-glibc2.2'). The \n" +
-				  				  "general format for the package name itself is: \n" +
-				  				  "'<version>-<arch>-<os>-<osversion>-glibc<glibcversion>')")
+				  .setDescription("The package name to download. This overrides condor-version. \n" +
+				  				  "I don't recommend using condor-package unless you know what \n" +
+				  				  "you are doing. The general format for the package name itself \n" +
+				  				  "is: '<version>-<arch>-<os>-<osversion>-glibc<glibcversion>' \n" +
+				  				  "(e.x. '7.0.0-ia64-Linux-2.4-glibc2.2')")
 				  .hasArgument()
 		);
 		
