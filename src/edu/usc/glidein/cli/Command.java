@@ -109,7 +109,8 @@ public abstract class Command
 				  .setOption("sec")
 				  .setLongOption("security")
 				  .setUsage("-sec [--security] <mode>")
-				  .setDescription("Security mode. One of: 'msg', 'conv', 'trans', or 'none'. (default: trans)")
+				  .setDescription("Security mode. One of: 'msg', 'conv', 'trans', or 'none'. \n" +
+				  				  "(default: trans)")
 				  .hasArgument()
 		);
 		options.add(
@@ -125,7 +126,8 @@ public abstract class Command
 				  .setOption("authz")
 				  .setLongOption("authorization")
 				  .setUsage("-authz [--authorization] <mode>")
-				  .setDescription("Authorization mode. One of: 'host', 'self', 'none', or a DN. (default: host)")
+				  .setDescription("Authorization mode. One of: 'host', 'self', 'none', or a DN. \n" +
+				  				  "(default: 'host')")
 				  .hasArgument()
 		);
 		options.add(
@@ -140,9 +142,9 @@ public abstract class Command
 				  .setOption("af")
 				  .setLongOption("argument-file")
 				  .setUsage("-af [--argument-file] <file>")
-				  .setDescription("The name of a file containing command-line arguments. Format is the same as regular \n" +
-				  		"command-line arguments except carriage returns are allowed without being escaped and lines \n" +
-				  		"beginning with # are ignored.")
+				  .setDescription("The name of a file containing command-line arguments. Format is the \n" +
+				  				  "same as regular command-line arguments except carriage returns are \n" +
+				  				  "allowed without being escaped and lines beginning with # are ignored.")
 				  .hasArgument()
 		);
 		
