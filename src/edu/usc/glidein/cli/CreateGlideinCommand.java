@@ -17,8 +17,6 @@ package edu.usc.glidein.cli;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -95,7 +93,7 @@ public class CreateGlideinCommand extends Command
 				  .setDescription("Number of cpus for condor to report")
 				  .hasArgument()
 		);
-		String defaultCondorHost = getDefaultCondorHost();
+		String defaultCondorHost = getLocalHost();
 		options.add(
 			Option.create()
 				  .setOption("ch")
@@ -200,7 +198,7 @@ public class CreateGlideinCommand extends Command
 			String condorHost = cmdln.getOptionValue("condor-host");
 			glidein.setCondorHost(condorHost);
 		} else {
-			String defaultCondorHost = getDefaultCondorHost();
+			String defaultCondorHost = getLocalHost();
 			if (defaultCondorHost == null) {
 				throw new CommandException("Missing required argument: condor-host");
 			} else {
@@ -401,16 +399,5 @@ public class CreateGlideinCommand extends Command
 	public String getUsage()
 	{
 		return "Usage: create-glidein --site <site>";
-	}
-	
-	private String getDefaultCondorHost()
-	{
-		// Set the default condor host
-		try {
-			InetAddress addr = InetAddress.getLocalHost();
-			return addr.getHostName();
-		}  catch (UnknownHostException uhe) {
-			return null;
-		}
 	}
 }

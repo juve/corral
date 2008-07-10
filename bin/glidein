@@ -1,22 +1,102 @@
 #!/bin/sh
+#
+#  Copyright 2007-2008 University Of Southern California
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing,
+#  software distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
 
-# Locate appropriate env vars
-if [ -z "$JAVA_HOME" ]; then
-    echo "ERROR: Please set the JAVA_HOME environment variable"
-    exit 1
-fi
+DELIM="#"
+EXEC="edu.usc.glidein.cli.CommandLineClient"
+DEF_OPTIONS=""
+DEF_CMD_OPTIONS=""
+EGD_DEVICE="/dev/urandom"
+
+updateOptions() {
+     
+  if [ "X$2" != "X" ] ; then
+    GLOBUS_OPTIONS="$GLOBUS_OPTIONS -D$1=$2"
+  fi
+
+}
+
+# Require GLOBUS_LOCATION
 if [ -z "$GLOBUS_LOCATION" ]; then
 	echo "ERROR: Please set the GLOBUS_LOCATION environment variable"
 	exit 1
 fi
 
 # Set classpath
-# IMPORTANT: Needed for client-config.wsdd!
-CLASSPATH=${CLASSPATH}:${GLOBUS_LOCATION}
+LOCALCLASSPATH=${GLOBUS_LOCATION}
 for jar in `ls $GLOBUS_LOCATION/lib/*.jar`; do
-	CLASSPATH="${CLASSPATH}:${jar}"
+	LOCALCLASSPATH="${LOCALCLASSPATH}:${jar}"
 done
-export CLASSPATH
 
-# Run CommandLineClient
-${JAVA_HOME}/bin/java edu.usc.glidein.cli.CommandLineClient "$@"
+# Set other variables
+updateOptions "GLOBUS_LOCATION" "$GLOBUS_LOCATION"
+updateOptions "java.endorsed.dirs" "$GLOBUS_LOCATION/endorsed"
+updateOptions "X509_USER_PROXY" "$X509_USER_PROXY"
+updateOptions "X509_CERT_DIR" "$X509_CERT_DIR"
+updateOptions "GLOBUS_HOSTNAME" "$GLOBUS_HOSTNAME"
+updateOptions "GLOBUS_TCP_PORT_RANGE" "$GLOBUS_TCP_PORT_RANGE"
+updateOptions "GLOBUS_TCP_SOURCE_PORT_RANGE" "$GLOBUS_TCP_SOURCE_PORT_RANGE"
+updateOptions "GLOBUS_UDP_SOURCE_PORT_RANGE" "$GLOBUS_UDP_SOURCE_PORT_RANGE"
+
+# Set random device
+if [ -c "$EGD_DEVICE" -a  -r "$EGD_DEVICE" ]; then
+    updateOptions "java.security.egd" "file://$EGD_DEVICE"
+fi
+
+if [ "X$IBM_JAVA_OPTIONS" = "X" ] ; then
+  IBM_JAVA_OPTIONS=-Xquickstart
+  export IBM_JAVA_OPTIONS
+fi
+
+if [ $# -gt 0 ]; then
+  if [ "X${DEF_CMD_OPTIONS}" != "X" ]; then
+    set - ${GLOBUS_OPTIONS} -classpath ${LOCALCLASSPATH} ${EXEC}  ${DEF_CMD_OPTIONS} "$@"
+  else
+    set - ${GLOBUS_OPTIONS} -classpath ${LOCALCLASSPATH} ${EXEC} "$@"
+  fi
+else
+  if [ "X${DEF_CMD_OPTIONS}" != "X" ]; then
+    set - ${GLOBUS_OPTIONS} -classpath ${LOCALCLASSPATH} ${EXEC}  ${DEF_CMD_OPTIONS}
+  else
+    set - ${GLOBUS_OPTIONS} -classpath ${LOCALCLASSPATH} ${EXEC}
+  fi
+fi
+
+# Add any default java options
+OLD_IFS=${IFS}
+IFS=${DELIM}
+for i in ${DEF_OPTIONS} ; do
+  IFS=${OLD_IFS}
+  DEFINE=`echo $i|cut -d'=' -f1`
+  if [ "$DEFINE" != "$i" ]; then
+    VALUE="`echo $i|cut -d'=' -f2-`"
+    set - $DEFINE="$VALUE" "$@"
+  else
+    set - $DEFINE "$@"
+  fi
+  IFS=${DELIM}
+done
+IFS=${OLD_IFS}
+
+# Determine java
+if [ "X$JAVA_HOME" = "X" ] ; then
+  _RUNJAVA=java
+ else 
+  _RUNJAVA="$JAVA_HOME"/bin/java
+fi
+
+# Run it
+exec $_RUNJAVA "$@"
