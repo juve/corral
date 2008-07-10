@@ -15,8 +15,10 @@
  */
 package edu.usc.glidein.cli;
 
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.List;
@@ -86,7 +88,7 @@ public abstract class Command
 				  .setOption("h")
 				  .setLongOption("host")
 				  .setUsage("-h [--host] <host|ip>")
-				  .setDescription("Service host (default: localhost)")
+				  .setDescription("Service host (default: "+getLocalHost()+")")
 				  .hasArgument()
 		);
 		options.add(
@@ -290,7 +292,7 @@ public abstract class Command
 		if (cmdln.hasOption("h")) {
 			host = cmdln.getOptionValue("h");
 		} else {
-			host = "localhost";
+			host = getLocalHost();
 		}
 		
 		// Port
@@ -414,6 +416,17 @@ public abstract class Command
 			return credentialEPR;
 		} catch (DelegationException de) {
 			throw new CommandException("Unable to delegate credential: "+de.getMessage(),de);
+		}
+	}
+	
+	public String getLocalHost()
+	{
+		// Set the default condor host
+		try {
+			InetAddress addr = InetAddress.getLocalHost();
+			return addr.getHostName();
+		}  catch (UnknownHostException uhe) {
+			return null;
 		}
 	}
 	
