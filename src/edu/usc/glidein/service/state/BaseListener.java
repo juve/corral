@@ -100,7 +100,7 @@ public abstract class BaseListener implements CondorEventListener
 					try {
 						aborted = true; // Only try to abort once
 						Condor condor = Condor.getInstance();
-						condor.cancelJob(event.getJob().getJobId());
+						condor.cancelJob(event.getJob());
 					} catch(CondorException ce) {
 						// We are just going to log this because we may be 
 						// recovering the state of a job that has already 

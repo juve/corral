@@ -48,12 +48,12 @@ public class SiteFactoryService extends BaseService
 		}
 	}
 	
-	public EndpointReferenceType createSite(Site site) 
+	public EndpointReferenceType create(Site site) 
 	throws GlideinException
 	{
 		try {
 			SiteFactoryPortType factory = getPort();
-			EndpointReferenceType epr = factory.createSite(site);
+			EndpointReferenceType epr = factory.create(site);
 			return epr;
 		} catch (RemoteException re) {
 			throw new GlideinException("Unable to create site: "+

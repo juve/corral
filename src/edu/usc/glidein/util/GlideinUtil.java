@@ -70,5 +70,7 @@ public class GlideinUtil
 			out.printf("until = %tc\n",until);
 		}
 		out.printf("rsl = %s\n", glidein.getRsl());
+		out.printf("subject = %s\n", glidein.getSubject());
+		out.printf("localUsername = %s\n", glidein.getLocalUsername());
 	}
 }

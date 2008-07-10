@@ -29,21 +29,12 @@ public class CredentialUtil
 	throws IOException
 	{
 		// Create the file if it doesn't exist
-		file.createNewFile();
+		if (!file.exists() && !file.createNewFile()) {
+			throw new IOException("Unable to create credential file");
+		}
 		
 		// Change file permissions
-		CommandLine chmod = new CommandLine();
-		chmod.setExecutable(new File("/bin/chmod"));
-		chmod.addArgument("600");
-		chmod.addArgument(file.getAbsolutePath());
-		chmod.execute();
-		int exitCode = chmod.getExitCode();
-		if(exitCode != 0){
-			throw new IOException(
-					"Unable to change proxy permissions\n\n"+
-					"Stdout:\n"+chmod.getOutput()+
-					"Stderr:\n"+chmod.getError());
-		}
+		FilesystemUtil.chmod(file, 600);
 		
 		// Save the credential to the file
 		FileOutputStream pstream = 

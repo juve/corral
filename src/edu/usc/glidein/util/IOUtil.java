@@ -69,25 +69,4 @@ public class IOUtil
 			writer.close();
 		}
 	}
-	
-	/**
-	 * Remove a directory and all files and sub-directories
-	 * @param dir The directory to remove
-	 * @return true if everything was deleted, false otherwise
-	 */
-	public static boolean rmdirs(File dir) 
-	{
-		if (dir.isFile()) {
-			return dir.delete();
-		} else if (dir.isDirectory()) {
-			boolean result = true;
-			File[] fds = dir.listFiles();
-			for(File fd : fds) {
-				result = result && rmdirs(fd);
-			}
-			return result && dir.delete();
-		} else {
-			throw new IllegalStateException("Not a file or directory");
-		}
-	}
 }

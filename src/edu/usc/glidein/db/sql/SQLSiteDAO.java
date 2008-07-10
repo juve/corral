@@ -83,7 +83,7 @@ public class SQLSiteDAO implements SiteDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, created, lastUpdate) VALUES (?,?,?,?,?,?,?,?,?,?)");
+			stmt = connection.prepareStatement("INSERT INTO site (name, installPath, localPath, condorPackage, condorVersion, state, shortMessage, longMessage, created, lastUpdate, subject, localUsername) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setString(i++, site.getName());
 			stmt.setString(i++, site.getInstallPath());
@@ -105,6 +105,9 @@ public class SQLSiteDAO implements SiteDAO
 			} else {
 				stmt.setTimestamp(i++, new Timestamp(lastUpdate.getTimeInMillis()));
 			}
+			stmt.setString(i++, site.getSubject());
+			stmt.setString(i++, site.getLocalUsername());
+			
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create site: wrong number of db updates");
 			}
@@ -388,6 +391,9 @@ public class SQLSiteDAO implements SiteDAO
 			Calendar lastUpdate = Calendar.getInstance();
 			lastUpdate.setTime(rs.getTimestamp("lastUpdate"));
 			site.setLastUpdate(lastUpdate);
+			
+			site.setSubject(rs.getString("subject"));
+			site.setLocalUsername(rs.getString("localUsername"));
 			
 			return site;
 		} catch (SQLException sqle) {

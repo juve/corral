@@ -42,6 +42,7 @@ import org.globus.wsrf.impl.ReflectionResourceProperty;
 import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
 import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
+import org.globus.wsrf.security.SecurityException;
 
 import edu.usc.glidein.condor.Condor;
 import edu.usc.glidein.condor.CondorEventGenerator;
@@ -66,8 +67,9 @@ import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteState;
 import edu.usc.glidein.util.AddressingUtil;
+import edu.usc.glidein.util.AuthenticationUtil;
 import edu.usc.glidein.util.CredentialUtil;
-import edu.usc.glidein.util.IOUtil;
+import edu.usc.glidein.util.FilesystemUtil;
 
 public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, ResourceProperties
 {
@@ -244,6 +246,17 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		if (site.getLocalPath() == null) 
 			throw new ResourceException("Must specify local path");
 		
+		try {
+			// Authenticate the client
+			AuthenticationUtil.authenticate();
+			
+			// Set subject and username
+			site.setSubject(AuthenticationUtil.getSubject());
+			site.setLocalUsername(AuthenticationUtil.getLocalUsername());
+		} catch (SecurityException se) {
+			throw new ResourceException("Unable to authenticate client",se);
+		}
+		
 		// Save site in database
 		try {
 			Database db = Database.getDatabase();
@@ -281,6 +294,8 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	{
 		info("Creating remove event");
 		
+		authorize();
+		
 		// Choose new state. If force, then just delete the record from
 		// the database and remove the resource, otherwise go through the
 		// removal process.
@@ -313,6 +328,11 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	public void submit(EndpointReferenceType credentialEPR) throws ResourceException 
 	{
 		info("Creating submit event");
+		
+		authorize();
+		
+		// Create working directory
+		createWorkingDirectory();
 		
 		// Schedule submit event
 		try {
@@ -368,11 +388,10 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private File getWorkingDirectory() throws ResourceException
+	private void createWorkingDirectory() throws ResourceException
 	{
-		// Determine the directory path
-		File dir = new File(getConfig().getWorkingDirectory(),"site-"+site.getId());
-	
+		File dir = getWorkingDirectory();
+		
 		// Create the directory if it doesn't exist
 		if (dir.exists()) {
 			if (!dir.isDirectory()) {
@@ -385,13 +404,17 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 					throw new ResourceException(
 							"Unable to create working directory");
 				}
-			} catch (SecurityException e) {
+			} catch (java.lang.SecurityException e) {
 				throw new ResourceException(
 						"Unable to create working directory");
 			}
 		}
-		
-		return dir;
+	}
+	
+	private File getWorkingDirectory() throws ResourceException
+	{
+		// Determine the directory path
+		return new File(getConfig().getWorkingDirectory(),"site-"+site.getId());
 	}
 	
 	private File getInstallDirectory() throws ResourceException
@@ -414,7 +437,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		File jobDirectory = getInstallDirectory();
 		
 		// Create a job description
-		CondorJob job = new CondorJob(jobDirectory);
+		CondorJob job = new CondorJob(jobDirectory,site.getLocalUsername());
 		job.setUniverse(CondorUniverse.GRID);
 		
 		// Set jobmanager info
@@ -578,8 +601,10 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	{
 		info("Canceling install job");
 		try {
+			CondorJob job = new CondorJob(getInstallDirectory(),site.getLocalUsername());
 			String jobid = readJobId(getInstallDirectory());
-			Condor.getInstance().cancelJob(jobid);
+			job.setJobId(jobid);
+			Condor.getInstance().cancelJob(job);
 		} catch (CondorException ce) {
 			throw new ResourceException("Unable to cancel install job",ce);
 		}
@@ -648,7 +673,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		File jobDirectory = getUninstallDirectory();
 		
 		// Create a job description
-		CondorJob job = new CondorJob(jobDirectory);
+		CondorJob job = new CondorJob(jobDirectory,site.getLocalUsername());
 		job.setUniverse(CondorUniverse.GRID);
 		
 		// Set jobmanager info
@@ -741,11 +766,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		deleteFromDatabase();
 		
 		// Remove the working directory and all sub-directories
-		try {
-			IOUtil.rmdirs(getWorkingDirectory());
-		} catch (ResourceException re) {
-			throw new ResourceException("Unable to remove working directory",re);
-		}
+		FilesystemUtil.rm(getWorkingDirectory());
 	}
 	
 	private void fail(String message, Exception exception, Calendar time) throws ResourceException
@@ -1002,7 +1023,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			// finished, running, ready to submit, or not ready
 			
 			File jobDir = getInstallDirectory();
-			CondorJob job = new CondorJob(jobDir);
+			CondorJob job = new CondorJob(jobDir, site.getLocalUsername());
 			
 			if (job.getLog().exists()) {
 				
@@ -1045,7 +1066,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			// could be finished, running, ready to submit or unready
 			
 			File jobDir = getUninstallDirectory();
-			CondorJob job = new CondorJob(jobDir);
+			CondorJob job = new CondorJob(jobDir, site.getLocalUsername());
 			
 			if (job.getLog().exists()) {
 				
@@ -1089,6 +1110,23 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			throw new IllegalStateException(
 					"Unrecognized state: "+state);
 			
+		}
+	}
+	
+	private void authorize() throws ResourceException
+	{
+		try {
+			// Authenticate the client
+			AuthenticationUtil.authenticate();
+			
+			// Set subject and username
+			String subject = AuthenticationUtil.getSubject();
+			if (subject == null || !subject.equals(site.getSubject())) {
+				throw new ResourceException(
+						"Subject "+subject+" is not authorized to modify site "+site.getId());
+			}
+		} catch (SecurityException se) {
+			throw new ResourceException("Unable to authenticate client",se);
 		}
 	}
 	

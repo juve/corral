@@ -59,7 +59,7 @@
 
 	<portType name="GlideinFactoryPortType">
 	
-		<operation name="createGlidein">
+		<operation name="create">
 			<input message="tns:createGlideinRequestMessage"/>
 			<output message="tns:createGlideinResponseMessage"/>
 		</operation>

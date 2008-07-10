@@ -12,6 +12,7 @@
 		<parameter name="handlerClass" value="org.globus.axis.providers.RPCProvider"/>
 		<parameter name="scope" value="Application"/>
 		<parameter name="providers" value="GetRPProvider"/>
+		<parameter name="securityDescriptor" value="etc/glidein_service/security-config.xml"/>
 	</service>
 
 	<!-- GlideinFactoryService -->
@@ -23,6 +24,7 @@
 		<parameter name="scope" value="Application"/>
 		<parameter name="instance" value="glidein/GlideinService"/>
 		<parameter name="loadOnStartup" value="true"/>
+		<parameter name="securityDescriptor" value="etc/glidein_service/security-config.xml"/>
 	</service>
 
 	<!-- SiteService -->
@@ -33,6 +35,7 @@
 		<parameter name="handlerClass" value="org.globus.axis.providers.RPCProvider"/>
 		<parameter name="scope" value="Application"/>
 		<parameter name="providers" value="GetRPProvider"/>
+		<parameter name="securityDescriptor" value="etc/glidein_service/security-config.xml"/>
 	</service>
 
 	<!-- SiteFactoryService -->
@@ -44,6 +47,7 @@
 		<parameter name="scope" value="Application"/>
 		<parameter name="instance" value="glidein/SiteService"/>
 		<parameter name="loadOnStartup" value="true"/>
+		<parameter name="securityDescriptor" value="etc/glidein_service/security-config.xml"/>
 	</service>
 
 </deployment>

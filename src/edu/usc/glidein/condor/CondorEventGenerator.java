@@ -281,7 +281,7 @@ public class CondorEventGenerator extends Thread
 	
 	public static void main(String[] args)
 	{
-		CondorJob j = new CondorJob(new File("/Users/juve/Workspace/Condor"));
+		CondorJob j = new CondorJob(new File("/Users/juve/Workspace/Condor"),System.getProperty("user.name"));
 		j.setJobId("8.0");
 		j.setLog(new File("/Users/juve/Workspace/Condor/terminated.log"));
 		

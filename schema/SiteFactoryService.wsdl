@@ -58,7 +58,8 @@
 	============================================================-->
 
 	<portType name="SiteFactoryPortType">
-		<operation name="createSite">
+	
+		<operation name="create">
 			<input message="tns:createSiteRequestMessage"/>
 			<output message="tns:createSiteResponseMessage"/>
 		</operation>

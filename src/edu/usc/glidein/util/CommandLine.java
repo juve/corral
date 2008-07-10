@@ -31,6 +31,8 @@ import java.util.Map;
  */
 public class CommandLine
 {
+	public static final String SUDO = "/usr/bin/sudo";
+	
 	/**
 	 * The arguments for the command
 	 */
@@ -44,7 +46,7 @@ public class CommandLine
 	/**
 	 * Path to the command's executable
 	 */
-	private File executable;
+	private String command;
 	
 	/**
 	 * Working directory where executable should be invoked
@@ -75,7 +77,7 @@ public class CommandLine
 		arguments = new LinkedList<String>();
 		environment = new HashMap<String,String>();
 		workingDirectory = new File(".");
-		executable = null;
+		command = null;
 		output = new StringBuffer();
 		error = new StringBuffer();
 	}
@@ -125,33 +127,24 @@ public class CommandLine
 	}
 	
 	/**
-	 * Set the path to the executable
-	 * @param executable The path to the executable
+	 * Set the command
+	 * @param command The command or path to the command
 	 */
-	public void setExecutable(File executable)
-	throws NullPointerException, IllegalArgumentException
+	public void setCommand(String command)
+	throws NullPointerException
 	{
-		if(executable==null) 
-			throw new NullPointerException("null executable");
-		if(!executable.isAbsolute())
-			throw new IllegalArgumentException(
-					"Path to executable must be absolute");
-		if(!executable.exists())
-			throw new IllegalArgumentException(
-					"Executable "+executable+" does not exist");
-		if(!executable.isFile())
-			throw new IllegalArgumentException(
-					"Executable must be a file");
-		this.executable = executable;
+		if(command==null) 
+			throw new NullPointerException("null command");
+		this.command = command;
 	}
 	
 	/**
 	 * Get the path to the executable
 	 * @return The path
 	 */
-	public File getExecutable()
+	public String getCommand()
 	{
-		return executable.getAbsoluteFile();
+		return command;
 	}
 	
 	/**
@@ -252,19 +245,40 @@ public class CommandLine
 	}
 	
 	/**
-	 * Execute this command. You can execute it multiple times if you like.
+	 * Execute this command as the current user. You can execute it multiple
+	 * times if you like.
 	 */
 	public void execute() throws IOException
 	{
-		// Prepare the command
-		StringBuffer command = new StringBuffer();
-		command.append(executable.getAbsolutePath());
-		for(String argument : arguments)
-		{
-			command.append(" ");
-			command.append(argument);
+		executeAs(null);
+	}
+	
+	/**
+	 * Execute this command as a specific user. You can execute it multiple
+	 * times if you like.
+	 */
+	public void executeAs(String username) throws IOException
+	{
+		LinkedList<String> cmdList = new LinkedList<String>();
+		
+		// If we want to run as another user and that user is not the current user
+		if (username != null && !System.getProperty("user.name").equals(username)) {
+			cmdList.add("sudo");
+			cmdList.add("-S");
+			cmdList.add("-H");
+			cmdList.add("-u");
+			cmdList.add(username);
+        }
+		
+		// Add executable
+		cmdList.add(command);
+		
+		// Add arguments
+		for(String argument : arguments) {
+			cmdList.add(argument);
 		}
-		String cmd = command.toString();
+		
+		String[] cmd = cmdList.toArray(new String[0]);
 		
 		// Prepare the environment
 		String[] env = new String[environment.size()];
@@ -300,41 +314,6 @@ public class CommandLine
 			exitCode = p.waitFor();
 		} catch(InterruptedException ie){
 			/* Ignore */
-		}
-	}
-	
-	/*
-	 * Test this class
-	 */
-	public static void main(String[] args)
-	{
-		try 
-		{
-			// Create command
-			CommandLine submit = new CommandLine();
-			submit.setWorkingDirectory(
-					new File("/Users/juve/Workspace/Condor"));
-			submit.setExecutable(
-					new File("/opt/condor/6.9.5/bin/condor_submit"));
-			submit.addArgument("-verbose");
-			submit.addArgument("job.sub");
-			submit.addEnvironmentVariable("CONDOR_HOME",
-					"/opt/condor/6.9.5");
-			submit.addEnvironmentVariable("CONDOR_CONFIG",
-					"/opt/condor/6.9.5/etc/condor_config");
-		
-			// Launch it
-			submit.execute();
-			
-			// Get output
-			if(submit.getExitCode()!=0)
-				System.err.println(submit.getError());
-			else
-				System.out.println(submit.getOutput());
-		} 
-		catch(IOException e)
-		{
-			e.printStackTrace();
 		}
 	}
 }
