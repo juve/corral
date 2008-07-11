@@ -31,14 +31,12 @@ public class CommandLine
 	{
 		CommandLine cmdln = null;
 		
-		// Set the options
-		Options ops = new Options();
-		for (Option option :  options) {
-			ops.addOption(option.buildOption());
-		}
-		
 		// Parse the command line args
 		try {
+			Options ops = new Options();
+			for (Option option :  options) {
+				ops.addOption(option.buildOption());
+			}
 			CommandLineParser parser = new PosixParser();
 			cmdln = new CommandLine(parser.parse(ops, args));
 		} catch (ParseException pe) {
@@ -68,6 +66,10 @@ public class CommandLine
 			}
 			
 			try {
+				Options ops = new Options();
+				for (Option option :  options) {
+					ops.addOption(option.buildOption());
+				}
 				CommandLineParser parser = new PosixParser();
 				cmdln.setFileArgs(parser.parse(ops, fargs));
 			} catch (ParseException pe) {
@@ -77,7 +79,6 @@ public class CommandLine
 		
 		return cmdln;
 	}
-	
 	
 	public boolean hasOption(String option)
 	{

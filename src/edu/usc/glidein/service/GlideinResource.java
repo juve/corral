@@ -42,6 +42,7 @@ import org.globus.wsrf.impl.ReflectionResourceProperty;
 import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
 import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
+import org.globus.wsrf.security.SecurityException;
 
 import edu.usc.glidein.condor.Condor;
 import edu.usc.glidein.condor.CondorEventGenerator;
@@ -67,8 +68,10 @@ import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteState;
 import edu.usc.glidein.util.AddressingUtil;
+import edu.usc.glidein.util.AuthenticationUtil;
 import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.CredentialUtil;
+import edu.usc.glidein.util.FilesystemUtil;
 import edu.usc.glidein.util.IOUtil;
 
 public class GlideinResource implements Resource, ResourceIdentifier, 
@@ -186,6 +189,17 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			throw new ResourceException("Wall time must be >= 2 minutes");
 		}
 		
+		try {
+			// Authenticate the client
+			AuthenticationUtil.authenticate();
+			
+			// Set subject and username
+			glidein.setSubject(AuthenticationUtil.getSubject());
+			glidein.setLocalUsername(AuthenticationUtil.getLocalUsername());
+		} catch (SecurityException se) {
+			throw new ResourceException("Unable to authenticate client",se);
+		}
+		
 		// Get site or fail
 		SiteResource siteResource = getSiteResource(glidein.getSiteId());
 		Site site = siteResource.getSite();
@@ -247,6 +261,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 	{
 		info("Removing glidein");
 		
+		authorize();
+		
 		// If we are forcing the issue, then just delete it
 		GlideinEventCode code = null;
 		if (force) {
@@ -268,6 +284,12 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 	public void submit(EndpointReferenceType credentialEPR) throws ResourceException
 	{
 		info("Submitting glidein");
+		
+		authorize();
+		
+		// Create the working directory
+		createWorkingDirectory();
+		
 		try {
 			
 			// Get delegated credential
@@ -332,7 +354,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		File jobDirectory = getJobDirectory();
 		
 		// Create a job description
-		CondorJob job = new CondorJob(jobDirectory);
+		CondorJob job = new CondorJob(jobDirectory, glidein.getLocalUsername());
 		job.setUniverse(CondorUniverse.GRID);
 		
 		// Set jobmanager info
@@ -501,19 +523,21 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 	{
 		info("Cancelling glidein job");
 		
-		// Find submit dir
-		File dir = getJobDirectory();
-		File jobidFile = new File(dir,"jobid");
-		
 		try {
+			// Find submit dir
+			File dir = getJobDirectory();
+			File jobidFile = new File(dir,"jobid");
+			CondorJob job = new CondorJob(dir,glidein.getLocalUsername());
+			
 			// Read job id from jobid file
 			BufferedReader reader = new BufferedReader(
 					new FileReader(jobidFile));
 			String jobid = reader.readLine();
 			reader.close();
+			job.setJobId(jobid);
 			
 			// condor_rm job
-			Condor.getInstance().cancelJob(jobid);
+			Condor.getInstance().cancelJob(job);
 		} catch (IOException ioe) {
 			throw new ResourceException(
 					"Unable to read job id",ioe);
@@ -560,11 +584,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 		
 		// Remove the working directory
-		try {
-			IOUtil.rmdirs(getWorkingDirectory());
-		} catch (ResourceException re) {
-			warn("Unable to remove working dir",re);
-		}
+		FilesystemUtil.rm(getWorkingDirectory());
 	}
 	
 	private ServiceConfiguration getConfig() throws ResourceException
@@ -583,9 +603,9 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		return jobDirectory;
 	}
 	
-	private File getWorkingDirectory() throws ResourceException
+	private void createWorkingDirectory() throws ResourceException
 	{
-		File dir = new File(getConfig().getWorkingDirectory(),"glidein-"+glidein.getId());
+		File dir = getWorkingDirectory();
 		
 		// Create the directory if it doesn't exist
 		if (dir.exists()) {
@@ -599,13 +619,17 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 					throw new ResourceException(
 							"Unable to create working directory");
 				}
-			} catch (SecurityException e) {
+			} catch (java.lang.SecurityException e) {
 				throw new ResourceException(
 						"Unable to create working directory");
 			}
 		}
 		
-		return dir;
+	}
+	
+	private File getWorkingDirectory() throws ResourceException
+	{
+		return new File(getConfig().getWorkingDirectory(),"glidein-"+glidein.getId());
 	}
 	
 	private void storeCredential(GlobusCredential credential) throws ResourceException
@@ -964,7 +988,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			// running, ready, or unready
 			
 			File jobDir = getJobDirectory();
-			CondorJob job = new CondorJob(jobDir);
+			CondorJob job = new CondorJob(jobDir, glidein.getLocalUsername());
 			
 			if (job.getLog().exists()) {
 				
@@ -995,7 +1019,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			// If glidein has been submitted to condor, then it can only 
 			// be running or finished
 			File jobDir = getJobDirectory();
-			CondorJob job = new CondorJob(jobDir);
+			CondorJob job = new CondorJob(jobDir, glidein.getLocalUsername());
 			job.setJobId(readJobId());
 			GlideinListener listener = 
 				new GlideinListener(getKey());
@@ -1006,7 +1030,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		} else if (GlideinState.REMOVING.equals(state)) {
 			
 			File jobDir = getJobDirectory();
-			CondorJob job = new CondorJob(jobDir);
+			CondorJob job = new CondorJob(jobDir, glidein.getLocalUsername());
 			
 			// If the log is still there, then try to cancel the job
 			if (job.getLog().exists()) {
@@ -1031,6 +1055,23 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			// This should not happen
 			throw new IllegalStateException("Glidein state was: "+state);
 			
+		}
+	}
+	
+	private void authorize() throws ResourceException
+	{
+		try {
+			// Authenticate the client
+			AuthenticationUtil.authenticate();
+			
+			// Set subject and username
+			String subject = AuthenticationUtil.getSubject();
+			if (subject == null || !subject.equals(glidein.getSubject())) {
+				throw new ResourceException(
+						"Subject "+subject+" is not authorized to modify glidein "+glidein.getId());
+			}
+		} catch (SecurityException se) {
+			throw new ResourceException("Unable to authenticate client",se);
 		}
 	}
 

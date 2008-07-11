@@ -39,7 +39,7 @@ public class GlideinFactoryService
 {
 	private Logger logger = Logger.getLogger(GlideinFactoryService.class);
 	
-	public EndpointReferenceType createGlidein(Glidein glidein)
+	public EndpointReferenceType create(Glidein glidein)
 	throws RemoteException
 	{
 		EndpointReferenceType epr = null;

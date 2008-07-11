@@ -374,7 +374,7 @@ public class CreateSiteCommand extends Command
 			SiteFactoryService factory = new SiteFactoryService(
 					getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
 			factory.setDescriptor(getClientSecurityDescriptor());
-			EndpointReferenceType epr = factory.createSite(site);
+			EndpointReferenceType epr = factory.create(site);
 			
 			// Get instance
 			SiteService instance = new SiteService(epr);

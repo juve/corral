@@ -29,6 +29,7 @@ import java.util.Map;
 import org.globus.gsi.GlobusCredential;
 
 import edu.usc.glidein.util.CredentialUtil;
+import edu.usc.glidein.util.FilesystemUtil;
 
 /**
  * A class representing a condor job.
@@ -150,11 +151,17 @@ public class CondorJob implements Serializable
 	private String globusXML;
 	
 	/**
+	 * The owner of the job
+	 */
+	private String owner;
+	
+	/**
 	 * Create a job with a given job directory and set of parameters
 	 * @param jobDirectory The directory where the files for this job 
 	 * should be created
+	 * @param owner The username of the owner of this job
 	 */
-	public CondorJob(File jobDirectory)
+	public CondorJob(File jobDirectory, String owner)
 	{
 		this.jobDirectory = jobDirectory;
 		this.log = new File(jobDirectory,"log");
@@ -170,6 +177,7 @@ public class CondorJob implements Serializable
 		this.localExecutable = false;
 		this.globusRSL = null;
 		this.globusXML = null;
+		this.owner = owner;
 	}
 	
 	public void addListener(CondorEventListener listener)
@@ -389,6 +397,16 @@ public class CondorJob implements Serializable
 		return globusXML;
 	}
 	
+	public void setOwner(String owner)
+	{
+		this.owner = owner;
+	}
+	
+	public String getOwner()
+	{
+		return owner;
+	}
+	
 	public boolean hasCredential()
 	{
 		return credential != null;
@@ -593,6 +611,12 @@ public class CondorJob implements Serializable
 			throw new CondorException(
 					"Unable to save Condor job id to file",ioe);
 		}
+		
+		// Change the ownership
+		if (owner != null && !System.getProperty("user.name").equals(owner)) {
+			FilesystemUtil.chmod(jobidFile, 644);
+			FilesystemUtil.chown(jobidFile, owner);
+		}
 	}
 	
 	public void prepareForSubmit() throws CondorException
@@ -616,7 +640,12 @@ public class CondorJob implements Serializable
 		
 		// Delete the log file if it exists
 		if (log.exists()) {
-			log.delete();
+			FilesystemUtil.rm(log);
+		}
+		
+		// Change the ownership
+		if (owner != null && !System.getProperty("user.name").equals(owner)) {
+			FilesystemUtil.chown(jobDirectory, owner);
 		}
 	}
 }

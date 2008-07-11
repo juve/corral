@@ -34,7 +34,9 @@ CREATE TABLE site (
 	shortMessage	TEXT NOT NULL,		-- A short status message
 	longMessage		TEXT,				-- A long status message (e.g. Stack trace)
 	created			INTEGER NOT NULL,	-- Time when site was created (unix time in ms)
-	lastUpdate		INTEGER NOT NULL	-- Time when site was last updated (unix time in ms)
+	lastUpdate		INTEGER NOT NULL,	-- Time when site was last updated (unix time in ms)
+	subject			TEXT NOT NULL,		-- Owner of resource
+	localUsername	TEXT NOT NULL		-- Local username of owner
 );
 
 /**
@@ -89,7 +91,9 @@ CREATE TABLE glidein (
 	resubmits		INTEGER,			-- Number of times to resubmit
 	until			INTEGER,			-- Date to resubmit until (unix time in ms)
 	submits			INTEGER	NOT NULL,	-- Total number of times this glidein has be submitted
-	rsl				TEXT				-- Globus RSL or XML to override other parameters
+	rsl				TEXT,				-- Globus RSL or XML to override other parameters
+	subject			TEXT NOT NULL,		-- Owner of resource
+	localUsername	TEXT NOT NULL		-- Local username of owner
 );
 
 /**

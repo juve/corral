@@ -35,6 +35,8 @@ CREATE TABLE site (
 	longMessage		TEXT,								-- A long status message (e.g. Stack trace)
 	created			DATETIME NOT NULL,					-- Time when site was created
 	lastUpdate		DATETIME NOT NULL,					-- Time when site was last updated
+	subject			VARCHAR(256) NOT NULL,				-- Owner of resource
+	localUsername	VARCHAR(64) NOT NULL,				-- Local username of owner
 	CONSTRAINT pk_site PRIMARY KEY (id)
 ) type=InnoDB;
 
@@ -93,6 +95,8 @@ CREATE TABLE glidein (
 	until				DATETIME,						-- Date to resubmit until
 	submits				INTEGER NOT NULL,				-- Total number of times this glidein has be submitted
 	rsl					TEXT,							-- Globus RSL or XML to override other parameters
+	subject				VARCHAR(256) NOT NULL,			-- Owner of resource
+	localUsername		VARCHAR(64) NOT NULL,			-- Local username of owner
 	CONSTRAINT pk_glidein PRIMARY KEY (id),
 	CONSTRAINT fk_glidein_01 FOREIGN KEY (site) REFERENCES site(id) ON DELETE SET NULL
 ) type=InnoDB;

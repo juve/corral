@@ -38,7 +38,7 @@ public class SiteFactoryService
 {
 	private Logger logger = Logger.getLogger(SiteFactoryService.class);
 	
-	public EndpointReferenceType createSite(Site site)
+	public EndpointReferenceType create(Site site)
 	throws RemoteException
 	{	
 		EndpointReferenceType epr = null;

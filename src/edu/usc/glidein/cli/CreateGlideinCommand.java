@@ -359,7 +359,7 @@ public class CreateGlideinCommand extends Command
 			GlideinFactoryService factory = new GlideinFactoryService(
 					getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
 			factory.setDescriptor(desc);
-			EndpointReferenceType epr = factory.createGlidein(glidein);
+			EndpointReferenceType epr = factory.create(glidein);
 			
 			// Get instance
 			GlideinService instance = new GlideinService(epr);

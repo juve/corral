@@ -96,7 +96,7 @@ public class Condor
 			File condorBin = new File(condorHome,"bin");
 			File condorSubmit = new File(condorBin,"condor_submit");
 			
-			submit.setExecutable(condorSubmit);
+			submit.setCommand(condorSubmit.getAbsolutePath());
 			submit.setWorkingDirectory(job.getJobDirectory());
 			
 			// Arguments
@@ -110,7 +110,7 @@ public class Condor
 					"CONDOR_CONFIG",getCondorConfig());
 			
 			// Run condor_submit
-			submit.execute();
+			submit.executeAs(job.getOwner());
 		} catch(IOException ioe) {
 			throw new CondorException("Unable to submit job",ioe);
 		}
@@ -148,7 +148,7 @@ public class Condor
 	 * @param job The job to cancel
 	 * @throws CondorException If there is an error cancelling the job
 	 */
-	public void cancelJob(String condorId) throws CondorException
+	public void cancelJob(CondorJob job) throws CondorException
 	{	
 		//Run rm command
 		CommandLine cancel = new CommandLine();
@@ -157,10 +157,10 @@ public class Condor
 			File condorBin = new File(condorHome,"bin");
 			File condorRm = new File(condorBin,"condor_rm");
 			
-			cancel.setExecutable(condorRm);
+			cancel.setCommand(condorRm.getAbsolutePath());
 			
 			// Arguments
-			cancel.addArgument(condorId);
+			cancel.addArgument(job.getJobId());
 			
 			// Set environment
 			cancel.addEnvironmentVariable("CONDOR_HOME",
@@ -169,7 +169,7 @@ public class Condor
 					getCondorConfig());
 			
 			// Run condor_rm
-			cancel.execute();
+			cancel.executeAs(job.getOwner());
 		} catch(IOException ioe) {
 			throw new CondorException("Unable to cancel job",ioe);
 		}
@@ -186,7 +186,7 @@ public class Condor
 	
 	public static void main(String[] args)
 	{
-		CondorJob job = new CondorJob(new File("/tmp/glidein_service/job-123"));
+		CondorJob job = new CondorJob(new File("/tmp/glidein_service/job-123"),System.getenv("user.name"));
 		job.setUniverse(CondorUniverse.GRID);
 		//job.setGridType(CondorGridType.GT2);
 		//job.setGridContact("dynamic.usc.edu/jobmanager-fork");

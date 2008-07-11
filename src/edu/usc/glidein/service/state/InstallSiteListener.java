@@ -24,6 +24,7 @@ import org.globus.wsrf.ResourceKey;
 
 import edu.usc.glidein.condor.CondorEvent;
 import edu.usc.glidein.condor.CondorJob;
+import edu.usc.glidein.util.FilesystemUtil;
 import edu.usc.glidein.util.IOUtil;
 
 public class InstallSiteListener extends BaseListener
@@ -100,7 +101,7 @@ public class InstallSiteListener extends BaseListener
 	private void success(CondorJob job)
 	{
 		// Cleanup job dir
-		IOUtil.rmdirs(job.getJobDirectory());
+		FilesystemUtil.rm(job.getJobDirectory());
 		
 		// Generate success event
 		try {

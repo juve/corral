@@ -95,6 +95,9 @@ public class SiteUtil
 			out.printf("glideinService.project = %s\n", glideinService.getProject());
 			out.printf("glideinService.queue = %s\n", glideinService.getQueue());
 		}
+		
+		out.printf("subject = %s\n", site.getSubject());
+		out.printf("localUsername = %s\n", site.getLocalUsername());
 	}
 	
 	private static String getRequired(Properties p, String key, String name) throws Exception

@@ -48,12 +48,12 @@ public class GlideinFactoryService extends BaseService
 		}
 	}
 	
-	public EndpointReferenceType createGlidein(Glidein glidein) 
+	public EndpointReferenceType create(Glidein glidein) 
 	throws GlideinException
 	{
 		try {
 			GlideinFactoryPortType factory = getPort();	
-			EndpointReferenceType epr = factory.createGlidein(glidein);
+			EndpointReferenceType epr = factory.create(glidein);
 			return epr;
 		} catch (RemoteException re) {
 			throw new GlideinException("Unable to create glidein: "+
