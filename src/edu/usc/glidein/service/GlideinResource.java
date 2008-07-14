@@ -292,6 +292,11 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		
 		try {
 			
+			/* TODO Save the Credential EPR and retrieve the credential later
+			 * I can do this now that I have the subject name stored. This will
+			 * allow us to refresh the credential if we want.
+			 */
+			
 			// Get delegated credential
 			DelegationResource delegationResource = 
 				DelegationUtil.getDelegationResource(credentialEPR);
