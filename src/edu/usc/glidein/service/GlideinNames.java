@@ -19,6 +19,32 @@ import javax.xml.namespace.QName;
 
 public class GlideinNames
 {
+	// Parameters
+	public static final String ID = "id";
+	public static final String SITE = "site";
+	public static final String SITE_NAME = "site-name";
+	public static final String CONDOR_HOST = "condor-host";
+	public static final String COUNT = "count";
+	public static final String HOST_COUNT = "host-count";
+	public static final String WALL_TIME = "wall-time";
+	public static final String NUM_CPUS = "num-cpus";
+	public static final String CONDOR_CONFIG = "condor-config";
+	public static final String GCB_BROKER = "gcb-broker";
+	public static final String IDLE_TIME = "idle-time";
+	public static final String CONDOR_DEBUG = "condor-debug";
+	public static final String STATE = "state";
+	public static final String SHORT_MESSAGE = "short-message";
+	public static final String LONG_MESSAGE = "long-message";
+	public static final String CREATED = "created";
+	public static final String LAST_UPDATE = "last-update";
+	public static final String RESUBMIT = "resubmit";
+	public static final String RESUBMITS = "resubmits";
+	public static final String UNTIL = "until";
+	public static final String SUBMITS = "submits";
+	public static final String RSL = "rsl";
+	public static final String SUBJECT = "subject";
+	public static final String LOCAL_USERNAME = "local-username";
+	
 	// Service names
 	public static final String GLIDEIN_FACTORY_SERVICE = "glidein/GlideinFactoryService";
 	public static final String GLIDEIN_SERVICE = "glidein/GlideinService";
@@ -28,25 +54,25 @@ public class GlideinNames
 	public static final QName RESOURCE_KEY = new QName(SERVICE_NS, "GlideinServiceKey");
 	public static final QName RESOURCE_PROPERTIES = new QName(SERVICE_NS, "GlideinResourceProperties");
 	
-	public static final QName RP_ID = new QName(SERVICE_NS, "Id");
-	public static final QName RP_SITE = new QName(SERVICE_NS, "SiteId");
-	public static final QName RP_CONDOR_HOST = new QName(SERVICE_NS, "CondorHost");
-	public static final QName RP_COUNT = new QName(SERVICE_NS, "Count");
-	public static final QName RP_HOST_COUNT = new QName(SERVICE_NS, "HostCount");
-	public static final QName RP_WALL_TIME = new QName(SERVICE_NS, "WallTime");
-	public static final QName RP_NUM_CPUS = new QName(SERVICE_NS, "NumCpus");
-	public static final QName RP_CONDOR_CONFIG = new QName(SERVICE_NS, "CondorConfig");
-	public static final QName RP_GCB_BROKER = new QName(SERVICE_NS, "GcbBroker");
-	public static final QName RP_IDLE_TIME = new QName(SERVICE_NS, "IdleTime");
-	public static final QName RP_CONDOR_DEBUG = new QName(SERVICE_NS, "CondorDebug");
-	public static final QName RP_STATE = new QName(SERVICE_NS, "State");
-	public static final QName RP_SHORT_MESSAGE = new QName(SERVICE_NS, "ShortMessage");
-	public static final QName RP_LONG_MESSAGE = new QName(SERVICE_NS, "LongMessage");
-	public static final QName RP_CREATED = new QName(SERVICE_NS, "Created");
-	public static final QName RP_LAST_UPDATE = new QName(SERVICE_NS, "LastUpdate");
-	public static final QName RP_RESUBMIT = new QName(SERVICE_NS, "Resubmit");
-	public static final QName RP_RESUBMITS = new QName(SERVICE_NS, "Resubmits");
-	public static final QName RP_UNTIL = new QName(SERVICE_NS, "Until");
-	public static final QName RP_SUBMITS = new QName(SERVICE_NS, "Submits");
-	public static final QName RP_RSL = new QName(SERVICE_NS, "Rsl");
+	public static final QName RP_ID = new QName(SERVICE_NS, ID);
+	public static final QName RP_SITE = new QName(SERVICE_NS, SITE);
+	public static final QName RP_CONDOR_HOST = new QName(SERVICE_NS, CONDOR_HOST);
+	public static final QName RP_COUNT = new QName(SERVICE_NS, COUNT);
+	public static final QName RP_HOST_COUNT = new QName(SERVICE_NS, HOST_COUNT);
+	public static final QName RP_WALL_TIME = new QName(SERVICE_NS, WALL_TIME);
+	public static final QName RP_NUM_CPUS = new QName(SERVICE_NS, NUM_CPUS);
+	public static final QName RP_CONDOR_CONFIG = new QName(SERVICE_NS, CONDOR_CONFIG);
+	public static final QName RP_GCB_BROKER = new QName(SERVICE_NS, GCB_BROKER);
+	public static final QName RP_IDLE_TIME = new QName(SERVICE_NS, IDLE_TIME);
+	public static final QName RP_CONDOR_DEBUG = new QName(SERVICE_NS, CONDOR_DEBUG);
+	public static final QName RP_STATE = new QName(SERVICE_NS, STATE);
+	public static final QName RP_SHORT_MESSAGE = new QName(SERVICE_NS, SHORT_MESSAGE);
+	public static final QName RP_LONG_MESSAGE = new QName(SERVICE_NS, LONG_MESSAGE);
+	public static final QName RP_CREATED = new QName(SERVICE_NS, CREATED);
+	public static final QName RP_LAST_UPDATE = new QName(SERVICE_NS, LAST_UPDATE);
+	public static final QName RP_RESUBMIT = new QName(SERVICE_NS, RESUBMIT);
+	public static final QName RP_RESUBMITS = new QName(SERVICE_NS, RESUBMITS);
+	public static final QName RP_UNTIL = new QName(SERVICE_NS, UNTIL);
+	public static final QName RP_SUBMITS = new QName(SERVICE_NS, SUBMITS);
+	public static final QName RP_RSL = new QName(SERVICE_NS, RSL);
 }
