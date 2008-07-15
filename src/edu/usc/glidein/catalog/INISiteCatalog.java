@@ -39,22 +39,28 @@ public class INISiteCatalog implements SiteCatalog
 		}
 	}
 	
+	private void setProperty(Properties p, String key, String value)
+	{
+		if (value == null) return;
+		p.setProperty(key, value);
+	}
+	
 	private Site extractINISite(INI ini, String name) throws SiteCatalogException
 	{
 		try {
 			Properties p = new Properties();
-			p.setProperty(NAME, name);
-			p.setProperty(INSTALL_PATH, getINIValue(ini,name,INSTALL_PATH));
-			p.setProperty(LOCAL_PATH, getINIValue(ini,name,LOCAL_PATH));
-			p.setProperty(CONDOR_PACKAGE, getINIValue(ini,name,CONDOR_PACKAGE));
-			p.setProperty(CONDOR_VERSION, getINIValue(ini,name,CONDOR_VERSION));
-			p.setProperty(STAGING_SERVICE, getINIValue(ini,name,STAGING_SERVICE));
-			p.setProperty(STAGING_SERVICE_PROJECT, getINIValue(ini,name,STAGING_SERVICE_PROJECT));
-			p.setProperty(STAGING_SERVICE_QUEUE, getINIValue(ini,name,STAGING_SERVICE_QUEUE));
-			p.setProperty(GLIDEIN_SERVICE, getINIValue(ini,name,GLIDEIN_SERVICE));
-			p.setProperty(GLIDEIN_SERVICE_PROJECT, getINIValue(ini,name,GLIDEIN_SERVICE_PROJECT));
-			p.setProperty(GLIDEIN_SERVICE_QUEUE, getINIValue(ini,name,GLIDEIN_SERVICE_QUEUE));
-			p.setProperty(ENVIRONMENT, getINIValue(ini,name,ENVIRONMENT));
+			setProperty(p, NAME, name);
+			setProperty(p, INSTALL_PATH, getINIValue(ini,name,INSTALL_PATH));
+			setProperty(p, LOCAL_PATH, getINIValue(ini,name,LOCAL_PATH));
+			setProperty(p, CONDOR_PACKAGE, getINIValue(ini,name,CONDOR_PACKAGE));
+			setProperty(p, CONDOR_VERSION, getINIValue(ini,name,CONDOR_VERSION));
+			setProperty(p, STAGING_SERVICE, getINIValue(ini,name,STAGING_SERVICE));
+			setProperty(p, STAGING_SERVICE_PROJECT, getINIValue(ini,name,STAGING_SERVICE_PROJECT));
+			setProperty(p, STAGING_SERVICE_QUEUE, getINIValue(ini,name,STAGING_SERVICE_QUEUE));
+			setProperty(p, GLIDEIN_SERVICE, getINIValue(ini,name,GLIDEIN_SERVICE));
+			setProperty(p, GLIDEIN_SERVICE_PROJECT, getINIValue(ini,name,GLIDEIN_SERVICE_PROJECT));
+			setProperty(p, GLIDEIN_SERVICE_QUEUE, getINIValue(ini,name,GLIDEIN_SERVICE_QUEUE));
+			setProperty(p, ENVIRONMENT, getINIValue(ini,name,ENVIRONMENT));
 			return SiteUtil.createSite(p);
 		} catch (Exception e) {
 			throw new SiteCatalogException(e);
