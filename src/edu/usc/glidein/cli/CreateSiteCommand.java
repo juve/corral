@@ -187,9 +187,11 @@ public class CreateSiteCommand extends Command
 				  .setUsage("-cp [--condor-package] <pkg>")
 				  .setDescription("The package name to download. This overrides condor-version. \n" +
 				  				  "I don't recommend using condor-package unless you know what \n" +
-				  				  "you are doing. The general format for the package name itself \n" +
-				  				  "is: '<version>-<arch>-<os>-<osversion>-glibc<glibcversion>' \n" +
-				  				  "(e.x. '7.0.0-ia64-Linux-2.4-glibc2.2')")
+				  				  "you are doing. The default format for the package name is: \n" +
+				  				  "'<condorversion>-<arch>-<os>-<osversion>-glibc<glibcversion>.tar.gz' \n" +
+				  				  "(e.x. '7.0.0-ia64-Linux-2.4-glibc2.2.tar.gz'), but you can \n" +
+				  				  "specify any package name you like as long as it is available \n" +
+				  				  "on one of the configured staging servers.")
 				  .hasArgument()
 		);
 		
