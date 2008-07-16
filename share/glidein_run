@@ -112,7 +112,7 @@ if [ ! -f "${GLIDEIN_CONDOR_CONFIG}" ]; then
 fi
 
 # Determine host name as well as possible
-if [ ! -z "`which globus-hostname`" ]; then
+if [ ! -z "`which globus-hostname 2>/dev/null`" ]; then
 	HOSTNAME=`globus-hostname`
 else
 	case `uname` in
