@@ -3,56 +3,1817 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <title>Glidein Service Manual</title>
-  
+
   <chapter>
     <title>Overview</title>
+
     <section>
       <title>Introduction</title>
-      <para></para>
-    </section>
-    <section>
-      <title>What is a Glidein?</title>
-      <para></para>
-    </section>
-    <section>
-      <title>What is a Grid Service?</title>
-      <para></para>
+
+      <para>TBD</para>
+
+      <para>What is a Glidein?</para>
+
+      <para>What is the glidein service?</para>
+
+      <para>How does the service work?</para>
+
+      <para>Architecture: staging servers, grid sites, Condor, Glidein
+      Service</para>
     </section>
   </chapter>
-  
+
   <chapter>
     <title>User's Manual</title>
+
     <section>
-      <title>Introduction</title>
-      <para></para>
+      <title>Sites</title>
+
+      <section>
+        <title>Site Parameters</title>
+
+        <para><itemizedlist>
+            <listitem>
+              <command>id</command>
+
+              <para>The ID number of the site.</para>
+            </listitem>
+
+            <listitem>
+              <command>name</command>
+
+              <para>The user-friendly name for the site.</para>
+            </listitem>
+
+            <listitem>
+              <command>state</command>
+
+              <para>The current state of the site.</para>
+            </listitem>
+
+            <listitem>
+              <command>short-message</command>
+
+              <para>A short status message. This message will contain summary
+              information about the current state of the site.</para>
+            </listitem>
+
+            <listitem>
+              <command>long-message</command>
+
+              <para>A long status message. This message will contain detailed
+              information about errors including stack traces and the output
+              of failed commands.</para>
+            </listitem>
+
+            <listitem>
+              <command>created</command>
+
+              <para>The date and time when the site was created.</para>
+            </listitem>
+
+            <listitem>
+              <command>last-update</command>
+
+              <para>The date and time when the site was last updated.</para>
+            </listitem>
+
+            <listitem>
+              <command>subject</command>
+
+              <para>The DN of the owner of the site. The value comes from the
+              user's proxy.</para>
+            </listitem>
+
+            <listitem>
+              <command>local-username</command>
+
+              <para>The local username of the owner of the site. All site
+              install and uninstall jobs submitted by the service will be
+              owned by this user. The value comes from the
+              grid-mapfile.</para>
+            </listitem>
+
+            <listitem>
+              <command>install-path</command>
+
+              <para>This is the remote path where executables are installed.
+              This path should be on a shared filesystem accessible by all the
+              nodes. Example: '/home/juve/glidein'</para>
+            </listitem>
+
+            <listitem>
+              <command>local-path</command>
+
+              <para>This is the remote path where log files, etc are placed
+              (i.e. scratch). This path need not be on a shared filesystem.
+              Example: '/tmp'</para>
+            </listitem>
+
+            <listitem>
+              <command>condor-version</command>
+
+              <para>The version of Condor to setup on the remote site. A
+              package for the version should be available on the staging
+              server for the OS and architecture of the target site. Example:
+              '7.0.0'.</para>
+            </listitem>
+
+            <listitem>
+              <command>condor-package</command>
+
+              <para>The glidein package to download. This overrides
+              condor-version. The default format for the package name is:
+              '&lt;condorversion&gt;-&lt;arch&gt;-&lt;os&gt;-&lt;osversion&gt;-glibc&lt;glibcversion&gt;.tar.gz'.
+              Example: '7.0.0-ia64-Linux-2.4-glibc2.2.tar.gz'. See the section
+              on staging server setup for more information about how package
+              names work.</para>
+            </listitem>
+
+            <listitem>
+              <command>staging-service</command>
+
+              <para>This is the gatekeeper to use for setup (e.g.
+              jobmanager-fork). The format follows the Condor submit file
+              format for the grid_resource parameter. Only the gt2 and gt4
+              grid types are supported right now. Example: 'gt2
+              dynamic.usc.edu/jobmanager-fork'.</para>
+            </listitem>
+
+            <listitem>
+              <command>staging-service-project</command>
+
+              <para>The project to use for the staging-service. The value will
+              be used to populate the 'project' RSL attribute when submitting
+              the staging (install and uninstall) jobs for the site. Example:
+              'A123123'.</para>
+            </listitem>
+
+            <listitem>
+              <command>staging-service-queue</command>
+
+              <para>The queue to use for the staging-service. The value will
+              be used to populate the 'queue' RSL attribute when submitting
+              the staging (install and uninstall) jobs for the site. Example:
+              'dque'.</para>
+            </listitem>
+
+            <listitem>
+              <command>glidein-service</command>
+
+              <para>This is the gatekeeper to use when submitting glidein jobs
+              (e.g. jobmanager-pbs). The format is identical to the format for
+              staging-service.</para>
+            </listitem>
+
+            <listitem>
+              <command>glidein-service-project</command>
+
+              <para>The project to use for the staging-service. The value will
+              be used to populate the 'project' RSL attribute when submitting
+              the glidein jobs for the site. Example: 'A123123'.</para>
+            </listitem>
+
+            <listitem>
+              <command>glidein-service-queue</command>
+
+              <para>The queue to use for the glidein-service. The value will
+              be used to populate the 'queue' RSL attribute when submitting
+              the glidein jobs for the site. Example: 'dque'.</para>
+            </listitem>
+
+            <listitem>
+              <command>environment</command>
+
+              <para>This is the environment for both staging and glideins. Use
+              ':' to separate entries. Example: 'FOO=f:BAR=b'</para>
+            </listitem>
+          </itemizedlist></para>
+      </section>
+
+      <section>
+        <title>Creating Sites</title>
+
+        <para>The <command>glidein create-site</command> command is used to
+        create sites. See the command reference for more information.</para>
+      </section>
+
+      <section>
+        <title>Site Catalogs</title>
+
+        <para>A site catalog is a file containing information used to create
+        sites. The <command>glidein create-site</command> command accepts two
+        forms of site catalogs: INI site catalogs and XML site catalogs. INI
+        catalogs are based on the standard INI file format. XML site catalogs
+        are extensions of the Pegasus site catalog format. In addition,
+        because all <command>glidein</command> sub-commands accept the
+        <command>--argument-file</command> option you may also use an argument
+        file to specify the site parameters.</para>
+
+        <section>
+          <title>INI Site Catalog Format</title>
+
+          <para>The INI site catalog format is based on the standard INI file
+          format. Each site entry is preceded by the site name in square
+          brackets (i.e. "[site-name]"). Any parameters specified before the
+          first named entry belong to a special "global" entry. All parameters
+          defined in the global entry are used as defaults if the parameter is
+          not specified in the site entry. All lines beginning with a
+          semi-colon (';') are ignored.</para>
+
+          <para>Example: <programlisting>
+condor-version  = 7.0.0
+;condor-package = 7.0.0-ia64-Linux-2.4-glibc2.2.tar.gz
+environment     = _condor_CONDOR_ADMIN=juve@usc.edu
+
+; USC HPCC Cluster
+[usc-dynamic]
+install-path    = /home/geovault-00/juve/glidein
+local-path      = /home/geovault-00/juve/glidein/local
+staging-service = gt2 dynamic.usc.edu/jobmanager-fork
+glidein-service = gt2 dynamic.usc.edu/jobmanager-pbs
+
+; SDSC Teragrid Cluster
+[sdsc-ia64]
+install-path    = /users/gideon/glidein
+local-path      = /scratch/gideon/glidein
+staging-service = gt2 tg-login1.sdsc.teragrid.org/jobmanager-fork
+glidein-service = gt2 tg-login1.sdsc.teragrid.org/jobmanager-pbs</programlisting></para>
+        </section>
+
+        <section>
+          <title>XML Site Catalog Format</title>
+
+          <para>The XML site catalog format is based on the Pegasus site
+          catalog format. Site parameters are specified by inserting profile
+          tags into the site entry. The namespace for all glidein site
+          parameters is 'pegasus' and the key name is the name of the site
+          parameter prepended with 'glidein.'. For example, the site-name
+          parameter has a key of 'glidein.site-name'.</para>
+
+          <para>Example:<programlisting>&lt;sitecatalog xmlns="http://pegasus.isi.edu/schema/sitecatalog" version="2.0"
+   xsi:schemaLocation="http://pegasus.isi.edu/schema/sitecatalog http://pegasus.isi.edu/schema/sc-2.0.xsd"&gt;
+
+   &lt;site handle="ncsa-mercury" 
+      gridlaunch="/gpfs_scratch1/nopurge/SCEC/CyberShake2007/pegasus/pegasus-2.1.0-20070813/bin/kickstart" 
+      sysinfo="INTEL32::LINUX"&gt;
+
+      &lt;profile namespace="env" key="GLOBUS_LOCATION"&gt;/usr/projects/Pegasus/SOFTWARE/globus/default/&lt;/profile&gt;
+      &lt;profile namespace="env" key="LD_LIBRARY_PATH"&gt;/usr/projects/Pegasus/SOFTWARE/globus/default/lib&lt;/profile&gt;
+      &lt;!-- profile namespace="env" key="PEGASUS_HOME"&gt;/usr/projects/Pegasus/SOFTWARE/pegasus/default&lt;/profile --&gt;
+      &lt;profile namespace="env" key="PEGASUS_HOME"&gt;/gpfs_scratch1/nopurge/SCEC/CyberShake2007/pegasus/pegasus-2.1.0-20070813&lt;/profile&gt;
+      &lt;profile namespace="condor" key="universe"&gt;vanilla&lt;/profile&gt;
+      &lt;profile namespace="condor" key="requirements"&gt;(FileSystemDomain=="ncsa.teragrid.org")&amp;amp;&amp;amp;(Arch=="IA64")&lt;/profile&gt;
+      &lt;profile namespace="pegasus" key="style"&gt;glidein&lt;/profile&gt;
+
+      &lt;profile namespace="pegasus" key="glidein.install-path"&gt;/home/ac/juve/glidein&lt;/profile&gt;
+      &lt;profile namespace="pegasus" key="glidein.local-path"&gt;/gpfs_scratch1/juve/glidein&lt;/profile&gt;
+      &lt;profile namespace="pegasus" key="glidein.condor-version"&gt;7.0.0&lt;/profile&gt;
+      &lt;!-- &lt;profile namespace="pegasus" key="glidein.condor-package"&gt;7.0.0-ia64-Linux-2.4-glibc2.2.tar.gz&lt;/profile&gt; --&gt;
+      &lt;profile namespace="pegasus" key="glidein.staging-service"&gt;gt2 grid-hg.ncsa.teragrid.org/jobmanager-fork&lt;/profile&gt;
+      &lt;profile namespace="pegasus" key="glidein.glidein-service"&gt;gt2 grid-hg.ncsa.teragrid.org/jobmanager-pbs&lt;/profile&gt;
+      &lt;profile namespace="pegasus" key="glidein.glidein-service-project"&gt;nqi&lt;/profile&gt;
+      &lt;profile namespace="pegasus" key="glidein.glidein-service-queue"&gt;dque&lt;/profile&gt;
+      &lt;profile namespace="pegasus" key="glidein.environment"&gt;_condor_CONDOR_ADMIN=juve@usc.edu&lt;/profile&gt;
+
+      &lt;lrc url="rls://intensity.usc.edu"/&gt;
+
+      &lt;gridftp url="gsiftp://gridftp-hg.ncsa.teragrid.org" storage="/gpfs_scratch1/tera3d/CyberShake2007/storage" major="2" minor="4" patch="3"/&gt;
+
+      &lt;jobmanager universe="vanilla" url="grid-hg.ncsa.teragrid.org/jobmanager-pbs" major="2" minor="4" patch="3"/&gt;
+      &lt;jobmanager universe="transfer" url="grid-hg.ncsa.teragrid.org/jobmanager-fork" major="2" minor="4" patch="3"/&gt;
+
+      &lt;workdirectory&gt;/gpfs_scratch1/tera3d/CyberShake2007/execdir&lt;/workdirectory&gt;
+   &lt;/site&gt;
+
+&lt;/sitecatalog&gt;</programlisting></para>
+        </section>
+
+        <section>
+          <title>Using an Argument File</title>
+
+          <para>Example:<programlisting>--site-name ncsa-mercury
+--condor-version 7.0.0
+#--condor-package 7.0.0-ia64-Linux-2.4-glibc2.2.tar.gz
+--environment _condor_CONDOR_ADMIN=juve@usc.edu
+--install-path /home/ac/juve/glidein
+--local-path /gpfs_scratch1/juve/glidein
+--staging-service 'gt2 grid-hg.ncsa.teragrid.org/jobmanager-fork'
+--glidein-service 'gt2 grid-hg.ncsa.teragrid.org/jobmanager-pbs'
+--glidein-service-project nqi
+--glidein-service-queue dque
+--verbose</programlisting></para>
+        </section>
+      </section>
     </section>
+
     <section>
-      <title>The glidein command</title>
-      <para></para>
+      <title>Glideins</title>
+
+      <section>
+        <title>Glidein Parameters</title>
+
+        <para><itemizedlist>
+            <listitem>
+              <command>id</command>
+
+              <para>The ID number of this glidein.</para>
+            </listitem>
+
+            <listitem>
+              <command>state</command>
+
+              <para>The current state of the glidein.</para>
+            </listitem>
+
+            <listitem>
+              <command>short-message</command>
+
+              <para>A short status message. This message will contain summary
+              information about the current state of the glidein.</para>
+            </listitem>
+
+            <listitem>
+              <command>long-message</command>
+
+              <para>A long status message. This message will contain detailed
+              information about errors including stack traces and the output
+              of failed commands.</para>
+            </listitem>
+
+            <listitem>
+              <command>created</command>
+
+              <para>The date and time when the glidein was created.</para>
+            </listitem>
+
+            <listitem>
+              <command>last-update</command>
+
+              <para>The date and time when the glidein was last
+              updated.</para>
+            </listitem>
+
+            <listitem>
+              <command>subject</command>
+
+              <para>The DN of the owner of the glidein. The value comes from
+              the user's proxy.</para>
+            </listitem>
+
+            <listitem>
+              <command>local-username</command>
+
+              <para>The local username of the owner of the glidein. All Condor
+              jobs submitted by the service will be owned by this user. The
+              value comes from the grid-mapfile.</para>
+            </listitem>
+
+            <listitem>
+              <command>site</command>
+
+              <para>The site ID for this glidein.</para>
+            </listitem>
+
+            <listitem>
+              <command>site-name</command>
+
+              <para>The name of the site.</para>
+            </listitem>
+
+            <listitem>
+              <command>condor-host</command>
+
+              <para>The Condor central manager host that this glidein reports
+              to.</para>
+            </listitem>
+
+            <listitem>
+              <command>count</command>
+
+              <para>The number of processes created by this glidein across all
+              hosts.</para>
+            </listitem>
+
+            <listitem>
+              <command>host-count</command>
+
+              <para>The number of hosts provided by this glidein.</para>
+            </listitem>
+
+            <listitem>
+              <command>wall-time</command>
+
+              <para>The runtime of this glidein in minutes.</para>
+            </listitem>
+
+            <listitem>
+              <command>num-cpus</command>
+
+              <para>The number of CPUs to report per host. This sets the
+              NUM_CPUS ClassAd for condor_startd.</para>
+            </listitem>
+
+            <listitem>
+              <command>condor-config</command>
+
+              <para>An optional, custom condor configuration file for this
+              glidein.</para>
+            </listitem>
+
+            <listitem>
+              <command>gcb-broker</command>
+
+              <para>The IP address of the GCB broker for this glidein. GCB
+              enables glideins to work through firewalls by enabling reverse
+              connections.</para>
+            </listitem>
+
+            <listitem>
+              <command>idle-time</command>
+
+              <para>The maximum amount of time in minutes that this glidein
+              will run without being matched to a job. If the idle time passes
+              and the glidein is never matched to a job then it will
+              exit.</para>
+            </listitem>
+
+            <listitem>
+              <command>condor-debug</command>
+
+              <para>A comma-separated list of condor daemon debugging flags
+              (e.g. 'D_MACHINE,D_JOB').</para>
+            </listitem>
+
+            <listitem>
+              <command>resubmit</command>
+
+              <para>Should the glidein service resubmit this job when it
+              terminates? If true, then the glidein service will resubmit this
+              job when it terminates. By default it will resubmit the glidein
+              indefinitely, until either the proxy expires, the user removes
+              the glidein manually, or a failure occurs. Optionally, the user
+              can specify the number of resubmits that should be attempted, or
+              a date after which resubmission should stop.</para>
+            </listitem>
+
+            <listitem>
+              <command>resubmits</command>
+
+              <para>If the glidein service should resubmit this glidein, this
+              value specifies the number of times it is resubmitted. The total
+              number of submits, then, is equal to this value plus 1.</para>
+            </listitem>
+
+            <listitem>
+              <command>until</command>
+
+              <para>If the glidein service should resubmit this glidein, this
+              value specifies the date after which resubmission should
+              stop.</para>
+            </listitem>
+
+            <listitem>
+              <command>submits</command>
+
+              <para>The total number of times this glidein has been submitted.
+              This is used to keep track of resubmitted jobs.</para>
+            </listitem>
+
+            <listitem>
+              <command>rsl</command>
+
+              <para>The Globus RSL (GT2) or XML (GT4) to use for this glidein.
+              This parameter will override any values specified for count,
+              host-count, wall-time and any project or queue specified for the
+              site's glidein execution service. You should include
+              "(jobtype=multiple)" if you specify this parameter. Also be
+              aware that the output of the list-glidein command won't
+              accurately reflect the parameters for the job as the output of
+              that command is based on the values of the regular
+              parameters.</para>
+            </listitem>
+          </itemizedlist></para>
+      </section>
+
+      <section>
+        <title>Creating Glideins</title>
+
+        <para>The <command>glidein create-glidein</command> command can be
+        used to create glideins. See the command reference for more
+        information.</para>
+      </section>
+    </section>
+
+    <section>
+      <title>Command Reference</title>
+
+      <para>All the functions of the glidein service can be accessed via the
+      <command>glidein</command> command. This command has several
+      sub-commands that allow you to perform various operations on sites and
+      glideins. These sub-commands include: <itemizedlist>
+          <listitem>
+             
+
+            <command>help</command>
+
+             : Display a help message for one of the sub-commands. 
+          </listitem>
+
+          <listitem>
+             
+
+            <command>create-site</command>
+
+             : Create a new site and stage executables. 
+          </listitem>
+
+          <listitem>
+             
+
+            <command>list-site</command>
+
+             : Display all sites that are currently available. 
+          </listitem>
+
+          <listitem>
+             
+
+            <command>remove-site</command>
+
+             : Remove a site from the remote system and delete it from the database. 
+          </listitem>
+
+          <listitem>
+             
+
+            <command>site-history</command>
+
+             : Show site state change history. 
+          </listitem>
+
+          <listitem>
+             
+
+            <command>create-glidein</command>
+
+             : Create and submit a new glidein. 
+          </listitem>
+
+          <listitem>
+             
+
+            <command>list-glidein</command>
+
+             : Show all glideins that are currently active. 
+          </listitem>
+
+          <listitem>
+             
+
+            <command>remove-glidein</command>
+
+             : Cancel a glidein job and delete it from the datbase. 
+          </listitem>
+
+          <listitem>
+             
+
+            <command>glidein-history</command>
+
+             : Show glidein state change history. 
+          </listitem>
+        </itemizedlist></para>
+
+      <para>The following sections explain how to use the
+      <command>glidein</command> command in more detail.</para>
+
+      <section>
+        <title>Common command-line options</title>
+
+        <para>The following options are common to all sub-commands of the
+        <command>glidein</command> command except for
+        <command>help</command>:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><command>-h [--host] &lt;host|ip&gt;</command></para>
+
+            <para>The host where the Globus container is running. The default
+            value is the FQDN of the local host.</para>
+          </listitem>
+
+          <listitem>
+            <para><command>-p [--port] &lt;port&gt;</command></para>
+
+            <para>The port that the Globus container is listening on. The
+            default value is 8443 for transport security or 8080 if another
+            security mechanism is used.</para>
+          </listitem>
+
+          <listitem>
+            <para><command>-d [--debug]</command></para>
+
+            <para>Enable verbose client debugging messages.</para>
+          </listitem>
+
+          <listitem>
+            <para><command>-sec [--security] &lt;mode&gt;</command></para>
+
+            <para>Sets the client security mode. The value is one of: 'msg'
+            for GSI Secure Message, 'conv' for GSI Secure Conversation,
+            'trans' for transport security (https), or 'none' for no security.
+            The default value is 'trans'.</para>
+          </listitem>
+
+          <listitem>
+            <para><command>-P [--protection] &lt;type&gt;</command></para>
+
+            <para>Sets the client security protection type. The value is one
+            of 'sig' for signature, or 'enc' for encryption. The default value
+            is 'sig'. This only applies if GSI Secure Message or GSI Secure
+            Conversation is used as the security mode.</para>
+          </listitem>
+
+          <listitem>
+            <para><command>-authz [--authorization]
+            &lt;mode&gt;</command></para>
+
+            <para>Sets the client authorization mode. The value is one of:
+            'host' for host authorization, 'self' for self authorization,
+            'none' for no authorization, or a distinguished name that should
+            match the credentials of the server. The default value is
+            'host'.</para>
+          </listitem>
+
+          <listitem>
+            <para><command>-anon [--anonymous]</command></para>
+
+            <para>Enable anonymous authentication. The default is disabled.
+            Please note that the glidein service will only accept anonymous
+            clients for certain operations (e.g. list-site, and
+            list-glidein).</para>
+          </listitem>
+
+          <listitem>
+            <para><command>-af [--argument-file] &lt;file&gt;</command></para>
+
+            <para>The name of a file containing command-line arguments. The
+            format of the file is the same as regular command-line arguments
+            except carriage returns are allowed without being escaped, and
+            lines beginning with # are ignored.</para>
+
+            <para>Example: <programlisting>-authz none
+-anon
+--security trans
+--host host.example.com
+--port 8443
+#--debug</programlisting></para>
+          </listitem>
+        </itemizedlist>
+      </section>
+
+      <section>
+        <title>help (h)</title>
+
+        <para>Display a help message for one or more of the glidein command's
+        sub-commands.</para>
+
+        <section>
+          <title>Usage</title>
+
+          <para><command>glidein help SUBCOMMAND...</command></para>
+        </section>
+
+        <section>
+          <title>Options</title>
+
+          <para>No options</para>
+        </section>
+      </section>
+
+      <section>
+        <title>list-site (ls)</title>
+
+        <para>Show current sites.</para>
+
+        <section>
+          <title>Usage</title>
+
+          <para><command>glidein list-site [SITE...]</command></para>
+        </section>
+
+        <section>
+          <title>Options</title>
+
+          <itemizedlist>
+            <listitem>
+              <para><command>-l [--long]</command></para>
+
+              <para>Show detailed site information.</para>
+            </listitem>
+          </itemizedlist>
+        </section>
+      </section>
+
+      <section>
+        <title>create-site (cs)</title>
+
+        <para>This command creates a new site and submits an installation job
+        to the remote site.</para>
+
+        <section>
+          <title>Usage</title>
+
+          <para><command>create-site [options] [--catalog-format
+          &lt;format&gt;] --catalog-file &lt;file&gt; --site-name
+          &lt;name&gt;</command></para>
+
+          <para><command>create-site [options] --site-name &lt;name&gt;
+          --install-path &lt;path&gt; --local-path &lt;path&gt;
+          --staging-service &lt;service&gt; [--staging-service-project
+          &lt;proj&gt;] [--staging-service-queue &lt;queue&gt;]
+          --glidein-service &lt;service&gt; [--glidein-service-project
+          &lt;proj&gt;] [--glidein-service-queue &lt;queue&gt;]
+          [--condor-version &lt;version&gt; | --condor-package &lt;pkg&gt;]
+          [--environment &lt;env&gt;]</command></para>
+        </section>
+
+        <section>
+          <title>Options</title>
+
+          <itemizedlist>
+            <listitem>
+              <para><command>-c [--catalog-file] &lt;file&gt;</command></para>
+
+              <para>The catalog file containing sites.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-f [--catalog-format]
+              &lt;format&gt;</command></para>
+
+              <para>The format of the specified. site catalog. The value is
+              one of: 'ini', or 'xml'. The default value is determined by
+              filename extension. A format of 'ini' indicates an INI catalog,
+              and a format of 'xml' indicates a Pegasus site catalog (version
+              2.0 or 3.0). See Site Catalogs in the User's Manual for more
+              information.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-n [--site-name] &lt;name&gt;</command></para>
+
+              <para>The name of the site to create. If a site catalog is
+              specified, then the named site is read from the catalog.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-C [--credential] &lt;file&gt;</command></para>
+
+              <para>The user's credential as a proxy file. If not specified
+              the Globus default is used.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-v [--verbose]</command></para>
+
+              <para>Show details about the new site</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-ip [--install-path]
+              &lt;path&gt;</command></para>
+
+              <para>This is the remote path where executables are installed.
+              See also: Site Parameters.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-lp [--local-path] &lt;path&gt;</command></para>
+
+              <para>This is the remote path where log files, etc. are placed
+              (i.e. local scratch). See also: Site Parameters.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-ss [--staging-service]
+              &lt;service&gt;</command></para>
+
+              <para>This is the gatekeeper to use for setup (i.e. fork). The
+              format of the value follows the condor format for grid_resource.
+              Only the gt2 and gt4 grid types are supported right now. (e.x.
+              'gt2 dynamic.usc.edu/jobmanager-fork'). See also: Site
+              Parameters.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-ssp [--staging-service-project]
+              &lt;proj&gt;</command></para>
+
+              <para>The project to use for the staging service. The value for
+              this option is placed in the 'project' RSL attribute when the
+              job is submitted. See also: Site Parameters.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-ssq [--staging-service-queue]
+              &lt;queue&gt;</command></para>
+
+              <para>The queue to use for the staging service. The value for
+              this option is placed in the 'queue' RSL attribute when the job
+              is submitted. See also: Site Parameters.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-gs [--glidein-service]
+              &lt;svc&gt;</command></para>
+
+              <para>This is the gatekeeper to use for glideins (i.e. pbs). The
+              format of the value is identical to the staging service format.
+              See also: Site Parameters.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-gsp [--glidein-service-project]
+              &lt;proj&gt;</command></para>
+
+              <para>The project to use for the glidein service. The value for
+              this option is placed in the 'project' RSL attribute when the
+              job is submitted. The value can be overridden by specifying the
+              -rsl argument to create-glidein. See also: Site
+              Parameters.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-gsq [--glidein-service-queue]
+              &lt;queue&gt;</command></para>
+
+              <para>The queue to use for the glidein service. The value for
+              this option is placed in the 'queue' RSL attribute when the job
+              is submitted. The value can be overridden by specifying the -rsl
+              argument to create-glidein. See also: Site Parameters.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-cv [--condor-version]
+              &lt;ver&gt;</command></para>
+
+              <para>The version of Condor to setup on the remote site. (e.x
+              '7.0.0'). See also: Site Parameters.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-cp [--condor-package]
+              &lt;pkg&gt;</command></para>
+
+              <para>The package name to download. This overrides
+              condor-version. I don't recommend using condor-package unless
+              you know what you are doing. The default format for the package
+              name is:
+              '&lt;condorversion&gt;-&lt;arch&gt;-&lt;os&gt;-&lt;osversion&gt;-glibc&lt;glibcversion&gt;.tar.gz'.
+              (e.x. '7.0.0-ia64-Linux-2.4-glibc2.2.tar.gz'). See also: Site
+              Parameters.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-e [--environment] &lt;env&gt;</command></para>
+
+              <para>This is the environment for both staging jobs (install and
+              uninstall) and glideins. Use ':' to separate entries. (e.x.
+              'FOO=f:BAR=b'). See also: Site Parameters.</para>
+            </listitem>
+          </itemizedlist>
+        </section>
+      </section>
+
+      <section>
+        <title>remove-site (rs)</title>
+
+        <para>Remove an existing site.</para>
+
+        <section>
+          <title>Usage</title>
+
+          <para><command>glidein remove-site SITE...</command></para>
+        </section>
+
+        <section>
+          <title>Options</title>
+
+          <itemizedlist>
+            <listitem>
+              <para><command>-f [--force]</command></para>
+
+              <para>Force the site to be deleted regardless of state. This
+              argument causes the service to simply remove the site from its
+              persistent storage. No attempt is made to uninstall Condor
+              executables from the remote site or cancel any currently running
+              staging jobs or glideins.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-C [--credential] &lt;file&gt;</command></para>
+
+              <para>The user's credential as a proxy file. If not specified
+              the Globus default is used.</para>
+            </listitem>
+          </itemizedlist>
+        </section>
+      </section>
+
+      <section>
+        <title>site-history (sh)</title>
+
+        <para>This command displays a list of state changes that have occurred
+        for the given site(s). If no site is specified, then the history for
+        all sites will be returned.</para>
+
+        <section>
+          <title>Usage</title>
+
+          <para><command>glidein site-history [SITE...]</command></para>
+        </section>
+
+        <section>
+          <title>Options</title>
+
+          <para>No options</para>
+        </section>
+      </section>
+
+      <section>
+        <title>list-glidein (lg)</title>
+
+        <para>This command displays information about existing glideins. If no
+        glidein is specified then all glideins will be displayed.</para>
+
+        <section>
+          <title>Usage</title>
+
+          <para><command>glidein list-glidein [GLIDEIN...]</command></para>
+        </section>
+
+        <section>
+          <title>Options</title>
+
+          <itemizedlist>
+            <listitem>
+              <para><command>-l [--long]</command></para>
+
+              <para>Show detailed glidein information.</para>
+            </listitem>
+          </itemizedlist>
+        </section>
+      </section>
+
+      <section>
+        <title>create-glidein (cg)</title>
+
+        <para>This command creates a new glidein and submits it to the remote
+        site.</para>
+
+        <section>
+          <title>Usage</title>
+
+          <para><command>glidein create-glidein --site
+          &lt;site&gt;</command></para>
+        </section>
+
+        <section>
+          <title>Options</title>
+
+          <itemizedlist>
+            <listitem>
+              <para><command>-s [--site] &lt;id&gt;</command></para>
+
+              <para>Site to submit glidein to</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-c [--count] &lt;n&gt;</command></para>
+
+              <para>Total number of processes across all hosts (default: =
+              host-count).</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-hc [--host-count] &lt;n&gt;</command></para>
+
+              <para>Number of hosts (default: 1).</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-w [--wall-time] &lt;t&gt;</command></para>
+
+              <para>Wall time for job in minutes (default: 60, min: 2, max:
+              site-specific).</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-i [--idle-time] &lt;t&gt;</command></para>
+
+              <para>Glidein max idle time in minutes (default: =
+              wall-time).</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-n [--num-cpus] &lt;n&gt;</command></para>
+
+              <para>Number of CPUs for condor to advertise for each process.
+              This sets the NUM_CPUS Condor configuration parameter.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-ch [--condor-host]
+              &lt;name:port&gt;</command></para>
+
+              <para>Condor central manager to report to (default: local
+              host).</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-cd [--condor-debug] &lt;ops&gt;</command></para>
+
+              <para>Comma-separated list of Condor daemon debugging options
+              (e.x. 'D_JOB,D_MACHINE').</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-b [--gcb-broker] &lt;ip&gt;</command></para>
+
+              <para>GCB Broker IP address.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-cc [--condor-config]
+              &lt;file&gt;</command></para>
+
+              <para>Condor config file for glidein (default: provided by
+              service).</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-C [--credential] &lt;file&gt;</command></para>
+
+              <para>The user's proxy credential. If not specified the Globus
+              default is used.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-r [--resubmit] [number|date]</command></para>
+
+              <para>Resubmit the glidein when it expires. The glidein will be
+              resubmitted indefinitely until the user removes it. The optional
+              argument allows the user to specify either the maximum number of
+              times to resubmit the glidein, or a date, in 'YYYY-MM-DD
+              HH24:MM:SS' format, when to stop resubmitting the glidein. Dates
+              must be quoted on the command-line and are assumed to be
+              relative to the client's time zone. By default the service will
+              keep resubmitting the glidein until the user's certificate
+              expires, or the glidein fails.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-v [--verbose]</command></para>
+
+              <para>Show details about the new glidein.</para>
+            </listitem>
+
+            <listitem>
+              <para><command>-rsl [--globus-rsl]</command></para>
+
+              <para>The Globus RSL (GT2) or XML (GT4) to use for this job.
+              This parameter will override any values specified for count,
+              host-count, wall-time and any project or queue specified for the
+              site's glidein execution service. You should include
+              (jobType=multiple) if you specify this parameter. Also be aware
+              that the output of the list-glidein command won't accurately
+              reflect the parameters for the job as the output of that command
+              is based on the values of the regular parameters.</para>
+            </listitem>
+          </itemizedlist>
+        </section>
+      </section>
+
+      <section>
+        <title>remove-glidein (rg)</title>
+
+        <para>This command cancels any jobs submitted for the glidein and
+        removes it from the database.</para>
+
+        <section>
+          <title>Usage</title>
+
+          <para><command>glidein remove-glidein GLIDEIN...</command></para>
+        </section>
+
+        <section>
+          <title>Options</title>
+
+          <itemizedlist>
+            <listitem>
+              <para><command>-f [--force]</command></para>
+
+              <para>Force the glidein to be deleted from the database without
+              cancelling the job.</para>
+            </listitem>
+          </itemizedlist>
+        </section>
+      </section>
+
+      <section>
+        <title>glidein-history (gh)</title>
+
+        <para>This command displays the state change history of one or more
+        glideins.</para>
+
+        <section>
+          <title>Usage</title>
+
+          <para><command>glidein glidein-history [GLIDEIN...]</command></para>
+        </section>
+
+        <section>
+          <title>Options</title>
+
+          <para>No options.</para>
+        </section>
+      </section>
+    </section>
+
+    <section>
+      <title>API Reference</title>
+
+      <para>TBD</para>
     </section>
   </chapter>
-  
+
   <chapter>
     <title>Administrator's Manual</title>
+
     <section>
-      <title>Introduction</title>
-      <para></para>
+      <title>Dependencies</title>
+
+      <para>Required components: <itemizedlist>
+          <listitem>
+            <para>Java 1.5 or later</para>
+          </listitem>
+
+          <listitem>
+            <para>Ant 1.6 or later</para>
+          </listitem>
+
+          <listitem>
+            <para>Globus Toolkit version 4 or later</para>
+          </listitem>
+
+          <listitem>
+            <para>Condor version 6.8 or later</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <para>Optional components:<itemizedlist>
+          <listitem>
+            <para>MySQL 5 or later</para>
+          </listitem>
+        </itemizedlist></para>
     </section>
+
     <section>
-      <title>Installation</title>
-      <para></para>
+      <title>Database Setup</title>
+
+      <para>The glidein service requires a database to store information about
+      sites and glideins. The service supports both SQLite and MySQL databases
+      for this purpose.</para>
+
+      <para>SQLite is the default and requires no setup beyond installing the
+      Globus Toolkit and the service itself. SQLite should be sufficient for
+      most installations.</para>
+
+      <para>If you want to use MySQL then you need to do the following things:
+      <orderedlist>
+          <listitem>
+            <para>Install MySQL version 5 or later by following the
+            documentation for your operating system. There are plenty of
+            tutorials on how to do this on the internet.</para>
+          </listitem>
+
+          <listitem>
+            <para>Create a new database for the glidein service. I call my
+            database 'glidein', but you can call it anything you like, just
+            make sure you use the right name when you construct the JDBC URL
+            for the service's database configuration later. Using the MySQL
+            command-line tool you can do it like this (logging in as
+            root):<programlisting>[juve@juve ~]$ mysql -u root -p
+Enter password: 
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 5
+Server version: 5.0.51a MySQL Community Server (GPL)
+
+Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
+
+mysql&gt; create database glidein;
+Query OK, 1 row affected (0.00 sec)
+
+mysql&gt; </programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>After you have created a database, create a new user and
+            grant them full access to the database. Again, logged in as root
+            using the mysql command-line client you can do it like this:
+            <programlisting>mysql&gt; grant all on glidein.* to scott@localhost identified by 'tiger';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql&gt; </programlisting>The above creates a user who can log in from the
+            local host and create, read, write, update anything in the glidein
+            database. The user name is 'scott' and the password is 'tiger'.
+            Please use a user name and password of your own choosing.</para>
+          </listitem>
+
+          <listitem>
+            <para>Finally, after you have installed the glidein service you
+            will need to edit the database configuration in the service's
+            jndi-config.xml. Please refer to the section on database
+            configuration in Service Installation and Configuration for more
+            information on how to do this.</para>
+          </listitem>
+        </orderedlist></para>
     </section>
+
     <section>
-      <title>Configuration</title>
-      <para></para>
+      <title>Condor Setup</title>
+
+      <para>The glidein service uses Condor-G to submit all staging and
+      glidein jobs to the remote site. The server running the Globus container
+      should have access to a Condor submit host and all users of the service
+      should be able to submit Condor jobs from the server.</para>
+
+      <para>Please install Condor according to the documentation for your
+      system. The installation process is well-documented on the Condor
+      website: http://cs.wisc.edu/condor.</para>
+    </section>
+
+    <section>
+      <title>Staging Server Setup</title>
+
+      <para>The glidein service uses staging servers to host Condor binaries.
+      These binaries are downloaded from the server during site creation and
+      installed on the remote host in a shared filesystem. In order for the
+      service to function you will need to either provide your own staging
+      server, or use one of the existing staging servers provided by the
+      Condor Team.</para>
+
+      <para>The service uses the globus-url-copy command-line tool to
+      communicate with the staging servers. As such, staging servers can be
+      accessed via any protocol that globus-url-copy supports. This includes:
+      HTTP(S), FTP and GridFTP (gsiftp). Please note that if you use HTTPS or
+      GridFTP, globus-url-copy will use the proxy certificate used to submit
+      the job to communicate with the staging server.</para>
+
+      <para>The service downloads .tar.gz bundles from the staging server
+      called Condor packages. The name of the package can be specified
+      manually when creating the site, or determined at runtime by the
+      service. If the package name is determined automatically, it will follow
+      a standard naming convention. The format for automatically generated
+      package names is:
+      '&lt;version&gt;-&lt;arch&gt;-&lt;os&gt;-&lt;osversion&gt;-glibc&lt;glibcversion&gt;.tar.gz',
+      where &lt;version&gt; is the version of Condor being requested,
+      &lt;arch&gt; is the architecture (one of 'x86', 'x86_64', 'ia64',
+      'PA-RISC', 'ppc', or 'ppc64'), &lt;os&gt; is the operating system (one
+      of 'Linux', 'FreeBSD', 'AIX', 'MacOSX', or 'Solaris'), &lt;osversion&gt;
+      is the version of the operating system (the major and minor number of
+      the Linux kernel for Linux, '10.*' for Mac OS X, etc) and
+      &lt;glibcversion&gt; is the major and minor version of glibc. For more
+      information about how the package name is derived look at the
+      glidein_install script in GLOBUS_LOCATION/share/glidein_service after
+      you have installed the service. Please note that this naming convention
+      does not match the convention used by the Condor Team, so package names
+      may not match up with their staging servers. In that case the user can
+      specify a custom package name when creating a site that does match one
+      of the Condor package names.</para>
+
+      <para>Once the package name is determined, the glidein service accesses
+      a list of URL prefixes in order to try and find a staging server that
+      has the required package. It does this by appending the package name to
+      the URL prefix. For example, if the package name is
+      '7.0.0-x86-Linux-2.4-glibc2.3.tar.gz' and the URL prefix is
+      'gsiftp://example.com' then the package URL will be
+      'gsiftp://example.com/7.0.0-x86-Linux-2.4-glibc2.3.tar.gz'. The service
+      will attempt to access this URL to retrieve the package. If the URL
+      returns an error, then the service will construct another package URL
+      using the next URL prefix until all URL prefixes have been tried. The
+      list of URL prefixes is set in the jndi-config.xml file. See the section
+      on Service Installation and Configuration for more information on how to
+      specify the list of URL prefixes.</para>
+
+      <para>If you need to create a custom package for one of your sites, you
+      can easily do this by creating an appropriately named .tar.gz file that
+      contains the following Condor daemons: condor_master, condor_startd,
+      condor_starter, and condor_starter.std. These daemons can be found in
+      the sbin directory of any Condor installation. The .tar.gz file should
+      have a flat directory structure (i.e. when you unzip it it shouldn't
+      create any directories).</para>
+    </section>
+
+    <section>
+      <title>Globus Setup</title>
+
+      <para>The service requires a properly configured globus container with
+      the Globus Delegation Service. See the Globus Toolkit documentation for
+      more information on how to install this.</para>
+    </section>
+
+    <section>
+      <title>Service Installation and Configuration</title>
+
+      <section>
+        <title>Deploying the Service</title>
+
+        <para>The service is deployed by downloading the service source and
+        running an ant script. You can get the source from the website or from
+        the Subversion repository. After you download and unzip/untar the
+        source run <command>ant deploy</command> from the top-level source
+        directory (the one with build.xml). Make sure GLOBUS_LOCATION is set
+        to the path where you want to install the service (i.e. the location
+        of the Globus container you want to use for the service), and that the
+        user has write permissions to that directory.</para>
+
+        <para>You should see the ant script generate some stubs, compile
+        everything and deploy the service. If you get an error, see the
+        troubleshooting section of this manual.</para>
+
+        <para>If you want to remove the service you can do it by running
+        <command>ant undeploy</command> or by running
+        <command>globus-undeploy-gar glidein_service</command>. Please note
+        that if you undeploy the service or redeploy the service it will
+        delete or overwrite the service's configuration files.</para>
+
+        <para>All of the service's configuration parameters are specified by
+        editing the service's jndi-config.xml file. This file is located in
+        $GLOBUS_LOCATION/etc/glidein_service.</para>
+      </section>
+
+      <section>
+        <title>Database Configuration</title>
+
+        <para>The service currently supports two persistence mechanisms:
+        SQLite and MySQL. The database configuration is specified by defining
+        a global resource named "glidein/Database" in the service's
+        jndi-config.xml. The default jndi-config.xml is configured to use
+        SQLite. This should be sufficient for most users.</para>
+
+        <section>
+          <title>MySQL Configuration</title>
+
+          <para>An example MySQL resource configuration looks like
+          this:<programlisting>&lt;resource name="glidein/Database" type="edu.usc.glidein.db.mysql.MySQLDatabase"&gt;
+    &lt;resourceParams&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;factory&lt;/name&gt;
+            &lt;value&gt;org.globus.wsrf.jndi.BeanFactory&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;url&lt;/name&gt;
+            &lt;value&gt;jdbc:mysql://localhost:3306/glidein&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;user&lt;/name&gt;
+            &lt;value&gt;scott&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;password&lt;/name&gt;
+            &lt;value&gt;tiger&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;autoInstall&lt;/name&gt;
+            &lt;value&gt;true&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;schemaFile&lt;/name&gt;
+            &lt;value&gt;share/schema/glidein/mysql.sql&lt;/value&gt;
+        &lt;/parameter&gt;
+    &lt;/resourceParams&gt;
+&lt;/resource&gt;</programlisting></para>
+
+          <para>The parameters for the MySQL resource are: <itemizedlist>
+              <listitem>
+                <command>factory</command>
+
+                <para>The object factory to use for this resource. This value
+                for this parameter should be set to
+                org.globus.wsrf.jndi.BeanFactory.</para>
+              </listitem>
+
+              <listitem>
+                <command>url</command>
+
+                <para>The MySQL JDBC database URL. Example:
+                "jdbc:mysql://localhost:3306/glidein". The part on the end
+                after the last forward slash is the name of the database you
+                are using for the service. This database should be created
+                before you install the glidein service and start the
+                container. See the section on Database Configuration for more
+                information on how to do this.</para>
+              </listitem>
+
+              <listitem>
+                <command>user</command>
+
+                <para>The MySQL user that has read/write access to the
+                database.</para>
+              </listitem>
+
+              <listitem>
+                <command>password</command>
+
+                <para>The MySQL user's password.</para>
+              </listitem>
+
+              <listitem>
+                <command>autoInstall</command>
+
+                <para>Should we allow the database to install itself
+                automatically? The value is either 'true' or 'false'. If
+                'true', the service will create all the tables it needs
+                automatically. Note: It will not create the database or the
+                user automatically, those must be set up before starting the
+                service. See the section on Database Configuration for more
+                information on how to do this.</para>
+              </listitem>
+
+              <listitem>
+                <command>schemaFile</command>
+
+                <para>If <command>autoInstall</command> is set to 'true' this
+                is the database script that it will use to create the tables.
+                The default value set when the service is installed should
+                work for most people. If you are using an older version of
+                MySQL you may need to specify your own script or modify this
+                script. This path is relative to GLOBUS_LOCATION.</para>
+              </listitem>
+            </itemizedlist></para>
+        </section>
+
+        <section>
+          <title>SQLite Configuration</title>
+
+          <para>An example SQLite configuration looks like this:</para>
+
+          <para><programlisting>&lt;resource name="glidein/Database" type="edu.usc.glidein.db.sqlite.SQLiteDatabase"&gt;
+    &lt;resourceParams&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;factory&lt;/name&gt;
+            &lt;value&gt;org.globus.wsrf.jndi.BeanFactory&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;databaseFile&lt;/name&gt;
+            &lt;value&gt;var/glidein_service/glidein.db&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;autoInstall&lt;/name&gt;
+            &lt;value&gt;true&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;schemaFile&lt;/name&gt;
+            &lt;value&gt;share/schema/glidein/sqlite.sql&lt;/value&gt;
+        &lt;/parameter&gt;
+    &lt;/resourceParams&gt;
+&lt;/resource&gt;</programlisting></para>
+
+          <para>The parameters for the SQLite resource are: <itemizedlist>
+              <listitem>
+                <command>factory</command>
+
+                <para>The object factory to use for this resource. This value
+                for this parameter should be set to
+                org.globus.wsrf.jndi.BeanFactory.</para>
+              </listitem>
+
+              <listitem>
+                <command>databaseFile</command>
+
+                <para>Path to the SQLite database file. This path is relative
+                to GLOBUS_LOCATION.</para>
+              </listitem>
+
+              <listitem>
+                <command>autoInstall</command>
+
+                <para>Should we allow the database to install itself
+                automatically? The value is either 'true' or 'false'. If
+                'true', the service will create the database file and all the
+                tables it needs automatically.</para>
+              </listitem>
+
+              <listitem>
+                <command>schemaFile</command>
+
+                <para>If <command>autoInstall</command> is set to 'true' this
+                is the database script that it will use to create the tables.
+                The default file should be OK. This path is relative to
+                GLOBUS_LOCATION.</para>
+              </listitem>
+            </itemizedlist></para>
+        </section>
+      </section>
+
+      <section>
+        <title>Condor Configuraion</title>
+
+        <para>The service needs to know the path to the local Condor user
+        binaries (CONDOR_HOME/bin) and the Condor configuration file (usually
+        condor_config). These parameters are specified by defining a global
+        resource named "glidein/Condor" in the service's
+        jndi-config.xml.</para>
+
+        <para>An example resource configuration looks like this:</para>
+
+        <para><programlisting>&lt;resource name="glidein/Condor" type="edu.usc.glidein.condor.Condor"&gt;
+    &lt;resourceParams&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;factory&lt;/name&gt;
+            &lt;value&gt;org.globus.wsrf.jndi.BeanFactory&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;condorHome&lt;/name&gt;
+            &lt;value&gt;/usr/local/condor&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;condorConfig&lt;/name&gt;
+            &lt;value&gt;/etc/condor/condor_config&lt;/value&gt;
+        &lt;/parameter
+    &lt;/resourceParams&gt;
+&lt;/resource&gt;</programlisting></para>
+
+        <para>The parameters are: <itemizedlist>
+            <listitem>
+              <command>factory</command>
+
+              <para>The object factory to use for this resource. This value
+              for this parameter should be set to
+              org.globus.wsrf.jndi.BeanFactory.</para>
+            </listitem>
+
+            <listitem>
+              <command>condorHome</command>
+
+              <para>The path to the Condor install directory. This is commonly
+              /usr/local/condor. The path must be absolute.</para>
+            </listitem>
+
+            <listitem>
+              <command>condorConfig</command>
+
+              <para>The path to the Condor configuration file. This is
+              commonly /etc/condor/condor_config. The path must be
+              absolute.</para>
+            </listitem>
+          </itemizedlist></para>
+      </section>
+
+      <section>
+        <title>Glidein Configuration</title>
+
+        <para>The glidein service uses several scripts, directories and
+        parameters to accomplish its job. These parameters are specified by
+        defining a global resource named "glidein/ServiceConfiguration" in the
+        service's jndi-config.xml file. The default values should work in most
+        situations.</para>
+
+        <para>An example configuration looks like this:</para>
+
+        <para><programlisting>&lt;resource name="glidein/ServiceConfiguration" type="edu.usc.glidein.service.ServiceConfiguration"&gt;
+    &lt;resourceParams&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;factory&lt;/name&gt;
+            &lt;value&gt;org.globus.wsrf.jndi.BeanFactory&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;install&lt;/name&gt;
+            &lt;value&gt;share/glidein_service/glidein_install&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;uninstall&lt;/name&gt;
+            &lt;value&gt;share/glidein_service/glidein_uninstall&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;run&lt;/name&gt;
+            &lt;value&gt;share/glidein_service/glidein_run&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;glideinServerURLs&lt;/name&gt;
+            &lt;value&gt;http://scecit02.usc.edu/glidein/binaries,
+http://www.cs.wisc.edu/condor/glidein/binaries,
+gsiftp://gridftp.cs.wisc.edu/p/condor/public/binaries/glidein&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;glideinCondorConfig&lt;/name&gt;
+            &lt;value&gt;etc/glidein_service/glidein_condor_config&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;workingDirectory&lt;/name&gt;
+            &lt;value&gt;var/glidein_service&lt;/value&gt;
+        &lt;/parameter&gt;
+    &lt;/resourceParams&gt;
+&lt;/resource&gt;</programlisting></para>
+
+        <para>The parameters are: <itemizedlist>
+            <listitem>
+              <command>factory</command>
+
+              <para>The object factory to use for this resource. This value
+              for this parameter should be set to
+              org.globus.wsrf.jndi.BeanFactory.</para>
+            </listitem>
+
+            <listitem>
+              <command>install</command>
+
+              <para>Path to the site install shell script. This path is
+              relative to GLOBUS_LOCATION.</para>
+            </listitem>
+
+            <listitem>
+              <command>uninstall</command>
+
+              <para>Path to the site uninstall shell script. This path is
+              relative to GLOBUS_LOCATION.</para>
+            </listitem>
+
+            <listitem>
+              <command>run</command>
+
+              <para>Path to the glidein run shell script. This path is
+              relative to GLOBUS_LOCATION.</para>
+            </listitem>
+
+            <listitem>
+              <command>glideinServerURLs</command>
+
+              <para>Comma-separated list of URLs where glidein binaries can be
+              downloaded. URLs are searched for the required package in the
+              order specified. The first URL containing the required package
+              is used.</para>
+            </listitem>
+
+            <listitem>
+              <command>glideinCondorConfig</command>
+
+              <para>Path to the default condor_config file for glideins. Users
+              can override this by specifying their own config file. This path
+              is relative to GLOBUS_LOCATION.</para>
+            </listitem>
+
+            <listitem>
+              <command>workingDirectory</command>
+
+              <para>Directory to store working files in. This includes condor
+              submit scripts and log files, so it should not be located on an
+              NFS partition. This path is relative to GLOBUS_LOCATION.</para>
+            </listitem>
+          </itemizedlist></para>
+      </section>
+
+      <section>
+        <title>Event Queue Configuration</title>
+
+        <para>The glidein service has to respond to asynchronous events from
+        both Condor and the service's users. These events are stored in an
+        event queue which is serviced by a thread pool. The queue is specified
+        by defining a global resource named "glidein/EventQueue" in the
+        service's jndi-config.xml file.</para>
+
+        <para>An example event queue configuration looks like this:</para>
+
+        <para><programlisting>&lt;resource name="glidein/EventQueue" type="edu.usc.glidein.service.state.EventQueue"&gt;
+    &lt;resourceParams&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;factory&lt;/name&gt;
+            &lt;value&gt;org.globus.wsrf.jndi.BeanFactory&lt;/value&gt;
+        &lt;/parameter&gt;
+        &lt;parameter&gt;
+            &lt;name&gt;numThreads&lt;/name&gt;
+            &lt;value&gt;1&lt;/value&gt;
+        &lt;/parameter&gt;
+    &lt;/resourceParams&gt;
+&lt;/resource&gt;</programlisting></para>
+
+        <para>The parameters are: <itemizedlist>
+            <listitem>
+              <command>factory</command>
+
+              <para>The object factory to use for this resource. This value
+              for this parameter should be set to
+              org.globus.wsrf.jndi.BeanFactory.</para>
+            </listitem>
+
+            <listitem>
+              <command>numThreads</command>
+
+              <para>The number of threads to use for the thread pool that
+              services the event queue. The default value is 1, which is
+              should be sufficient for the majority of installations. If you
+              have a lot of users, glideins, and sites, then you might need to
+              increase this to prevent the service from getting behind in
+              processing events.</para>
+            </listitem>
+          </itemizedlist></para>
+      </section>
     </section>
   </chapter>
-  
+
   <chapter>
-    <title>Tutorial</title>
+    <title>Troubleshooting</title>
+
     <section>
-      <title>Introduction</title>
-      <para></para>
+      <title>Common Errors</title>
+
+      <itemizedlist>
+        <listitem>
+          <para><emphasis role="bold">The site or glidein is in FAILED state,
+          but I don't know why</emphasis></para>
+
+          <para>Try looking at the detailed message by providing the --long
+          argument to <command>glidein list-site</command> or <command>glidein
+          list-glidein</command>. This should give you more information about
+          the problem. You can also try looking at the Condor logs in the
+          working directory. This is usually located in
+          $GLOBUS_LOCATION/var/glidein_service, but it is specified in
+          jndi-config.xml, so look there if you can't find the logs.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">"sudo: sorry, you must have a tty to run
+          sudo"</emphasis></para>
+
+          <para>The glidein service uses sudo to submit condor jobs with
+          usernames from the gridmap file. This error happens when sudo has
+          the "requiretty" option set. The globus container may run without a
+          tty. The solution is to disable the "requiretty" option in the
+          sudoers file.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">"Detected down globus
+          resource"</emphasis></para>
+
+          <para>This message occurs whenever Condor is having trouble
+          connecting to the specified gatekeeper. Make sure that you have
+          entered the gatekeeper's contact string correctly. Try telnetting to
+          the host/port you specified (Note: The default GT2 gatekeeper port
+          is 2119 and the default GT4 port is 8443 for transport security or
+          8080 for no security.) If you can connect via telnet, then make sure
+          that the CA certs that Condor has access to are OK (Note: These are
+          usually located in /etc/grid-security/certificates or
+          ~/.globus/certificates.).</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">"Unable to locate globus-url-copy" when
+          creating site</emphasis></para>
+
+          <para>The glidein service uses globus-url-copy on the remote host to
+          download Condor glidein packages from one of several staging
+          servers. This message indicates that the glidein_install script was
+          not able to locate the globus-url-copy command on the remote host,
+          most likely because the GLOBUS_LOCATION environment variable is not
+          being set on the remote host. Make sure that your environment for
+          jobs submitted to the remote host is configured properly. In
+          particular, make sure that GLOBUS_LOCATION is set properly. You can
+          manually set GLOBUS_LOCATION by specifying an environment when
+          creating the site.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">"Failed to retrieve $PACKAGE" when
+          creating site</emphasis></para>
+
+          <para>The glidein service downloads Condor binary packages from a
+          staging server. This message indicates that the service has
+          identified $PACKAGE as the required package for the remote site, but
+          that none of the staging servers specified in jndi-config.xml
+          contain this package. The only solution is to 1) provide the URL for
+          a new staging server that contains the package in jndi-config.xml
+          and restart the Globus container, 2) add the package to an existing
+          staging server, or 3) specify a compatible package that does exist
+          on one of the staging servers when creating the site.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Trying to remove site, but it keeps
+          failing</emphasis></para>
+
+          <para>When you remove a site the glidein service submits a job to
+          remove the Condor binaries off the remote host. If the submission or
+          execution of this job fails, then the site will enter the FAILED
+          state. To force the site to be removed use the --force argument on
+          the command line. This will remove the site from the database
+          without submitting an uninstall job. You will need to clean up the
+          Condor binaries on the remote host manually.</para>
+        </listitem>
+      </itemizedlist>
     </section>
   </chapter>
 </book>
