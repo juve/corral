@@ -94,7 +94,7 @@
 		<profile namespace="pegasus" key="glidein.install-path">/home/ac/juve/glidein</profile>
 		<profile namespace="pegasus" key="glidein.local-path">/gpfs_scratch1/juve/glidein</profile>
 		<profile namespace="pegasus" key="glidein.condor-version">7.0.0</profile>
-		<!-- <profile namespace="pegasus" key="glidein.condor-package">7.0.0-ia64-Linux-2.4-glibc2.2</profile> -->
+		<!-- <profile namespace="pegasus" key="glidein.condor-package">7.0.0-ia64-Linux-2.4-glibc2.2.tar.gz</profile> -->
 		<profile namespace="pegasus" key="glidein.staging-service">gt2 grid-hg.ncsa.teragrid.org/jobmanager-fork</profile>
 		<profile namespace="pegasus" key="glidein.glidein-service">gt2 grid-hg.ncsa.teragrid.org/jobmanager-pbs</profile>
 		<profile namespace="pegasus" key="glidein.glidein-service-project">nqi</profile>
