@@ -15,12 +15,11 @@
  */
 package edu.usc.glidein.cli;
 
-import java.io.File;
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import static edu.usc.glidein.service.GlideinNames.*;
+
 import java.util.Calendar;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.globus.gsi.GlobusCredential;
@@ -29,15 +28,11 @@ import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
 import edu.usc.glidein.api.GlideinFactoryService;
 import edu.usc.glidein.api.GlideinService;
-import edu.usc.glidein.service.GlideinNames;
 import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.GlideinUtil;
-import edu.usc.glidein.util.IOUtil;
 
 public class CreateGlideinCommand extends Command
 {
-	public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	private Glidein glidein = null;
 	private GlobusCredential credential = null;
 	private boolean verbose = false;
@@ -172,6 +167,12 @@ public class CreateGlideinCommand extends Command
 		);
 	}
 	
+	private void setProperty(Properties p, String name, String value)
+	{
+		if (value == null) return;
+		p.setProperty(name, value);
+	}
+	
 	public void setArguments(CommandLine cmdln) throws CommandException
 	{
 		/* Check for extra arguments */
@@ -180,95 +181,12 @@ public class CreateGlideinCommand extends Command
 			throw new CommandException("Unrecognized argument: "+args[0]);
 		}
 		
-		glidein = new Glidein();
-		
-		/* Required params ***************************************************/
-		//site s
-		if (!cmdln.hasOption("s")) {
-			throw new CommandException("Missing required argument: site");
-		}
-		int siteId = Integer.parseInt(cmdln.getOptionValue("site"));
-		glidein.setSiteId(siteId);
-		
-		
-		/* Options ***********************************************************/
-		
-		//condor-host ch
-		if (cmdln.hasOption("ch")) {
-			String condorHost = cmdln.getOptionValue("condor-host");
-			glidein.setCondorHost(condorHost);
+		/* Verbose */
+		if (cmdln.hasOption("v")) {
+			verbose = true;
 		} else {
-			String defaultCondorHost = getLocalHost();
-			if (defaultCondorHost == null) {
-				throw new CommandException("Missing required argument: condor-host");
-			} else {
-				glidein.setCondorHost(defaultCondorHost);
-			}
+			verbose = false;
 		}
-		
-		//host-count hc
-		if (cmdln.hasOption("hc")) {
-			int hostCount = Integer.parseInt(cmdln.getOptionValue("host-count"));
-			glidein.setHostCount(hostCount);
-		} else {
-			glidein.setHostCount(1);
-		}
-		
-		//count c
-		if (cmdln.hasOption("c")) {
-			int count = Integer.parseInt(cmdln.getOptionValue("count"));
-			glidein.setCount(count);
-		} else {
-			glidein.setCount(glidein.getHostCount());
-		}
-		
-		//num-cpus n
-		if (cmdln.hasOption("n")) {
-			int numCpus = Integer.parseInt(cmdln.getOptionValue("num-cpus"));
-			glidein.setNumCpus(numCpus);
-		} else {
-			glidein.setNumCpus(1);
-		}
-		
-		//wall-time w
-		if (cmdln.hasOption("w")) {
-			int wallTime = Integer.parseInt(cmdln.getOptionValue("wall-time"));
-			if (wallTime<2) {
-				throw new CommandException("Wall time must be >= 2 minutes");
-			}
-			glidein.setWallTime(wallTime);
-		} else {
-			glidein.setWallTime(60);
-		}
-		
-		//idle-time i
-		if (cmdln.hasOption("i")) {
-			int idleTime = Integer.parseInt(cmdln.getOptionValue("idle-time"));
-			glidein.setIdleTime(idleTime);
-		} else {
-			glidein.setIdleTime(glidein.getWallTime());
-		}
-		
-		//condor-config cc
-		if (cmdln.hasOption("cc")) {
-			String fileName = cmdln.getOptionValue("condor-config");
-			File file = new File(fileName);
-			try {
-				String condorConfig = IOUtil.read(file);
-				byte[] condorConfigBytes = Base64.toBase64(condorConfig);
-				glidein.setCondorConfig(condorConfigBytes);
-			} catch (IOException ioe) {
-				throw new CommandException("Unable to read config file: "+fileName,ioe);
-			}
-		}
-		
-		//condor-debug cd
-		String condorDebug = cmdln.getOptionValue("condor-debug",null);
-		glidein.setCondorDebug(condorDebug);
-		
-		//gcb-broker b
-		String gcbBroker = cmdln.getOptionValue("gcb-broker", null);
-		glidein.setGcbBroker(gcbBroker);
 		
 		/* Get proxy credential */
 		if (cmdln.hasOption("C")) {
@@ -288,62 +206,51 @@ public class CreateGlideinCommand extends Command
 			}
 		}
 		
-		/* Resubmit the glidein when it expires */
-		if (cmdln.hasOption("r")) {
-			glidein.setResubmit(true);
-			String value = cmdln.getOptionValue("r");
+		/* Create glidein */
+		try {
+			Properties p = new Properties();
+			setProperty(p, SITE, cmdln.getOptionValue("s"));
+			setProperty(p, CONDOR_HOST, cmdln.getOptionValue("ch", getLocalHost()));
+			setProperty(p, HOST_COUNT, cmdln.getOptionValue("hc", "1"));
+			setProperty(p, COUNT, cmdln.getOptionValue("c", cmdln.getOptionValue("hc", "1")));
+			setProperty(p, NUM_CPUS, cmdln.getOptionValue("n", "1"));
+			setProperty(p, WALL_TIME, cmdln.getOptionValue("w", "60"));
+			setProperty(p, IDLE_TIME, cmdln.getOptionValue("i", cmdln.getOptionValue("w", "60")));
+			setProperty(p, CONDOR_CONFIG, cmdln.getOptionValue("cc"));
+			setProperty(p, CONDOR_DEBUG, cmdln.getOptionValue("cd"));
+			setProperty(p, GCB_BROKER, cmdln.getOptionValue("b"));
+			setProperty(p, RESUBMIT, cmdln.getOptionValue("r"));
+			setProperty(p, RSL, cmdln.getOptionValue("rsl"));
+			glidein = GlideinUtil.createGlidein(p);
+		} catch (Exception e) {
+			throw new CommandException(e);
+		}
+		
+		/* Validate the credential given resubmits */
+		if (glidein.isResubmit()) {
 			long timeLeft = credential.getTimeLeft() * 1000;
-			long timeRequired = glidein.getWallTime() * 60 * 1000;
+			long timeRequired = 0;
 			
-			if (value != null) {
-				if (value.matches("[0-9]+")) {
-					int resubmits = Integer.parseInt(value);
-					if (resubmits <= 0 || resubmits > 128) {
-						throw new CommandException(
-								"Resubmits must be between 0 and 128");
-					}
-					timeRequired = resubmits * glidein.getWallTime() * 60 * 1000;
-					glidein.setResubmits(resubmits);
-				} else {
-					Calendar until = Calendar.getInstance();
-					Calendar now = Calendar.getInstance();
-					try {
-						SimpleDateFormat parser = new SimpleDateFormat(DATE_FORMAT);
-						until.setTime(parser.parse(value));
-					} catch (ParseException pe) {
-						throw new CommandException(
-								"Invalid resubmit option: "+value);
-					}
-					if (until.before(now)) {
-						throw new CommandException(
-								"Resubmit date should be in the future");
-					}
-					timeRequired = until.getTimeInMillis() - now.getTimeInMillis();
-					glidein.setUntil(until);
-				}
+			if (glidein.getResubmits() > 0) {
+				int resubmits = glidein.getResubmits();
+				timeRequired = resubmits * glidein.getWallTime() * 60 * 1000;
+			} else {
+				Calendar until = glidein.getUntil();
+				Calendar now = Calendar.getInstance();
+				timeRequired = until.getTimeInMillis() - now.getTimeInMillis();
 			}
+			
 			if (isDebug()) {
 				System.out.println("Time Left: "+timeLeft+" ms");
 				System.out.println("Time Required: "+timeRequired+" ms");
 			}
+			
 			if (timeLeft < timeRequired) {
 				throw new CommandException(
 						"Not enough time left on credential for " +
 						"specified run time (including resubmits)");
 			}
-		} else {
-			glidein.setResubmit(false);
 		}
-		
-		/* Verbose */
-		if (cmdln.hasOption("v")) {
-			verbose = true;
-		} else {
-			verbose = false;
-		}
-		
-		/* RSL */
-		glidein.setRsl(cmdln.getOptionValue("rsl",null));
 	}
 	
 	public void execute() throws CommandException
@@ -357,7 +264,7 @@ public class CreateGlideinCommand extends Command
 			// Create glidein
 			ClientSecurityDescriptor desc = getClientSecurityDescriptor();
 			GlideinFactoryService factory = new GlideinFactoryService(
-					getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
+					getServiceURL(GLIDEIN_FACTORY_SERVICE));
 			factory.setDescriptor(desc);
 			EndpointReferenceType epr = factory.create(glidein);
 			

@@ -33,4 +33,9 @@ public class CommandException extends Exception
 	{
 		super(message, cause);
 	}
+	
+	public CommandException(Throwable cause)
+	{
+		super(cause);
+	}
 }

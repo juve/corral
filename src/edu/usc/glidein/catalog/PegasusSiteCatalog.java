@@ -1,5 +1,7 @@
 package edu.usc.glidein.catalog;
 
+import static edu.usc.glidein.service.SiteNames.*;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,7 +54,7 @@ public class PegasusSiteCatalog implements SiteCatalog
 	
 	private void addSiteProperties(Properties properties) 
 	{
-		sites.put(properties.getProperty("name"), properties);
+		sites.put(properties.getProperty(NAME), properties);
 	}
 	
 	private class PegasusSiteCatalogHandler extends DefaultHandler
@@ -85,7 +87,7 @@ public class PegasusSiteCatalog implements SiteCatalog
 			} else if ("site".equals(qname)) {
 				
 				String site = attributes.getValue("handle");
-				properties.put("name", site);
+				properties.put(NAME, site);
 				
 			}
 		}

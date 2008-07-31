@@ -24,6 +24,18 @@ import org.globus.wsrf.ResourceContext;
 import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.Glidein;
 
+/* TODO Allow user to create glideins that download the Condor binaries
+ * This will allow the user to create glideins for sites that do not have
+ * a shared filesystem. The binaries will go in the localPath instead of
+ * the installPath.
+ */
+// TODO Implement event notification using WS-Notification
+// TODO Implement dynamic provisioners
+// TODO Think of a friendly name for the service: Glidein Automation Service (GAS)?
+// TODO Investigate switch to Java CoG Kit for job submission and monitoring
+// TODO Investigate the usefulness of automatic site selection
+// TODO Should there be only one actual service, or should I keep two? One is better for isolation
+
 public class GlideinService
 {
 	private Logger logger = Logger.getLogger(GlideinService.class);

@@ -25,6 +25,12 @@ import edu.usc.glidein.stubs.RemoveRequest;
 import edu.usc.glidein.stubs.types.EmptyObject;
 import edu.usc.glidein.stubs.types.Site;
 
+/* TODO Add --nostaging option for site creation
+ * This will allow the site to enter the READY state without staging
+ * executables and may be useful for sites that 1) don't have a shared
+ * filesystem, or 2) have already been set up manually.
+ */
+
 public class SiteService 
 {
 	private Logger logger = Logger.getLogger(SiteService.class);

@@ -1,17 +1,13 @@
 package edu.usc.glidein.catalog;
 
-import java.io.File;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import static edu.usc.glidein.service.SiteNames.*;
 
-import edu.usc.glidein.cli.CommandException;
-import edu.usc.glidein.stubs.types.EnvironmentVariable;
-import edu.usc.glidein.stubs.types.ExecutionService;
-import edu.usc.glidein.stubs.types.ServiceType;
+import java.io.File;
+import java.util.Properties;
+
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.util.INI;
+import edu.usc.glidein.util.SiteUtil;
 
 public class INISiteCatalog implements SiteCatalog
 {
@@ -43,73 +39,32 @@ public class INISiteCatalog implements SiteCatalog
 		}
 	}
 	
+	private void setProperty(Properties p, String key, String value)
+	{
+		if (value == null) return;
+		p.setProperty(key, value);
+	}
+	
 	private Site extractINISite(INI ini, String name) throws SiteCatalogException
 	{
-		Site s = new Site();
-		s.setName(name);
-		s.setInstallPath(getINIValue(ini,name,"installPath"));
-		s.setLocalPath(getINIValue(ini,name,"localPath"));
-		s.setCondorPackage(getINIValue(ini,name,"condorPackage"));
-		s.setCondorVersion(getINIValue(ini,name,"condorVersion"));
-		
-		/* Staging service */
 		try {
-			String staging = getINIValue(ini,name,"stagingService");
-			if (staging == null) {
-				throw new CommandException(
-						"Missing required parameter 'stagingService' " +
-						"for site '"+name+"'");
-			}
-			String[] comp = staging.trim().split("[ ]", 2);
-			ExecutionService stagingService = new ExecutionService();
-			stagingService.setProject(getINIValue(ini,name,"stagingService.project"));
-			stagingService.setQueue(getINIValue(ini,name,"stagingService.queue"));
-			stagingService.setServiceType(ServiceType.fromString(comp[0].toUpperCase()));
-			stagingService.setServiceContact(comp[1]);
-			s.setStagingService(stagingService);
+			Properties p = new Properties();
+			setProperty(p, NAME, name);
+			setProperty(p, INSTALL_PATH, getINIValue(ini,name,INSTALL_PATH));
+			setProperty(p, LOCAL_PATH, getINIValue(ini,name,LOCAL_PATH));
+			setProperty(p, CONDOR_PACKAGE, getINIValue(ini,name,CONDOR_PACKAGE));
+			setProperty(p, CONDOR_VERSION, getINIValue(ini,name,CONDOR_VERSION));
+			setProperty(p, STAGING_SERVICE, getINIValue(ini,name,STAGING_SERVICE));
+			setProperty(p, STAGING_SERVICE_PROJECT, getINIValue(ini,name,STAGING_SERVICE_PROJECT));
+			setProperty(p, STAGING_SERVICE_QUEUE, getINIValue(ini,name,STAGING_SERVICE_QUEUE));
+			setProperty(p, GLIDEIN_SERVICE, getINIValue(ini,name,GLIDEIN_SERVICE));
+			setProperty(p, GLIDEIN_SERVICE_PROJECT, getINIValue(ini,name,GLIDEIN_SERVICE_PROJECT));
+			setProperty(p, GLIDEIN_SERVICE_QUEUE, getINIValue(ini,name,GLIDEIN_SERVICE_QUEUE));
+			setProperty(p, ENVIRONMENT, getINIValue(ini,name,ENVIRONMENT));
+			return SiteUtil.createSite(p);
 		} catch (Exception e) {
-			throw new SiteCatalogException("Unable to create staging service " +
-					"for site '"+name+"'. Are you sure you used the right " +
-					"format for stagingService?");
+			throw new SiteCatalogException(e);
 		}
-		
-		/* Glidein service */
-		try {
-			String glidein = getINIValue(ini,name,"glideinService");
-			if (glidein == null) {
-				throw new CommandException(
-						"Missing required parameter 'glideinService' " +
-						"for site '"+name+"'");
-			}
-			String[] comp = glidein.trim().split("[ ]", 2);
-			ExecutionService glideinService = new ExecutionService();
-			glideinService.setProject(getINIValue(ini,name,"glideinService.project"));
-			glideinService.setQueue(getINIValue(ini,name,"glideinService.queue"));
-			glideinService.setServiceType(ServiceType.fromString(comp[0].toUpperCase()));
-			glideinService.setServiceContact(comp[1]);
-			s.setGlideinService(glideinService);
-		} catch (Exception e) {
-			throw new SiteCatalogException("Unable to create glidein service " +
-					"for site '"+name+"'. Are you sure you used the right " +
-					"format for glideinService?");
-		}
-		
-		/* Environment */
-		String env = getINIValue(ini,name,"environment");
-		if (env!=null) {
-			List<EnvironmentVariable> envs = new LinkedList<EnvironmentVariable>();
-			Pattern p = Pattern.compile("([^=]+)=([^:]+):?");
-			Matcher m = p.matcher(env);
-			while (m.find()) {
-				EnvironmentVariable e = new EnvironmentVariable();
-				e.setVariable(m.group(1));
-				e.setValue(m.group(2));
-				envs.add(e);
-			}
-			s.setEnvironment(envs.toArray(new EnvironmentVariable[0]));
-		}
-		
-		return s;
 	}
 
 	private String getINIValue(INI ini, String site, String key)

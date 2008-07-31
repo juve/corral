@@ -15,6 +15,8 @@
  */
 package edu.usc.glidein.cli;
 
+import static edu.usc.glidein.service.SiteNames.*;
+
 import java.io.File;
 import java.util.List;
 import java.util.Properties;
@@ -185,9 +187,11 @@ public class CreateSiteCommand extends Command
 				  .setUsage("-cp [--condor-package] <pkg>")
 				  .setDescription("The package name to download. This overrides condor-version. \n" +
 				  				  "I don't recommend using condor-package unless you know what \n" +
-				  				  "you are doing. The general format for the package name itself \n" +
-				  				  "is: '<version>-<arch>-<os>-<osversion>-glibc<glibcversion>' \n" +
-				  				  "(e.x. '7.0.0-ia64-Linux-2.4-glibc2.2')")
+				  				  "you are doing. The default format for the package name is: \n" +
+				  				  "'<condorversion>-<arch>-<os>-<osversion>-glibc<glibcversion>.tar.gz' \n" +
+				  				  "(e.x. '7.0.0-ia64-Linux-2.4-glibc2.2.tar.gz'), but you can \n" +
+				  				  "specify any package name you like as long as it is available \n" +
+				  				  "on one of the configured staging servers.")
 				  .hasArgument()
 		);
 		
@@ -200,6 +204,12 @@ public class CreateSiteCommand extends Command
 				  				  "to separate entries. (e.x. 'FOO=f:BAR=b')")
 				  .hasArgument()
 		);
+	}
+	
+	private void setProperty(Properties p, String name, String value)
+	{
+		if (value == null) return;
+		p.setProperty(name, value);
 	}
 	
 	public void setArguments(CommandLine cmdln) throws CommandException
@@ -243,68 +253,21 @@ public class CreateSiteCommand extends Command
 		
 		/* If we are getting the properties from the command-line */
 		else {
-			
-			Properties props = new Properties();
-			
-			props.setProperty("name", siteName);
-			
-			String installPath = cmdln.getOptionValue("ip");
-			if (installPath != null) {
-				props.setProperty("installPath", installPath);
-			}
-			
-			String localPath = cmdln.getOptionValue("lp");
-			if (localPath != null) {
-				props.setProperty("localPath", localPath);
-			}
-			
-			String stagingService = cmdln.getOptionValue("ss");
-			if (stagingService != null) {
-				props.setProperty("stagingService", stagingService);
-			}
-			
-			String stagingServiceProject = cmdln.getOptionValue("ssp");
-			if (stagingServiceProject != null) {
-				props.setProperty("stagingService.project", stagingServiceProject);
-			}
-			
-			String stagingServiceQueue = cmdln.getOptionValue("ssq");
-			if (stagingServiceQueue != null) {
-				props.setProperty("stagingService.queue", stagingServiceQueue);
-			}
-			
-			String glideinService = cmdln.getOptionValue("gs");
-			if (glideinService != null) {
-				props.setProperty("glideinService", glideinService);
-			}
-			
-			String glideinServiceProject = cmdln.getOptionValue("gsp");
-			if (glideinServiceProject != null) {
-				props.setProperty("glideinService.project", glideinServiceProject);
-			}
-			
-			String glideinServiceQueue = cmdln.getOptionValue("gsq");
-			if (glideinServiceQueue != null) {
-				props.setProperty("glideinService.queue", glideinServiceQueue);
-			}
-			
-			String condorVersion = cmdln.getOptionValue("cv");
-			if (condorVersion != null) {
-				props.setProperty("condorVersion", condorVersion);
-			}
-			
-			String condorPackage = cmdln.getOptionValue("cp");
-			if (condorPackage != null) {
-				props.setProperty("condorPackage", condorPackage);
-			}
-			
-			String environment = cmdln.getOptionValue("e");
-			if (environment != null) {
-				props.setProperty("environment", environment);
-			}
-			
 			try {
-				site = SiteUtil.createSite(props);
+				Properties p = new Properties();
+				setProperty(p, NAME, siteName);
+				setProperty(p, INSTALL_PATH, cmdln.getOptionValue("ip"));
+				setProperty(p, LOCAL_PATH, cmdln.getOptionValue("lp"));
+				setProperty(p, STAGING_SERVICE, cmdln.getOptionValue("ss"));
+				setProperty(p, STAGING_SERVICE_PROJECT, cmdln.getOptionValue("ssp"));
+				setProperty(p, STAGING_SERVICE_QUEUE, cmdln.getOptionValue("ssq"));
+				setProperty(p, GLIDEIN_SERVICE, cmdln.getOptionValue("gs"));
+				setProperty(p, GLIDEIN_SERVICE_PROJECT, cmdln.getOptionValue("gsp"));
+				setProperty(p, GLIDEIN_SERVICE_QUEUE, cmdln.getOptionValue("gsq"));
+				setProperty(p, CONDOR_VERSION, cmdln.getOptionValue("cv"));
+				setProperty(p, CONDOR_PACKAGE, cmdln.getOptionValue("cp"));
+				setProperty(p, ENVIRONMENT, cmdln.getOptionValue("e"));
+				site = SiteUtil.createSite(p);
 			} catch (Exception e) {
 				throw new CommandException(
 						"Unable to create site: "+e.getMessage(),e);

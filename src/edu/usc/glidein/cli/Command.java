@@ -19,19 +19,20 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.cert.X509Certificate;
 import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.List;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.globus.axis.util.Util;
-import org.globus.delegation.DelegationException;
 import org.globus.delegation.DelegationUtil;
 import org.globus.gsi.GlobusCredential;
 import org.globus.wsrf.impl.security.authorization.Authorization;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 import org.globus.wsrf.impl.security.util.AuthUtil;
 import org.globus.wsrf.security.Constants;
+import org.globus.wsrf.utils.AddressingUtils;
 
 public abstract class Command
 {
@@ -410,12 +411,19 @@ public abstract class Command
 		URL delegationServiceUrl = getServiceURL("DelegationFactoryService");
 		
 		try {
+			EndpointReferenceType delegEpr =
+	            AddressingUtils.createEndpointReference(delegationServiceUrl.toString(), null);
+			
+			X509Certificate[] certsToDelegateOn =
+	            DelegationUtil.getCertificateChainRP(delegEpr,desc);
+	        
 			EndpointReferenceType credentialEPR = 
 				DelegationUtil.delegate(delegationServiceUrl.toString(), 
-					credential, credential.getIdentityCertificate(), fullDelegation, desc);
+	        		credential, certsToDelegateOn[0], fullDelegation, desc);
+	        
 			return credentialEPR;
-		} catch (DelegationException de) {
-			throw new CommandException("Unable to delegate credential: "+de.getMessage(),de);
+		} catch (Exception e) {
+			throw new CommandException("Unable to delegate credential: "+e.getMessage(), e);
 		}
 	}
 	
