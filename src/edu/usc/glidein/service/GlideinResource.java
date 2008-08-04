@@ -18,8 +18,12 @@ package edu.usc.glidein.service;
 import java.io.BufferedReader;
 import java.io.CharArrayWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.util.Calendar;
 
@@ -38,11 +42,17 @@ import org.globus.wsrf.ResourceIdentifier;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.ResourceProperties;
 import org.globus.wsrf.ResourcePropertySet;
+import org.globus.wsrf.Topic;
+import org.globus.wsrf.TopicList;
+import org.globus.wsrf.TopicListAccessor;
 import org.globus.wsrf.impl.ReflectionResourceProperty;
 import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
+import org.globus.wsrf.impl.SimpleTopic;
+import org.globus.wsrf.impl.SimpleTopicList;
 import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
 import org.globus.wsrf.security.SecurityException;
+import org.globus.wsrf.utils.SubscriptionPersistenceUtils;
 
 import edu.usc.glidein.condor.Condor;
 import edu.usc.glidein.condor.CondorEventGenerator;
@@ -64,6 +74,8 @@ import edu.usc.glidein.stubs.types.EnvironmentVariable;
 import edu.usc.glidein.stubs.types.ExecutionService;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinState;
+import edu.usc.glidein.stubs.types.GlideinStateChange;
+import edu.usc.glidein.stubs.types.GlideinStateChangeMessage;
 import edu.usc.glidein.stubs.types.ServiceType;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteState;
@@ -75,16 +87,24 @@ import edu.usc.glidein.util.FilesystemUtil;
 import edu.usc.glidein.util.IOUtil;
 
 public class GlideinResource implements Resource, ResourceIdentifier, 
-	PersistenceCallback, ResourceProperties
+	PersistenceCallback, ResourceProperties, TopicListAccessor
 {
 	private Logger logger = Logger.getLogger(GlideinResource.class);
 	private SimpleResourcePropertySet resourceProperties;
+	private Topic stateChangeTopic;
+	private TopicList topicList;
 	private Glidein glidein = null;
 	
 	/**
 	 * Default constructor required
 	 */
-	public GlideinResource() { }
+	public GlideinResource()
+	{
+		resourceProperties = new SimpleResourcePropertySet(SiteNames.RESOURCE_PROPERTIES);
+		stateChangeTopic = new SimpleTopic(GlideinNames.TOPIC_STATE_CHANGE);
+		topicList = new SimpleTopicList(this);
+		topicList.addTopic(stateChangeTopic);
+	}
 
 	public void setGlidein(Glidein glidein)
 	{
@@ -110,6 +130,11 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				new Integer(glidein.getId()));
 	}
 	
+	public TopicList getTopicList()
+	{
+		return topicList;
+	}
+	
 	public ResourcePropertySet getResourcePropertySet()
 	{
 		return resourceProperties;
@@ -118,9 +143,6 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 	private void setResourceProperties()
 	{
 		try {
-			resourceProperties = new SimpleResourcePropertySet(
-					GlideinNames.RESOURCE_PROPERTIES);
-			
 			resourceProperties.add(new ReflectionResourceProperty(
 					GlideinNames.RP_ID,"id",glidein));
 			resourceProperties.add(new ReflectionResourceProperty(
@@ -241,8 +263,21 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 
 	public void load(ResourceKey key) throws ResourceException
 	{
-		info("Loading glidein "+key.getValue());
+		info("Loading glidein resource "+key.getValue());
 		int id = ((Integer)key.getValue()).intValue();
+		loadGlidein(id);
+		loadListeners();
+	}
+	
+	public void store() throws ResourceException 
+	{
+		info("Storing glidein resource "+glidein.getId());
+		storeListeners();
+		storeGlidein();
+	}
+	
+	private void loadGlidein(int id) throws ResourceException
+	{
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
@@ -252,9 +287,46 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 	}
 	
-	public void store() throws ResourceException 
+	private void storeGlidein() throws ResourceException
 	{
-		throw new UnsupportedOperationException();
+		/* Do nothing */
+	}
+	
+	private void storeListeners() throws ResourceException
+	{
+		// TODO: Store listeners in database
+		File listeners = getListenersFile();
+		try {
+			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(listeners));
+			SubscriptionPersistenceUtils.storeSubscriptionListeners(topicList, oos);
+			oos.close();
+		} catch (Exception e) {
+			throw new ResourceException("Unable to store glidein listeners",e);
+		}
+	}
+	
+	private void loadListeners() throws ResourceException
+	{
+		File listeners = getListenersFile();
+		if (listeners.exists() && listeners.isFile()) {
+			try {
+				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(listeners));
+				SubscriptionPersistenceUtils.loadSubscriptionListeners(topicList, ois);
+				ois.close();
+			} catch (Exception e) {
+				throw new ResourceException("Unable to load glidein listeners",e);
+			}
+		}
+	}
+	
+	private File getListenersFile() throws ResourceException
+	{
+		File work = getWorkingDirectory();
+		if (!work.exists()) {
+			work.mkdirs();
+		}
+		File listeners = new File(work,"listeners");
+		return listeners;
 	}
 	
 	public void remove(boolean force) throws ResourceException 
@@ -288,7 +360,10 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		authorize();
 		
 		// Create the working directory
-		createWorkingDirectory();
+		File work = getWorkingDirectory();
+		if (!work.exists()) {
+			work.mkdirs();
+		}
 		
 		try {
 			
@@ -337,6 +412,21 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
 		} catch(DatabaseException de) {
 			throw new ResourceException("Unable to update state to "+state,de);
+		}
+	
+		// Notify topic listeners
+		info("Notifying listeners of state change");
+		try {
+			GlideinStateChange stateChange = new GlideinStateChange();
+			stateChange.setGlideinId(glidein.getId());
+			stateChange.setState(state);
+			stateChange.setShortMessage(shortMessage);
+	        stateChange.setLongMessage(longMessage);
+	        stateChange.setTime(time);
+	        
+	        stateChangeTopic.notify(new GlideinStateChangeMessage(stateChange));
+		} catch (Exception e) {
+			warn("Unable to notify topic listeners", e);
 		}
 	}
 	
@@ -606,30 +696,6 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		File jobDirectory = new File(getWorkingDirectory(),"job");
 		if (!jobDirectory.exists()) jobDirectory.mkdir();
 		return jobDirectory;
-	}
-	
-	private void createWorkingDirectory() throws ResourceException
-	{
-		File dir = getWorkingDirectory();
-		
-		// Create the directory if it doesn't exist
-		if (dir.exists()) {
-			if (!dir.isDirectory()) {
-				throw new ResourceException(
-						"Working directory is not a directory");
-			}
-		} else {
-			try {
-				if (!dir.mkdirs()) {
-					throw new ResourceException(
-							"Unable to create working directory");
-				}
-			} catch (java.lang.SecurityException e) {
-				throw new ResourceException(
-						"Unable to create working directory");
-			}
-		}
-		
 	}
 	
 	private File getWorkingDirectory() throws ResourceException
