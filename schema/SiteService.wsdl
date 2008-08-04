@@ -9,10 +9,14 @@
 	xmlns:wsrpw="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
 	xmlns:wsdlpp="http://www.globus.org/namespaces/2004/10/WSDLPreprocessor"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-	xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing">
+	xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing"
+	xmlns:wsntw="http://docs.oasis-open.org/wsn/2004/06/wsn-WS-BaseNotification-1.2-draft-01.wsdl">
 	
 	<wsdl:import namespace="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
 		location="../wsrf/properties/WS-ResourceProperties.wsdl" />
+		
+	<wsdl:import namespace="http://docs.oasis-open.org/wsn/2004/06/wsn-WS-BaseNotification-1.2-draft-01.wsdl"
+		location="../wsrf/notification/WS-BaseN.wsdl" />
 		
 	<!--============================================================
 								TYPES
@@ -78,7 +82,7 @@
 							PORT TYPE
 	============================================================-->
 	<portType name="SitePortType"
-		wsdlpp:extends="wsrpw:GetResourceProperty"
+		wsdlpp:extends="wsrpw:GetResourceProperty wsntw:NotificationProducer"
 		wsrp:ResourceProperties="tns:SiteResourceProperties">
 		 
 		<operation name="getSite">
