@@ -49,19 +49,16 @@ public class GlideinResourceHome extends ResourceHomeImpl
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
-			Glidein[] glideins = dao.list(true);
-			for (Glidein glidein : glideins) {
+			int[] ids = dao.listIds();
+			for (int id : ids) {
 			
 				// Create a resource object
-				GlideinResource resource = new GlideinResource();
-				resource.setGlidein(glidein);
+				ResourceKey key = new SimpleResourceKey(
+						GlideinNames.RESOURCE_KEY, new Integer(id));
+				GlideinResource resource = (GlideinResource)find(key);
 				
 				// Recover the resource state
 				resource.recoverState();
-				
-				// Add the resource object
-				ResourceKey key = resource.getKey();
-				this.add(key, resource);
 			}
 		} catch (DatabaseException de) {
 			throw new InitializeException(

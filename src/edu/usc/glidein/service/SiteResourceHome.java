@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.impl.ResourceHomeImpl;
+import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
 
 import edu.usc.glidein.db.Database;
@@ -48,19 +49,16 @@ public class SiteResourceHome extends ResourceHomeImpl
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
-			Site[] sites = dao.list(true);
-			for (Site site : sites) {
+			int[] ids = dao.listIds();
+			for (int id : ids) {
 			
-				// Create a resource object
-				SiteResource resource = new SiteResource();
-				resource.setSite(site);
+				// Lookup resource object
+				ResourceKey key = new SimpleResourceKey(
+						SiteNames.RESOURCE_KEY, new Integer(id));
+				SiteResource resource = (SiteResource)find(key);
 				
 				// Recover the resource state
 				resource.recoverState();
-				
-				// Add the resource object
-				ResourceKey key = resource.getKey();
-				this.add(key, resource);
 			}
 		} catch (DatabaseException de) {
 			throw new InitializeException(
