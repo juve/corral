@@ -73,4 +73,7 @@ public class SiteNames
 	public static final QName RP_GLIDEIN_SERVICE_TYPE = new QName(SERVICE_NS, GLIDEIN_SERVICE_TYPE);
 	public static final QName RP_GLIDEIN_PROJECT = new QName(SERVICE_NS, GLIDEIN_SERVICE_PROJECT);
 	public static final QName RP_GLIDEIN_QUEUE = new QName(SERVICE_NS, GLIDEIN_SERVICE_QUEUE);
+	
+	// State change topic
+	public static final QName TOPIC_STATE_CHANGE = new QName(SERVICE_NS, "state-change");
 }

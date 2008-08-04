@@ -75,4 +75,7 @@ public class GlideinNames
 	public static final QName RP_UNTIL = new QName(SERVICE_NS, UNTIL);
 	public static final QName RP_SUBMITS = new QName(SERVICE_NS, SUBMITS);
 	public static final QName RP_RSL = new QName(SERVICE_NS, RSL);
+	
+	// Topics
+	public static final QName TOPIC_STATE_CHANGE = new QName(SERVICE_NS, "state-change");
 }
