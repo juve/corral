@@ -219,6 +219,35 @@ public class SQLGlideinDAO implements GlideinDAO
 		
 	}
 	
+	public int[] listIds() throws DatabaseException 
+	{
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		LinkedList<Integer> results = new LinkedList<Integer>();
+		try {
+			conn = getConnection();
+			stmt = conn.prepareStatement("SELECT id FROM glidein");
+			rs = stmt.executeQuery();
+			while (rs.next()) {
+				results.add(rs.getInt("id"));
+			}
+			
+			int[] ids = new int[results.size()];
+			int i = 0;
+			for (Integer id : results) {
+				ids[i++] = id;
+			}
+			return ids;
+		} catch(SQLException sqle) {
+			throw new DatabaseException("Unable to get glidein ids: select failed",sqle);
+		} finally {
+			JDBCUtil.closeQuietly(rs);
+			JDBCUtil.closeQuietly(stmt);
+			JDBCUtil.closeQuietly(conn);
+		}
+	}
+	
 	public Glidein[] list(boolean longFormat) throws DatabaseException 
 	{
 		Connection conn = null;

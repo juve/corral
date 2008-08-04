@@ -30,6 +30,7 @@ public interface GlideinDAO
 			String shortMessage, String longMessage, Calendar time) 
 			throws DatabaseException;
 	public Glidein[] list(boolean longFormat) throws DatabaseException;
+	public int[] listIds() throws DatabaseException;
 	public void insertHistory(int glideinId, GlideinState state, Calendar time)
 			throws DatabaseException;
 	public GlideinHistoryEntry[] getHistory(int[] glideinIds) throws DatabaseException;
