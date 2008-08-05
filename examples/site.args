@@ -7,7 +7,7 @@
 --site-name ncsa-mercury
 --condor-version 7.0.0
 #--condor-package 7.0.0-ia64-Linux-2.4-glibc2.2.tar.gz
---environment _condor_CONDOR_ADMIN=juve@usc.edu
+--environment _condor_CONDOR_ADMIN=juve@usc.edu;GLOBUS_LOCATION=/usr/local/globus-4.0.1-r3
 --install-path /home/ac/juve/glidein
 --local-path /gpfs_scratch1/juve/glidein
 --staging-service 'gt2 grid-hg.ncsa.teragrid.org/jobmanager-fork'

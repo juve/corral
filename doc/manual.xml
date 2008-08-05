@@ -1295,18 +1295,12 @@ mysql&gt; </programlisting>The above creates a user who can log in from the
       of the Condor package names.</para>
 
       <para>Once the package name is determined, the glidein service accesses
-      a list of URL prefixes in order to try and find a staging server that
-      has the required package. It does this by appending the package name to
-      the URL prefix. For example, if the package name is
-      '7.0.0-x86-Linux-2.4-glibc2.3.tar.gz' and the URL prefix is
-      'gsiftp://example.com' then the package URL will be
-      'gsiftp://example.com/7.0.0-x86-Linux-2.4-glibc2.3.tar.gz'. The service
-      will attempt to access this URL to retrieve the package. If the URL
-      returns an error, then the service will construct another package URL
-      using the next URL prefix until all URL prefixes have been tried. The
-      list of URL prefixes is set in the jndi-config.xml file. See the section
-      on Service Installation and Configuration for more information on how to
-      specify the list of URL prefixes.</para>
+      a list of URLs retrieved from the replica location service to download
+      the required package. If the first URL returns an error, then the service
+      will try the next URL until all URLs have been tried. The URL of the
+      replica location service is set in the jndi-config.xml file. See the 
+      section on Service Installation and Configuration for more information 
+      on how to specify the list of URL prefixes.</para>
 
       <para>If you need to create a custom package for one of your sites, you
       can easily do this by creating an appropriately named .tar.gz file that
@@ -1314,7 +1308,8 @@ mysql&gt; </programlisting>The above creates a user who can log in from the
       condor_starter, and condor_starter.std. These daemons can be found in
       the sbin directory of any Condor installation. The .tar.gz file should
       have a flat directory structure (i.e. when you unzip it it shouldn't
-      create any directories).</para>
+      create any directories). Just upload the package to the staging server
+      and add a mapping to the replica location service.</para>
     </section>
 
     <section>
@@ -1603,10 +1598,8 @@ mysql&gt; </programlisting>The above creates a user who can log in from the
             &lt;value&gt;share/glidein_service/glidein_run&lt;/value&gt;
         &lt;/parameter&gt;
         &lt;parameter&gt;
-            &lt;name&gt;glideinServerURLs&lt;/name&gt;
-            &lt;value&gt;http://scecit02.usc.edu/glidein/binaries,
-http://www.cs.wisc.edu/condor/glidein/binaries,
-gsiftp://gridftp.cs.wisc.edu/p/condor/public/binaries/glidein&lt;/value&gt;
+            &lt;name&gt;rls&lt;/name&gt;
+            &lt;value&gt;rls://aftershock.usc.edu&lt;/value&gt;
         &lt;/parameter&gt;
         &lt;parameter&gt;
             &lt;name&gt;glideinCondorConfig&lt;/name&gt;
@@ -1650,12 +1643,10 @@ gsiftp://gridftp.cs.wisc.edu/p/condor/public/binaries/glidein&lt;/value&gt;
             </listitem>
 
             <listitem>
-              <command>glideinServerURLs</command>
+              <command>rls</command>
 
-              <para>Comma-separated list of URLs where glidein binaries can be
-              downloaded. URLs are searched for the required package in the
-              order specified. The first URL containing the required package
-              is used.</para>
+              <para>URL of the RLS service that should be used to locate
+              binary worker packages.</para>
             </listitem>
 
             <listitem>
@@ -1787,18 +1778,20 @@ gsiftp://gridftp.cs.wisc.edu/p/condor/public/binaries/glidein&lt;/value&gt;
         </listitem>
 
         <listitem>
-          <para><emphasis role="bold">"Failed to retrieve $PACKAGE" when
+          <para><emphasis role="bold">"Failed to retrieve package" when
           creating site</emphasis></para>
 
           <para>The glidein service downloads Condor binary packages from a
           staging server. This message indicates that the service has
-          identified $PACKAGE as the required package for the remote site, but
-          that none of the staging servers specified in jndi-config.xml
-          contain this package. The only solution is to 1) provide the URL for
-          a new staging server that contains the package in jndi-config.xml
-          and restart the Globus container, 2) add the package to an existing
-          staging server, or 3) specify a compatible package that does exist
-          on one of the staging servers when creating the site.</para>
+          identified the required package for the remote site, but
+          that the service failed to locate the package in the replica 
+          location service. First, make sure that the appropriate package
+          for the site is mapped in the replica location service. Next,
+          make sure that the mapping(s) for the package point to a valid
+          url on one of the staging servers. Finally, if you can't find
+          the correct package, you can either create a new one by downloading
+          Condor and patching it together yourself, or you can specify
+          a different, but compatible, package when creating the site.</para>
         </listitem>
 
         <listitem>

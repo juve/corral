@@ -112,10 +112,8 @@
         <!-- 	run					- Path to the glidein run shell script.	-->
         <!-- 						  Relative paths are relative to 		-->
         <!-- 						  GLOBUS_LOCATION						-->
-        <!-- 	glideinServerURLs	- List of URLs to retrieve glidein 		-->
-        <!-- 						  binaries from (comma-separated list).	-->
-        <!-- 						  URLs are considered in the order 		-->
-        <!-- 						  specified.							-->
+        <!-- 	rls					- URL of the RLS service that should be	-->
+        <!-- 						  used to locate binary worker packages -->
         <!-- 	glideinCondorConfig	- Default glidein config file. Relative	-->
         <!-- 						  paths are relative to GLOBUS_LOCATION -->
         <!-- 	workingDirectory	- Directory to store working files.		-->
@@ -141,8 +139,8 @@
                 	<value>share/glidein_service/glidein_run</value>
                 </parameter>
                 <parameter>
-                	<name>glideinServerURLs</name>
-                	<value>http://scecit02.usc.edu/glidein/binaries,http://www.cs.wisc.edu/condor/glidein/binaries,gsiftp://gridftp.cs.wisc.edu/p/condor/public/binaries/glidein</value>
+                	<name>rls</name>
+                	<value>rls://aftershock.usc.edu</value>
                 </parameter>
                 <parameter>
                 	<name>glideinCondorConfig</name>

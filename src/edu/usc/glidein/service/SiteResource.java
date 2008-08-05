@@ -567,8 +567,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		} else {
 			job.addArgument("-condorPackage "+site.getCondorPackage());
 		}
-		String[] urls = config.getStagingURLs();
-		for(String url : urls) job.addArgument("-url "+url);
+		job.addArgument("-rls "+config.getRls());
 		
 		// Add a listener
 		job.addListener(new InstallSiteListener(getKey()));

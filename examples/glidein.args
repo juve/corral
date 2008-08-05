@@ -7,7 +7,7 @@
 --count 1
 --host-count 1
 --num-cpus 2
---wall-time 60
+--wall-time 5
 #--idle-time 5
 #--condor-host juve.usc.edu
 #--condor-debug D_JOB,D_MACHINE

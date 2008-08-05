@@ -4,9 +4,9 @@
 CMD=`basename $0`
 usage ()
 {
-	echo """Usage: $CMD OPTIONS REQUIRED
+	echo """Usage: $CMD OPTIONS -i <path> (-u <url> | (-v <version> | -p <package>) -r <url>)
 
-REQUIRED
+OPTIONS
 
   -i | -installPath <path>
       The path to install the Condor executables.
@@ -17,29 +17,32 @@ REQUIRED
       The tar.gz archive to download. Default is gathered from system info.
       Ex: 7.0.0-x86-Linux-2.4-glibc2.3.tar.gz. Specify either -condorVersion
       or -condorPackage, but not both.
-  -u | -url <url> ...
-      The server URL where the glidein jobs are hosted. Protocols supported
-      include: http, https, ftp, and gsiftp. Multiple -url arguments are
-      allowed.
-      
-OPTIONS
-
+  -r | -rls <url>
+	  The replica location service URL where the package name can be looked
+	  up to find an appropriate replica of the binary worker node package to
+	  download. Specify either -rls or -url, but not both.
+  -u | -url <url>
+      The server URL of the binary worker node package. Protocols supported
+      include: http, https, ftp, and gsiftp. Specify either -rls or -url,
+      but not both.
   -h | -help
       Display this usage message
 """ >&2
 }
 
-SERVER_URLS=""
 INSTALL_PATH=""
 VERSION=""
 PACKAGE=""
+PACKAGE_URL=""
+RLS_URL=""
 
 while [ $# -ge 1 ]; do
 	case $1 in
 		-i | -installPath) INSTALL_PATH=$2 ;;
 		-v | -condorVersion) VERSION=$2 ;;
 		-p | -condorPackage) PACKAGE=$2 ;;
-		-u | -url) SERVER_URLS="${SERVER_URLS}$2 " ;;
+		-u | -url) PACKAGE_URL=$2 ;;
+		-r | -rls) RLS_URL=$2 ;;
 		-h | -help) usage ; exit 1 ;;
 		*) echo "Unknown argument: $1" >&2 ; exit 1 ;;
 	esac
@@ -57,30 +60,33 @@ if ! echo ${INSTALL_PATH} | grep -q -E "^/"; then
 	exit 1
 fi
 
-# Need at least one server url
-if [ -z "${SERVER_URLS}" ]; then
-	echo "Must specify at least one -url" >&2
+if [ -z "${PACKAGE_URL}" ] && [ -z "${RLS_URL}" ]; then
+	echo "Please specify either -rls or -url" >&2
 	exit 1
 fi
-for URL in ${SERVER_URLS}; do
-	if ! echo $URL | grep -q -E "(^gsiftp)|(^http)|(^ftp)"; then
-		echo "Invalid URL: $URL" >&2
+
+# If we are using RLS
+if [ -z "${PACKAGE_URL}" ]; then
+
+	# Must specify either package or version
+	if [ -z "$PACKAGE" ] && [ -z "$VERSION" ]; then
+		echo "Must specify -condorPackage or -condorVersion" >&2
 		exit 1
 	fi
-done
-
-# Must specify either package or version
-if [ -z "$PACKAGE" ] && [ -z "$VERSION" ]; then
-	echo "Must specify -condorPackage or -condorVersion" >&2
-	exit 1
-fi
-if [ ! -z "$PACKAGE" ] && [ ! -z "$VERSION" ]; then
-	echo "Must specify either -condorPackage or -condorVersion" >&2
-	exit 1
-fi
-if [ ! -z "$VERSION" ]; then
-	if ! echo $VERSION | grep -q -E "^[0-9]+[.][0-9]+[.][0-9]+$"; then
-		echo "Invalid Condor version: $VERSION" >&2
+	if [ ! -z "$PACKAGE" ] && [ ! -z "$VERSION" ]; then
+		echo "Must specify either -condorPackage or -condorVersion" >&2
+		exit 1
+	fi
+	if [ ! -z "$VERSION" ]; then
+		if ! echo "$VERSION" | grep -q -E "^[0-9]+[.][0-9]+[.][0-9]+$"; then
+			echo "Invalid Condor version: $VERSION" >&2
+			exit 1
+		fi
+	fi
+else
+	# Validate package URL
+	if ! echo "$PACKAGE_URL" | grep -q -E "(^gsiftp)|(^http)|(^ftp)"; then
+		echo "Invalid package URL: $PACKAGE_URL" >&2
 		exit 1
 	fi
 fi
@@ -90,9 +96,10 @@ if [ -z "${GLOBUS_LOCATION}" ]; then
 	echo "GLOBUS_LOCATION environment variable not set" >&2
 	exit 1
 fi
+source $GLOBUS_LOCATION/etc/globus-user-env.sh
 
-# If user specified version only, then determine package
-if [ -z "$PACKAGE" ]; then
+# Determine package name if needed
+if [ -z "${PACKAGE_URL}" ] && [ -z "$PACKAGE" ]; then
 
 	# Determine package name
 	os=`uname -s`
@@ -174,16 +181,44 @@ if [ -z "$PACKAGE" ]; then
 	esac
 fi
 
-# Download Condor package from one of the servers
-PACKAGE_PATH=`pwd`/package.tar.gz
-GUC=${GLOBUS_LOCATION}/bin/globus-url-copy
+# Locate tools
+GUC="${GLOBUS_LOCATION}/bin/globus-url-copy"
 if [ ! -x $GUC ]; then
 	echo "Unable to locate globus-url-copy" >&2
 	exit 1
 fi
-for URL in ${SERVER_URLS}; do
-	
-	PACKAGE_URL=$URL/$PACKAGE
+RLS="${GLOBUS_LOCATION}/bin/globus-rls-cli"
+if [ ! -x $RLS ]; then
+	echo "Unable to locate globus-rls-cli" >&2
+	exit 1
+fi
+
+# If using RLS
+PACKAGE_URLS=""
+if [ -z "${PACKAGE_URL}" ]; then
+	# Get list of urls from RLS
+	RESULTS=`$RLS query lrc lfn $PACKAGE $RLS_URL`
+	rc=$?
+	if [ $rc != 0 ]; then
+		echo "Unable to get package URL from RLS" >&2
+		exit 1
+	fi
+	OLD_IFS=$IFS
+	IFS="
+"
+	for RESULT in "$RESULTS"; do
+		URL=`echo $RESULT | cut -f2- -d:`
+		PACKAGE_URLS="$PACKAGE_URLS$URL "
+	done
+	IFS=$OLD_IFS
+else
+	# The package url is the list
+	PACKAGE_URLS="${PACKAGE_URL}"
+fi
+
+# Download Condor package from one of the staging servers
+PACKAGE_PATH=`pwd`/package.tar.gz
+for PACKAGE_URL in ${PACKAGE_URLS}; do
 	
 	# Try globus-url-copy first
 	$GUC ${PACKAGE_URL} file:${PACKAGE_PATH} 2>&1
@@ -208,7 +243,7 @@ done
 
 # If package could not be downloaded from any server
 if [ ! -f ${PACKAGE_PATH} ]; then
-	echo "Failed to retrieve $PACKAGE" >&2
+	echo "Failed to retrieve binary worker package" >&2
 	exit 1
 fi
 
