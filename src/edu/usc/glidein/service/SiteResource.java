@@ -16,18 +16,23 @@
 package edu.usc.glidein.service;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.CharArrayWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.security.Principal;
 import java.util.Calendar;
+import java.util.HashSet;
 
 import javax.naming.NamingException;
+import javax.security.auth.Subject;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
@@ -35,6 +40,8 @@ import org.globus.delegation.DelegationException;
 import org.globus.delegation.DelegationUtil;
 import org.globus.delegation.service.DelegationResource;
 import org.globus.gsi.GlobusCredential;
+import org.globus.gsi.jaas.GlobusPrincipal;
+import org.globus.util.Util;
 import org.globus.wsrf.PersistenceCallback;
 import org.globus.wsrf.Resource;
 import org.globus.wsrf.ResourceException;
@@ -45,6 +52,8 @@ import org.globus.wsrf.ResourcePropertySet;
 import org.globus.wsrf.Topic;
 import org.globus.wsrf.TopicList;
 import org.globus.wsrf.TopicListAccessor;
+import org.globus.wsrf.encoding.ObjectDeserializer;
+import org.globus.wsrf.encoding.ObjectSerializer;
 import org.globus.wsrf.impl.ReflectionResourceProperty;
 import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
@@ -53,6 +62,7 @@ import org.globus.wsrf.impl.SimpleTopicList;
 import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
 import org.globus.wsrf.security.SecurityException;
 import org.globus.wsrf.utils.SubscriptionPersistenceUtils;
+import org.xml.sax.InputSource;
 
 import edu.usc.glidein.condor.Condor;
 import edu.usc.glidein.condor.CondorEventGenerator;
@@ -80,7 +90,6 @@ import edu.usc.glidein.stubs.types.SiteStateChange;
 import edu.usc.glidein.stubs.types.SiteStateChangeMessage;
 import edu.usc.glidein.util.AddressingUtil;
 import edu.usc.glidein.util.AuthenticationUtil;
-import edu.usc.glidein.util.CredentialUtil;
 import edu.usc.glidein.util.FilesystemUtil;
 
 public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, 
@@ -376,22 +385,16 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			code = SiteEventCode.REMOVE;
 		}
 		
+		// Store the credential endpoint
+		storeCredentialEPR(credentialEPR);
+		
 		// Schedule remove event
 		try {
 			Event event = new SiteEvent(code,Calendar.getInstance(),getKey());
-			if (!force) {
-				DelegationResource delegationResource = 
-					DelegationUtil.getDelegationResource(credentialEPR);
-				GlobusCredential credential = 
-					delegationResource.getCredential();
-				event.setProperty("credential", credential);
-			}
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {
 			throw new ResourceException("Unable to get event queue",ne);
-		} catch (DelegationException de) {
-			throw new ResourceException("Unable to get delegated credential",de);
 		}
 	}
 	
@@ -407,31 +410,16 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			work.mkdirs();
 		}
 		
+		// Store the credential endpoint
+		storeCredentialEPR(credentialEPR);
+		
 		// Schedule submit event
 		try {
-			
-			/* TODO Save the Credential EPR and retrieve the credential later
-			 * I can do this now that I have the subject name stored. This will
-			 * allow us to refresh the credential if we want.
-			 */
-			
-			// Get delegated credential
-			DelegationResource delegationResource = 
-				DelegationUtil.getDelegationResource(credentialEPR);
-			GlobusCredential credential = 
-				delegationResource.getCredential();
-			
-			// Validate that there is enough time left on the credential
-			validateCredentialLifetime(credential);
-			
 			Event event = new SiteEvent(SiteEventCode.SUBMIT,Calendar.getInstance(),getKey());
-			event.setProperty("credential", credential);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (NamingException ne) {
 			throw new ResourceException("Unable to get event queue",ne);
-		} catch (DelegationException de) {
-			throw new ResourceException("Unable to get delegated credential",de);
 		}
 	}
 	
@@ -546,7 +534,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		job.setLocalExecutable(true);
 		
 		// Set credential
-		GlobusCredential cred = loadCredential();
+		GlobusCredential cred = getDelegatedCredential();
 		if (validateCredentialLifetime(cred)) {
 			job.setCredential(cred);
 		} else {
@@ -695,21 +683,31 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private File getCredentialFile() throws ResourceException
+	private File getCredentialEPRFile() throws ResourceException
 	{
 		File dir = getWorkingDirectory();
-		File credFile = new File(dir,"credential");
+		File credFile = new File(dir,"credential.epr");
 		return credFile;
 	}
 	
-	private void storeCredential(GlobusCredential credential)
+	private void storeCredentialEPR(EndpointReferenceType epr)
 	throws ResourceException
 	{
-		info("Storing credential");
-		try {
-			CredentialUtil.store(credential,getCredentialFile());
-		} catch (IOException e) {
-			throw new ResourceException("Unable to store credential",e);
+		info("Storing credential EPR");
+		// TODO: Store EPR in the database
+		synchronized (this) {
+			try {
+				String endpointString = ObjectSerializer.toString(
+						epr, EndpointReferenceType.getTypeDesc().getXmlType());
+				File file = getCredentialEPRFile();
+				BufferedWriter writer = new BufferedWriter(
+						new FileWriter(file));
+				writer.write(endpointString);
+				writer.close();
+				Util.setFilePermissions(file.getAbsolutePath(), 600);
+			} catch (Exception e) {
+				throw new ResourceException("Unable to store credential EPR",e);
+			}
 		}
 	}
 	
@@ -721,14 +719,47 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		return (need < credential.getTimeLeft());
 	}
 	
-	private GlobusCredential loadCredential() 
+	private EndpointReferenceType loadCredentialEPR() 
 	throws ResourceException
 	{
-		info("Loading credential");
+		info("Loading credential EPR");
+		synchronized (this) {
+			try {
+				FileInputStream fis = new FileInputStream(getCredentialEPRFile());
+				EndpointReferenceType epr = (EndpointReferenceType)
+					ObjectDeserializer.deserialize(
+							new InputSource(fis), EndpointReferenceType.class);
+				fis.close();
+				return epr;
+			} catch (Exception e) {
+				throw new ResourceException("Unable to load credential EPR",e);
+			}
+		}
+	}
+	
+	private GlobusCredential getDelegatedCredential() throws ResourceException
+	{
+		info("Retrieving delegated credential");
 		try {
-			return CredentialUtil.load(getCredentialFile());
-		} catch (IOException e) {
-			throw new ResourceException("Unable to load credential",e);
+			// Load the endpoint reference
+			EndpointReferenceType epr = loadCredentialEPR();
+			
+			// Create subject for authorization
+			Principal principal = new GlobusPrincipal(site.getSubject());
+			HashSet<Principal> principals = new HashSet<Principal>();
+			principals.add(principal);
+			Subject subject = new Subject(
+					false,principals,new HashSet(),new HashSet());
+			
+			// Get delegated credential
+			DelegationResource delegationResource = 
+				DelegationUtil.getDelegationResource(epr);
+			GlobusCredential credential = 
+				delegationResource.getCredential(subject);
+			org.globus.wsrf.security.SecurityManager.getManager().getCaller();
+			return credential;
+		} catch (DelegationException de) {
+			throw new ResourceException("Unable to get delegated credential",de);
 		}
 	}
 	
@@ -780,7 +811,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		job.setExecutable(uninstall);
 		job.setLocalExecutable(true);
 		
-		GlobusCredential cred = loadCredential();
+		GlobusCredential cred = getDelegatedCredential();
 		if (validateCredentialLifetime(cred)) {
 			job.setCredential(cred);
 		} else {
@@ -907,11 +938,6 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 					// Change status to staging
 					updateState(SiteState.STAGING, "Staging executables", null, event.getTime());
 						
-					// Store delegated credential
-					GlobusCredential credential = 
-						(GlobusCredential)event.getProperty("credential");
-					storeCredential(credential);
-						
 					// Submit job
 					submitInstallJob();
 					
@@ -920,7 +946,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				}
 				
 			} break;
-				
+			
 			case INSTALL_SUCCESS: {
 				
 				SiteState reqd = SiteState.STAGING;
@@ -968,15 +994,6 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				if (SiteState.STAGING.equals(state)) {
 					cancelInstallJob();
 				}
-				
-				// Store the credential for later. We have to do this because
-				// it is possible that there will be glideins that we need to
-				// wait for. If that happens then the event with the credential
-				// attached won't be available when we need to submit the
-				// uninstall job.
-				GlobusCredential credential = 
-					(GlobusCredential)event.getProperty("credential");
-				storeCredential(credential);
 				
 				// If there are some glideins for this site
 				if (hasGlideins()) {
@@ -1104,7 +1121,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				CondorEventGenerator gen = new CondorEventGenerator(job);
 				gen.start();
 				
-			} else if (getCredentialFile().exists()) {
+			} else if (getCredentialEPRFile().exists()) {
 				
 				// If the credential file still exists, 
 				// try to submit the install job
@@ -1147,7 +1164,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				CondorEventGenerator gen = new CondorEventGenerator(job);
 				gen.start();
 				
-			} else if (getCredentialFile().exists()) {
+			} else if (getCredentialEPRFile().exists()) {
 				
 				// Else, if the credential file exists, try to
 				// submit the uninstall job

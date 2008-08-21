@@ -16,18 +16,23 @@
 package edu.usc.glidein.service;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.CharArrayWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.security.Principal;
 import java.util.Calendar;
+import java.util.HashSet;
 
 import javax.naming.NamingException;
+import javax.security.auth.Subject;
 
 import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
@@ -35,6 +40,8 @@ import org.globus.delegation.DelegationException;
 import org.globus.delegation.DelegationUtil;
 import org.globus.delegation.service.DelegationResource;
 import org.globus.gsi.GlobusCredential;
+import org.globus.gsi.jaas.GlobusPrincipal;
+import org.globus.util.Util;
 import org.globus.wsrf.PersistenceCallback;
 import org.globus.wsrf.Resource;
 import org.globus.wsrf.ResourceException;
@@ -45,6 +52,8 @@ import org.globus.wsrf.ResourcePropertySet;
 import org.globus.wsrf.Topic;
 import org.globus.wsrf.TopicList;
 import org.globus.wsrf.TopicListAccessor;
+import org.globus.wsrf.encoding.ObjectDeserializer;
+import org.globus.wsrf.encoding.ObjectSerializer;
 import org.globus.wsrf.impl.ReflectionResourceProperty;
 import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
@@ -53,6 +62,7 @@ import org.globus.wsrf.impl.SimpleTopicList;
 import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
 import org.globus.wsrf.security.SecurityException;
 import org.globus.wsrf.utils.SubscriptionPersistenceUtils;
+import org.xml.sax.InputSource;
 
 import edu.usc.glidein.condor.Condor;
 import edu.usc.glidein.condor.CondorEventGenerator;
@@ -82,7 +92,6 @@ import edu.usc.glidein.stubs.types.SiteState;
 import edu.usc.glidein.util.AddressingUtil;
 import edu.usc.glidein.util.AuthenticationUtil;
 import edu.usc.glidein.util.Base64;
-import edu.usc.glidein.util.CredentialUtil;
 import edu.usc.glidein.util.FilesystemUtil;
 import edu.usc.glidein.util.IOUtil;
 
@@ -365,31 +374,16 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			work.mkdirs();
 		}
 		
+		// Store the credential endpoint
+		storeCredentialEPR(credentialEPR);
+		
 		try {
-			
-			/* TODO Save the Credential EPR and retrieve the credential later
-			 * I can do this now that I have the subject name stored. This will
-			 * allow us to refresh the credential if we want.
-			 */
-			
-			// Get delegated credential
-			DelegationResource delegationResource = 
-				DelegationUtil.getDelegationResource(credentialEPR);
-			GlobusCredential credential = 
-				delegationResource.getCredential();
-			
-			// Validate credential lifetime
-			validateCredentialLifetime(credential);
-			
 			// Create submit event
 			Event event = new GlideinEvent(GlideinEventCode.SUBMIT,Calendar.getInstance(),getKey());
-			event.setProperty("credential", credential);
 			EventQueue queue = EventQueue.getInstance(); 
 			queue.add(event);
 		} catch (NamingException ne) {
 			throw new ResourceException("Unable to get event queue",ne);
-		} catch (DelegationException de) {
-			throw new ResourceException("Unable to retrieve delegated credential",de);
 		}
 	}
 	
@@ -550,7 +544,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		job.addInputFile(configFile);
 		
 		// Set the credential
-		GlobusCredential cred = loadCredential();
+		GlobusCredential cred = getDelegatedCredential();
 		if (validateCredentialLifetime(cred)) {
 			job.setCredential(cred);
 		} else {
@@ -703,20 +697,76 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		return new File(getConfig().getWorkingDirectory(),"glidein-"+glidein.getId());
 	}
 	
-	private void storeCredential(GlobusCredential credential) throws ResourceException
+	private File getCredentialEPRFile() throws ResourceException
 	{
-		try {
-			CredentialUtil.store(credential,getCredentialFile());
-		} catch (IOException ioe) {
-			throw new ResourceException("Unable to store credential",ioe);
+		File work = getWorkingDirectory();
+		File credFile = new File(work,"credential.epr");
+		return credFile;
+	}
+	
+	private void storeCredentialEPR(EndpointReferenceType epr)
+	throws ResourceException
+	{
+		info("Storing credential EPR");
+		// TODO: Store EPR in the database
+		synchronized (this) {
+			try {
+				String endpointString = ObjectSerializer.toString(
+						epr, EndpointReferenceType.getTypeDesc().getXmlType());
+				File file = getCredentialEPRFile();
+				BufferedWriter writer = new BufferedWriter(
+						new FileWriter(file));
+				writer.write(endpointString);
+				writer.close();
+				Util.setFilePermissions(file.getAbsolutePath(), 600);
+			} catch (Exception e) {
+				throw new ResourceException("Unable to store credential EPR",e);
+			}
 		}
 	}
 	
-	private File getCredentialFile() throws ResourceException
+	private EndpointReferenceType loadCredentialEPR() 
+	throws ResourceException
 	{
-		File work = getWorkingDirectory();
-		File credFile = new File(work,"credential");
-		return credFile;
+		info("Loading credential EPR");
+		synchronized (this) {
+			try {
+				FileInputStream fis = new FileInputStream(getCredentialEPRFile());
+				EndpointReferenceType epr = (EndpointReferenceType)
+					ObjectDeserializer.deserialize(
+							new InputSource(fis), EndpointReferenceType.class);
+				fis.close();
+				return epr;
+			} catch (Exception e) {
+				throw new ResourceException("Unable to load credential EPR",e);
+			}
+		}
+	}
+	
+	private GlobusCredential getDelegatedCredential() throws ResourceException
+	{
+		info("Retrieving delegated credential");
+		try {
+			// Load the endpoint reference
+			EndpointReferenceType epr = loadCredentialEPR();
+			
+			// Create subject for authorization
+			Principal principal = new GlobusPrincipal(glidein.getSubject());
+			HashSet<Principal> principals = new HashSet<Principal>();
+			principals.add(principal);
+			Subject subject = new Subject(
+					false,principals,new HashSet(),new HashSet());
+			
+			// Get delegated credential
+			DelegationResource delegationResource = 
+				DelegationUtil.getDelegationResource(epr);
+			GlobusCredential credential = 
+				delegationResource.getCredential(subject);
+			org.globus.wsrf.security.SecurityManager.getManager().getCaller();
+			return credential;
+		} catch (DelegationException de) {
+			throw new ResourceException("Unable to get delegated credential",de);
+		}
 	}
 	
 	private boolean validateCredentialLifetime(GlobusCredential credential) 
@@ -729,17 +779,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 	
 	private boolean credentialIsValid() throws ResourceException
 	{
-		GlobusCredential cred = loadCredential();
+		GlobusCredential cred = getDelegatedCredential();
 		return validateCredentialLifetime(cred);
-	}
-	
-	private GlobusCredential loadCredential() throws ResourceException
-	{
-		try {
-			return CredentialUtil.load(getCredentialFile());
-		} catch (IOException ioe) {
-			throw new ResourceException("Unable to load credential",ioe);
-		}
 	}
 	
 	private void failQuietly(String message, Exception exception, Calendar time)
@@ -804,11 +845,6 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				// Only NEW glideins can be submitted
 				GlideinState reqd = GlideinState.NEW;
 				if (reqd.equals(state)) {
-					
-					// Save the credential
-					GlobusCredential credential = 
-						(GlobusCredential)event.getProperty("credential");
-					storeCredential(credential);
 					
 					if (siteIsReady()) {
 						
@@ -1071,9 +1107,9 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				CondorEventGenerator gen = new CondorEventGenerator(job);
 				gen.start();
 				
-			} else if (getCredentialFile().exists()) {
+			} else if (getCredentialEPRFile().exists()) {
 				
-				// If the credential file still exists, 
+				// If the credential EPR file still exists, 
 				// try to submit the install job
 				submitGlideinJob();
 				
