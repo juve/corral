@@ -88,6 +88,7 @@ public class SiteHistoryCommand extends Command
 			Calendar time = (Calendar)entry.getTime().clone();
 			time.setTimeZone(TimeZone.getDefault());
 			System.out.printf("%1$TF %1$TT",time);
+			System.out.printf(" [ %s ]",time.getTimeInMillis());
 			System.out.printf("\n");
 		}
 	}
