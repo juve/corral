@@ -827,6 +827,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		
 		// Add arguments
 		job.addArgument("-installPath "+site.getInstallPath());
+		job.addArgument("-localPath "+site.getLocalPath());
 		
 		// Add a listener
 		job.addListener(new UninstallSiteListener(getKey()));
