@@ -124,6 +124,12 @@ STARTD_EXPRS = IsGlidein, START, DaemonRunTime, DaemonStopTime
 # TCP works better in the WAN
 UPDATE_COLLECTOR_WITH_TCP = True
 
+# Might as well
+BIND_ALL_INTERFACES = True
+
+# Make sure we don't advertise private ips
+NETWORK_INTERFACE = $(GLIDEIN_IP_ADDR)
+
 # Use random numbers here so the glideins don't all hit the collector at 
 # the same time. If there are many glideins the collector can get overwhelmed.
 UPDATE_INTERVAL = $RANDOM_INTEGER(230, 370)

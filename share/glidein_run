@@ -165,6 +165,12 @@ if [ ! -z "${NUM_CPUS}" ]; then
 	export _condor_NUM_CPUS=${NUM_CPUS}
 fi
 
+# Determine IP address
+IP_ADDR=
+for ip in `/sbin/ifconfig  | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }' | grep -v '^192.' | grep -v '^10.' | grep -v '127.0.0.1'`; do
+	IP_ADDR=$ip
+done
+
 # Add condor config entries
 printf "\n\n" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_CONDOR_CONFIG = ${CONDOR_CONFIG}" >> ${CONDOR_CONFIG}
@@ -178,6 +184,7 @@ echo "GLIDEIN_IDLE_TIME_SECONDS = ${IDLE_TIME_SECONDS}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_GCB_ENABLE = ${GCB_ENABLE}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_GCB_BROKER = ${GCB_BROKER}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_DEBUG = ${DEBUG}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_IP_ADDR = ${IP_ADDR}" >> ${CONDOR_CONFIG}
 
 # If we got a signal, then Condor got it too, so just let Condor exit normally.
 # But record the fact that we got a signal so that we can leave the logs
