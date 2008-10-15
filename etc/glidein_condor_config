@@ -73,6 +73,9 @@ USE_PROCESS_GROUPS = False
 # environment variable.
 #NUM_CPUS = 0
 
+# Useful for Grid site environment variables (e.g. X509_USER_PROXY)
+JOB_INHERITS_STARTER_ENVIRONMENT = True
+
 ###############################################################################
 # Daemon settings
 ###############################################################################
