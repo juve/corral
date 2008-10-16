@@ -185,6 +185,7 @@ echo "GLIDEIN_GCB_ENABLE = ${GCB_ENABLE}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_GCB_BROKER = ${GCB_BROKER}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_DEBUG = ${DEBUG}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_IP_ADDR = ${IP_ADDR}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_X509_USER_PROXY = X509_USER_PROXY=${X509_USER_PROXY}" >> ${CONDOR_CONFIG}
 
 # If we got a signal, then Condor got it too, so just let Condor exit normally.
 # But record the fact that we got a signal so that we can leave the logs

@@ -73,8 +73,18 @@ USE_PROCESS_GROUPS = False
 # environment variable.
 #NUM_CPUS = 0
 
-# Useful for Grid site environment variables (e.g. X509_USER_PROXY)
+# Pass Grid site environment variables to glidein jobs. This gives Condor jobs
+# the same environment you would get when running the job on the grid site
+# directly (with the exception of X509_USER_PROXY, see below). 
 JOB_INHERITS_STARTER_ENVIRONMENT = True
+
+# Because Condor strips X509_USER_PROXY out of the STARTD environment we need
+# to pass it to the starter explicitly via STARTER_JOB_ENVIRONMENT. Please
+# note that this may be a rather large security hole depending on how you
+# configure security in your condor central manager. You should only allow
+# trusted users to submit jobs to this pool because they could gain access
+# to your proxy by submitting a job to read it.
+STARTER_JOB_ENVIRONMENT = $(GLIDEIN_X509_USER_PROXY)
 
 ###############################################################################
 # Daemon settings
