@@ -140,7 +140,7 @@ UPDATE_COLLECTOR_WITH_TCP = True
 # Might as well
 BIND_ALL_INTERFACES = True
 
-# Make sure we don't advertise private ips
+# The glidein_run script should determine the correct value for this
 NETWORK_INTERFACE = $(GLIDEIN_IP_ADDR)
 
 # Use random numbers here so the glideins don't all hit the collector at 
