@@ -4,7 +4,7 @@
 CMD=`basename $0`
 usage ()
 {
-	echo """Usage: $CMD OPTIONS -i <path> (-u <url> | (-v <version> | -p <package>) -r <url>)
+	echo """Usage: $CMD OPTIONS -i <path> (-v <version> | -p <package>)
 
 OPTIONS
 
@@ -15,20 +15,30 @@ OPTIONS
       or -condorPackage, but not both.
   -p | -condorPackage <tar.gz>
       The tar.gz archive to download. Default is gathered from system info.
-      Ex: 7.0.0-x86-Linux-2.4-glibc2.3.tar.gz. Specify either -condorVersion
-      or -condorPackage, but not both.
+      Ex: 7.0.0-x86-Linux-2.4-glibc2.3.tar.gz. The value can be a simple file
+      name, an absolute path, or a URL. The protocols supported for URLs 
+      include: file, http, https, ftp, and gsiftp. In all cases the value
+      must end with .tar.gz. Specify either -condorVersion or -condorPackage,
+      but not both.
   -r | -rls <url>
 	  The replica location service URL where the package name can be looked
 	  up to find an appropriate replica of the binary worker node package to
-	  download. Specify either -rls or -url, but not both.
-  -u | -url <url>
-      The server URL of the binary worker node package. Protocols supported
-      include: http, https, ftp, and gsiftp. Specify either -rls or -url,
-      but not both.
+	  download. This is only used if the -v is specified or if -p is not an
+	  absolute path or URL.
   -h | -help
       Display this usage message
 """ >&2
 }
+
+# If we have GLOBUS_LOCATION, then source the env script
+if [ "${GLOBUS_LOCATION}" ]; then
+	source $GLOBUS_LOCATION/etc/globus-user-env.sh
+fi
+
+# Find some stuff
+GUC=`which globus-url-copy 2&>/dev/null || echo "${GLOBUS_LOCATION}/bin/globus-url-copy"`
+RLS=`which globus-rls-cli 2&>/dev/null || echo "${GLOBUS_LOCATION}/bin/globus-rls-cli"`
+WGET=`which wget 2&>/dev/null || echo "/usr/bin/wget"`
 
 INSTALL_PATH=""
 VERSION=""
@@ -41,7 +51,6 @@ while [ $# -ge 1 ]; do
 		-i | -installPath) INSTALL_PATH=$2 ;;
 		-v | -condorVersion) VERSION=$2 ;;
 		-p | -condorPackage) PACKAGE=$2 ;;
-		-u | -url) PACKAGE_URL=$2 ;;
 		-r | -rls) RLS_URL=$2 ;;
 		-h | -help) usage ; exit 1 ;;
 		*) echo "Unknown argument: $1" >&2 ; exit 1 ;;
@@ -60,46 +69,35 @@ if ! echo ${INSTALL_PATH} | grep -q -E "^/"; then
 	exit 1
 fi
 
-if [ -z "${PACKAGE_URL}" ] && [ -z "${RLS_URL}" ]; then
-	echo "Please specify either -rls or -url" >&2
+# Need either package or version
+if [ -z "${PACKAGE}" ] && [ -z "${VERSION}" ]; then
+	echo "Please specify either -condorPackage or -condorVersion" >&2
 	exit 1
 fi
 
-# If we are using RLS
-if [ -z "${PACKAGE_URL}" ]; then
-
-	# Must specify either package or version
-	if [ -z "$PACKAGE" ] && [ -z "$VERSION" ]; then
-		echo "Must specify -condorPackage or -condorVersion" >&2
-		exit 1
-	fi
-	if [ ! -z "$PACKAGE" ] && [ ! -z "$VERSION" ]; then
-		echo "Must specify either -condorPackage or -condorVersion" >&2
-		exit 1
-	fi
-	if [ ! -z "$VERSION" ]; then
-		if ! echo "$VERSION" | grep -q -E "^[0-9]+[.][0-9]+[.][0-9]+$"; then
-			echo "Invalid Condor version: $VERSION" >&2
-			exit 1
-		fi
-	fi
-else
-	# Validate package URL
-	if ! echo "$PACKAGE_URL" | grep -q -E "(^gsiftp)|(^http)|(^ftp)"; then
-		echo "Invalid package URL: $PACKAGE_URL" >&2
+# Validate version
+if [ ! -z "$VERSION" ]; then
+	if ! echo "$VERSION" | grep -q -E "^[0-9]+[.][0-9]+[.][0-9]+$"; then
+		echo "Invalid Condor version: $VERSION" >&2
 		exit 1
 	fi
 fi
 
-# Check environment
-if [ -z "${GLOBUS_LOCATION}" ]; then
-	echo "GLOBUS_LOCATION environment variable not set" >&2
-	exit 1
+# Validate package name
+if [ ! -z "${PACKAGE}" ]; then
+	if ! echo "$PACKAGE" | grep -q -E ".tar.gz$"; then
+		echo "Condor package must be .tar.gz: $PACKAGE" >&2
+		exit 1
+	fi
 fi
-source $GLOBUS_LOCATION/etc/globus-user-env.sh
+
+# Determine if -condorPackage is a URL or absolute path
+if echo "$PACKAGE" | grep -q -E "(^/)|(^file)|(^gsiftp)|(^http)|(^ftp)"; then
+	PACKAGE_URL=$PACKAGE
+fi
 
 # Determine package name if needed
-if [ -z "${PACKAGE_URL}" ] && [ -z "$PACKAGE" ]; then
+if [ -z "$PACKAGE" ]; then
 
 	# Determine package name
 	os=`uname -s`
@@ -181,21 +179,18 @@ if [ -z "${PACKAGE_URL}" ] && [ -z "$PACKAGE" ]; then
 	esac
 fi
 
-# Locate tools
-GUC="${GLOBUS_LOCATION}/bin/globus-url-copy"
-if [ ! -x $GUC ]; then
-	echo "Unable to locate globus-url-copy" >&2
-	exit 1
-fi
-RLS="${GLOBUS_LOCATION}/bin/globus-rls-cli"
-if [ ! -x $RLS ]; then
-	echo "Unable to locate globus-rls-cli" >&2
-	exit 1
-fi
-
-# If using RLS
+# Initialize PACKAGE_URLS list
 PACKAGE_URLS=""
+
+# Find package URLs if needed
 if [ -z "${PACKAGE_URL}" ]; then
+
+	# Check to make sure we found globus-rls-cli
+	if [ ! -x $RLS ]; then
+		echo "Unable to locate globus-rls-cli" >&2
+		exit 1
+	fi
+
 	# Get list of urls from RLS
 	RESULTS=`$RLS query lrc lfn $PACKAGE $RLS_URL`
 	rc=$?
@@ -216,19 +211,51 @@ else
 	PACKAGE_URLS="${PACKAGE_URL}"
 fi
 
-# Download Condor package from one of the staging servers
+# Download Condor package
 PACKAGE_PATH=`pwd`/package.tar.gz
 for PACKAGE_URL in ${PACKAGE_URLS}; do
+
+	if echo "${PACKAGE_URL}" | grep -q -E '(^/)'; then
 	
-	# Try globus-url-copy first
-	$GUC ${PACKAGE_URL} file:${PACKAGE_PATH} 2>&1
-	rc=$?
-	
-	# If globus-url-copy fails and the url is http or ftp, then try wget
-	if [ $rc != 0 ] || [ ! -f ${PACKAGE_PATH} ] && 
-	echo $URL | grep -q -E '(^http)|(^ftp)'; then
-		wget -q -O ${PACKAGE_PATH} ${PACKAGE_URL} 2>&1
+		# If the url is an absolute path then copy it
+		cp ${PACKAGE_URL} ${PACKAGE_PATH} 2>&1
 		rc=$?
+		
+	elif echo "${PACKAGE_URL}" | grep -q -E '(^file)'; then
+	
+		# If the url is a file:// url, then copy it
+		PACKAGE_URL=`echo "$PACKAGE_URL" | cut -d: -f2-`
+		cp ${PACKAGE_URL} ${PACKAGE_PATH} 2>&1
+		rc=$?
+		
+	elif echo "${PACKAGE_URL}" | grep -q -E '(^http)|(^ftp)'; then
+	
+		# If the url is http[s] or ftp, try wget
+		
+		# Check to make sure we have wget
+		if [ ! -x $WGET ]; then
+			echo "Unable to locate wget" >&2
+			exit 1
+		fi
+		
+		# Attempt to download package
+		wget -q -O ${PACKAGE_PATH} "${PACKAGE_URL}" 2>&1
+		rc=$?
+		
+	else
+	
+		# It must be a globus url, try guc
+		
+		# Check to make sure we have globus-url-copy
+		if [ ! -x $GUC ]; then
+			echo "Unable to locate globus-url-copy" >&2
+			exit 1
+		fi
+
+		# Attempt to download package
+		$GUC "${PACKAGE_URL}" file:${PACKAGE_PATH} 2>&1
+		rc=$?
+		
 	fi
 
 	# Stop if we were successful
