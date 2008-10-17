@@ -185,13 +185,16 @@ public class CreateSiteCommand extends Command
 				  .setOption("cp")
 				  .setLongOption("condor-package")
 				  .setUsage("-cp [--condor-package] <pkg>")
-				  .setDescription("The package name to download. This overrides condor-version. \n" +
-				  				  "I don't recommend using condor-package unless you know what \n" +
-				  				  "you are doing. The default format for the package name is: \n" +
+				  .setDescription("The name of the package to download. This overrides condor-version. \n" +
+				  				  "The typical format for the package name is: \n" +
 				  				  "'<condorversion>-<arch>-<os>-<osversion>-glibc<glibcversion>.tar.gz' \n" +
 				  				  "(e.x. '7.0.0-ia64-Linux-2.4-glibc2.2.tar.gz'), but you can \n" +
-				  				  "specify any package name you like as long as it is available \n" +
-				  				  "on one of the configured staging servers.")
+				  				  "specify any package name you like, as long as it is mapped in RLS. \n" +
+				  				  "The value can be a simple file name like the example above, an \n" +
+				  				  "absolute path, or a URL. The protocols supported for URLs include: \n" +
+				  				  "file, http, https, ftp, and gsiftp. In most cases the value will end \n" +
+				  				  "with .tar.gz. If you provide a package name that is not an \n" +
+				  				  "absolute path or URL, then the service will try to look it up in RLS.")
 				  .hasArgument()
 		);
 		
