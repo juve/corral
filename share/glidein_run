@@ -111,20 +111,16 @@ if [ ! -f "${GLIDEIN_CONDOR_CONFIG}" ]; then
 	exit 1
 fi
 
-# Determine host name as well as possible
-if [ ! -z "`which globus-hostname 2>/dev/null`" ]; then
-	HOSTNAME=`globus-hostname`
-else
-	case `uname` in
-		Linux) HOSTNAME=`hostname -f` ;;
-		SunOS) HOSTNAME=`uname -n` ;;
-		AIX) HOSTNAME=`uname -n` ;;
-		*) HOSTNAME=`hostname` ;;
-	esac
-fi
+# Determine host name
+case `uname` in
+	Linux) HOSTNAME=`hostname -f` ;;
+	SunOS) HOSTNAME=`uname -n` ;;
+	AIX) HOSTNAME=`uname -n` ;;
+	*) HOSTNAME=`hostname` ;;
+esac
 
 # Set local directory
-LOCAL_DIR="${LOCAL_PATH}/${HOSTNAME}-$$"
+LOCAL_DIR="${LOCAL_PATH}/${HOSTNAME}_$$"
 if ! mkdir -p ${LOCAL_DIR}; then
 	echo "Unable to create glidein local dir: ${LOCAL_DIR}" >&2
 	exit 1
@@ -165,10 +161,13 @@ if [ ! -z "${NUM_CPUS}" ]; then
 	export _condor_NUM_CPUS=${NUM_CPUS}
 fi
 
-# Determine IP address
-IP_ADDR=
-for ip in `/sbin/ifconfig  | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }' | grep -v '^192.' | grep -v '^10.' | grep -v '127.0.0.1'`; do
-	IP_ADDR=$ip
+# Determine IP address. Favor public IPs over private IPs.
+ips=`/sbin/ifconfig | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }' | grep -v '127\.'`
+for ip in ${ips}; do
+	# TODO: Include 172.16.0.0-172.31.0.0 as private IPs
+	if [ -z "${IP_ADDR}" ] || ! echo ${ip} | grep -q -E '(^192\.)|(^10\.)'; then
+ 		IP_ADDR=$ip
+	fi
 done
 
 # Add condor config entries
