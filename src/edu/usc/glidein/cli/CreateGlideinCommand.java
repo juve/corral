@@ -27,15 +27,19 @@ import org.globus.gsi.GlobusCredentialException;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
 import edu.usc.glidein.api.GlideinFactoryService;
+import edu.usc.glidein.api.GlideinListener;
 import edu.usc.glidein.api.GlideinService;
 import edu.usc.glidein.stubs.types.Glidein;
+import edu.usc.glidein.stubs.types.GlideinState;
+import edu.usc.glidein.stubs.types.GlideinStateChange;
 import edu.usc.glidein.util.GlideinUtil;
 
-public class CreateGlideinCommand extends Command
+public class CreateGlideinCommand extends Command implements GlideinListener
 {
 	private Glidein glidein = null;
 	private GlobusCredential credential = null;
 	private boolean verbose = false;
+	private boolean wait = false;
 	
 	public void addOptions(List<Option> options)
 	{	
@@ -165,6 +169,13 @@ public class CreateGlideinCommand extends Command
 				  		"on the values of the regular parameters.")
 				  .hasArgument()
 		);
+		options.add(
+			Option.create()
+				  .setOption("W")
+				  .setLongOption("wait")
+				  .setUsage("-W [--wait]")
+				  .setDescription("Block waiting for the glidein to become RUNNING, FAILED, or DELETED.")
+		);
 	}
 	
 	private void setProperty(Properties p, String name, String value)
@@ -186,6 +197,13 @@ public class CreateGlideinCommand extends Command
 			verbose = true;
 		} else {
 			verbose = false;
+		}
+		
+		/* Wait */
+		if (cmdln.hasOption("W")) {
+			wait = true;
+		} else {
+			wait = false;
 		}
 		
 		/* Get proxy credential */
@@ -279,13 +297,41 @@ public class CreateGlideinCommand extends Command
 				System.out.println();
 			}
 			
+			if (isDebug()) System.out.println("Glidein created.");
+			
 			// Submit glidein
 			instance.submit(credentialEPR);
+			
+			if (isDebug()) System.out.println("Glidein submitted.");
+			
+			// Wait for started event
+			if (wait) {
+				if (isDebug()) { 
+					System.out.println("Waiting for glidein...");
+				}
+				
+				// Subscribe
+				instance.addListener(this);
+				
+				// Wait for state change
+				while (wait) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException ie) {
+						ie.printStackTrace();
+					}
+				}
+				
+				// Unsubscribe
+				instance.removeListener(this);
+				
+				if (isDebug()) {
+					System.out.println("Finished waiting.");
+				}
+			}
 		} catch (Exception e) {
 			throw new CommandException("Unable to create glidein: "+e.getMessage(),e);
 		}
-		
-		if (isDebug()) System.out.println("Glidein created.");
 	}
 
 	public String getName()
@@ -306,5 +352,23 @@ public class CreateGlideinCommand extends Command
 	public String getUsage()
 	{
 		return "Usage: create-glidein --site <site>";
+	}
+	
+	public void stateChanged(GlideinStateChange stateChange)
+	{
+		GlideinState state = stateChange.getState();
+		if (isDebug()) {
+			System.out.println("Glidein state changed to "+state);
+			System.out.println("\tShort message: "+stateChange.getShortMessage());
+			if (stateChange.getLongMessage() != null)
+				System.out.println("\tLong message:\n"+stateChange.getLongMessage());
+		}
+		
+		// If the new state is running, failed or deleted, then stop waiting
+		if (state.equals(GlideinState.RUNNING) || 
+				state.equals(GlideinState.FAILED) || 
+				state.equals(GlideinState.DELETED)) {
+			wait = false;
+		}
 	}
 }

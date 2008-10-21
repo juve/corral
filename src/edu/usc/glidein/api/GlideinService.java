@@ -226,29 +226,4 @@ public class GlideinService extends BaseService
 			}
 		}
 	}
-	
-	public static void main(String[] args)
-	{
-		try {
-			GlideinService s = new GlideinService(
-					new URL("https://juve.usc.edu:8443/wsrf/services/glidein/GlideinService"),5);
-			s.addListener(new GlideinListener(){
-				public void stateChanged(GlideinStateChange stateChange)
-				{
-					System.out.println("State changed: "+stateChange.getState());
-				}
-			});
-			
-			System.out.println("Waiting for notifications");
-			while (true) {
-				try {
-					Thread.sleep(30000);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 }

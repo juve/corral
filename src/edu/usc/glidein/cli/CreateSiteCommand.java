@@ -27,6 +27,7 @@ import org.globus.gsi.GlobusCredentialException;
 
 import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.api.SiteFactoryService;
+import edu.usc.glidein.api.SiteListener;
 import edu.usc.glidein.api.SiteService;
 import edu.usc.glidein.catalog.SiteCatalog;
 import edu.usc.glidein.catalog.SiteCatalogException;
@@ -34,15 +35,18 @@ import edu.usc.glidein.catalog.SiteCatalogFactory;
 import edu.usc.glidein.catalog.SiteCatalogFormat;
 import edu.usc.glidein.service.SiteNames;
 import edu.usc.glidein.stubs.types.Site;
+import edu.usc.glidein.stubs.types.SiteState;
+import edu.usc.glidein.stubs.types.SiteStateChange;
 import edu.usc.glidein.util.SiteUtil;
 
-public class CreateSiteCommand extends Command
+public class CreateSiteCommand extends Command implements SiteListener
 {
 	private File catalogFile = null;
 	private SiteCatalogFormat catalogFormat = null;
 	private Site site = null;
 	private GlobusCredential credential;
 	private boolean verbose;
+	private boolean wait;
 	
 	public void addOptions(List<Option> options)
 	{
@@ -207,6 +211,14 @@ public class CreateSiteCommand extends Command
 				  				  "to separate entries. (e.x. 'FOO=f:BAR=b')")
 				  .hasArgument()
 		);
+		
+		options.add(
+			Option.create()
+				  .setOption("W")
+				  .setLongOption("wait")
+				  .setUsage("-W [--wait]")
+				  .setDescription("Block waiting for the site to become READY, FAILED or DELETED.")
+		);
 	}
 	
 	private void setProperty(Properties p, String name, String value)
@@ -301,6 +313,13 @@ public class CreateSiteCommand extends Command
 		} else {
 			verbose = false;
 		}
+		
+		/* Wait */
+		if (cmdln.hasOption("W")) {
+			wait = true;
+		} else {
+			wait = false;
+		}
 	}
 	
 	public void execute() throws CommandException
@@ -352,16 +371,45 @@ public class CreateSiteCommand extends Command
 				SiteUtil.print(site);
 				System.out.println();
 			}
+			
+			if (isDebug()) System.out.printf("Site created.\n");
 
 			// Submit the new site
 			instance.submit(credentialEPR);
 			
+			if (isDebug()) System.out.printf("Site submitted.\n");
+			
+			// Wait for started event
+			if (wait) {
+				if (isDebug()) { 
+					System.out.println("Waiting for site...");
+				}
+				
+				// Subscribe
+				instance.addListener(this);
+				
+				// Wait for state change
+				while (wait) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException ie) {
+						ie.printStackTrace();
+					}
+				}
+				
+				// Unsubscribe
+				instance.removeListener(this);
+				
+				if (isDebug()) {
+					System.out.println("Finished waiting.");
+				}
+			}
 		} catch (GlideinException ge) {
 			throw new CommandException("Unable to create site: "+
 					site.getName()+": "+ge.getMessage(),ge);
 		}
 		
-		if (isDebug()) System.out.printf("Done creating site.\n");
+		
 	}
 
 	public String getName()
@@ -388,5 +436,23 @@ public class CreateSiteCommand extends Command
 	public String getDescription()
 	{
 		return "create-site (cs): Add a new site";
+	}
+	
+	public void stateChanged(SiteStateChange stateChange)
+	{
+		SiteState state = stateChange.getState();
+		if (isDebug()) {
+			System.out.println("Site state changed to "+state);
+			System.out.println("\tShort message: "+stateChange.getShortMessage());
+			if (stateChange.getLongMessage() != null)
+				System.out.println("\tLong message:\n"+stateChange.getLongMessage());
+		}
+		
+		// If the new state is running, failed or deleted, then stop waiting
+		if (state.equals(SiteState.READY) || 
+				state.equals(SiteState.FAILED) ||
+				state.equals(SiteState.DELETED)) {
+			wait = false;
+		}
 	}
 }
