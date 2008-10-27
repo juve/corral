@@ -40,6 +40,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 	private GlobusCredential credential = null;
 	private boolean verbose = false;
 	private boolean wait = false;
+	private CommandException exception = null;
 	
 	public void addOptions(List<Option> options)
 	{	
@@ -315,6 +316,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 				
 				// Wait for state change
 				while (wait) {
+					if (isDebug()) System.out.print(".");
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException ie) {
@@ -327,6 +329,11 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 				
 				if (isDebug()) {
 					System.out.println("Finished waiting.");
+				}
+				
+				// Throw the exception if it failed
+				if (exception != null) {
+					throw exception;
 				}
 			}
 		} catch (Exception e) {
@@ -365,9 +372,12 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 		}
 		
 		// If the new state is running, failed or deleted, then stop waiting
-		if (state.equals(GlideinState.RUNNING) || 
-				state.equals(GlideinState.FAILED) || 
+		if (state.equals(GlideinState.RUNNING)) {
+			wait = false;
+		} else if (state.equals(GlideinState.FAILED) || 
 				state.equals(GlideinState.DELETED)) {
+			exception = new CommandException("Glidein became "+state+": "+
+					stateChange.getShortMessage()+"\n"+stateChange.getLongMessage());
 			wait = false;
 		}
 	}

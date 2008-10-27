@@ -18,6 +18,7 @@ package edu.usc.glidein.cli;
 import static edu.usc.glidein.service.SiteNames.*;
 
 import java.io.File;
+import java.net.URL;
 import java.util.List;
 import java.util.Properties;
 
@@ -25,7 +26,6 @@ import org.apache.axis.message.addressing.EndpointReferenceType;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 
-import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.api.SiteFactoryService;
 import edu.usc.glidein.api.SiteListener;
 import edu.usc.glidein.api.SiteService;
@@ -47,6 +47,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 	private GlobusCredential credential;
 	private boolean verbose;
 	private boolean wait;
+	private CommandException exception;
 	
 	public void addOptions(List<Option> options)
 	{
@@ -382,34 +383,49 @@ public class CreateSiteCommand extends Command implements SiteListener
 			// Wait for started event
 			if (wait) {
 				if (isDebug()) { 
-					System.out.println("Waiting for site...");
+					System.out.println("Waiting for site "+site.getId()+"...");
 				}
 				
 				// Subscribe
-				instance.addListener(this);
+				SiteService s = new SiteService(
+						new URL("https://juve.usc.edu:8443/wsrf/services/glidein/SiteService"),
+						site.getId());
+				s.addListener(this);
+				s.addListener(new SiteListener(){
+					public void stateChanged(SiteStateChange stateChange)
+					{
+						System.out.println("State changed: "+stateChange.getState());
+					}
+				});
+				//instance.addListener(this);
 				
 				// Wait for state change
 				while (wait) {
+					if (isDebug()) System.out.print(".");
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(10000);
 					} catch (InterruptedException ie) {
 						ie.printStackTrace();
 					}
 				}
 				
 				// Unsubscribe
-				instance.removeListener(this);
+				s.removeListener(this);
+				//instance.removeListener(this);
 				
 				if (isDebug()) {
 					System.out.println("Finished waiting.");
 				}
+				
+				// Throw the exception if it failed
+				if (exception != null) {
+					throw exception;
+				}
 			}
-		} catch (GlideinException ge) {
+		} catch (Exception ge) {
 			throw new CommandException("Unable to create site: "+
 					site.getName()+": "+ge.getMessage(),ge);
 		}
-		
-		
 	}
 
 	public String getName()
@@ -449,9 +465,12 @@ public class CreateSiteCommand extends Command implements SiteListener
 		}
 		
 		// If the new state is running, failed or deleted, then stop waiting
-		if (state.equals(SiteState.READY) || 
-				state.equals(SiteState.FAILED) ||
+		if (state.equals(SiteState.READY)) {
+			wait = false;
+		} else if (state.equals(SiteState.FAILED) || 
 				state.equals(SiteState.DELETED)) {
+			exception = new CommandException("Site became "+state+": "+
+					stateChange.getShortMessage()+"\n"+stateChange.getLongMessage());
 			wait = false;
 		}
 	}

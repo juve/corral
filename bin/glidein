@@ -40,6 +40,7 @@ LOCALCLASSPATH=${GLOBUS_LOCATION}
 for jar in `ls $GLOBUS_LOCATION/lib/*.jar`; do
 	LOCALCLASSPATH="${LOCALCLASSPATH}:${jar}"
 done
+export CLASSPATH=$LOCALCLASSPATH
 
 # Set other variables
 updateOptions "GLOBUS_LOCATION" "$GLOBUS_LOCATION"
@@ -63,15 +64,15 @@ fi
 
 if [ $# -gt 0 ]; then
   if [ "X${DEF_CMD_OPTIONS}" != "X" ]; then
-    set - ${GLOBUS_OPTIONS} -classpath ${LOCALCLASSPATH} ${EXEC}  ${DEF_CMD_OPTIONS} "$@"
+    set - ${GLOBUS_OPTIONS} ${EXEC}  ${DEF_CMD_OPTIONS} "$@"
   else
-    set - ${GLOBUS_OPTIONS} -classpath ${LOCALCLASSPATH} ${EXEC} "$@"
+    set - ${GLOBUS_OPTIONS} ${EXEC} "$@"
   fi
 else
   if [ "X${DEF_CMD_OPTIONS}" != "X" ]; then
-    set - ${GLOBUS_OPTIONS} -classpath ${LOCALCLASSPATH} ${EXEC}  ${DEF_CMD_OPTIONS}
+    set - ${GLOBUS_OPTIONS} ${EXEC}  ${DEF_CMD_OPTIONS}
   else
-    set - ${GLOBUS_OPTIONS} -classpath ${LOCALCLASSPATH} ${EXEC}
+    set - ${GLOBUS_OPTIONS} ${EXEC}
   fi
 fi
 

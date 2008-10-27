@@ -229,4 +229,29 @@ public class SiteService extends BaseService
 			}
 		}
 	}
+	
+	public static void main(String[] args)
+	{
+		try {
+			SiteService s = new SiteService(
+					new URL("https://juve.usc.edu:8443/wsrf/services/glidein/SiteService"),59);
+			s.addListener(new SiteListener(){
+				public void stateChanged(SiteStateChange stateChange)
+				{
+					System.out.println("State changed: "+stateChange.getState());
+				}
+			});
+			
+			System.out.println("Waiting for notifications");
+			while (true) {
+				try {
+					Thread.sleep(30000);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }
