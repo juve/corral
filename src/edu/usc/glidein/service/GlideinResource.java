@@ -505,6 +505,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 		
 		// Add arguments
+		job.addArgument("-site "+site.getName());
 		job.addArgument("-installPath "+site.getInstallPath());
 		job.addArgument("-localPath "+site.getLocalPath());
 		job.addArgument("-condorHost "+glidein.getCondorHost());
