@@ -16,6 +16,8 @@ REQUIRED
       The condor central manager host.
    -t | -wallTime <minutes>
       The glidein runtime in minutes.
+   -s | -site <name>
+      The name of the site.
       
 OPTIONS
 
@@ -40,6 +42,7 @@ IDLE_TIME="0"
 DEBUG=""
 GCB_BROKER=""
 NUM_CPUS=""
+SITE_NAME=""
 
 while [ $# -ge 1 ]; do
 	case $1 in 
@@ -51,6 +54,7 @@ while [ $# -ge 1 ]; do
 		-b | -gcbBroker) GCB_BROKER=$2 ;;
 		-n | -numCpus) NUM_CPUS=$2 ;;
 		-d | -debug) DEBUG="${DEBUG}$2 " ;;
+		-s | -site) SITE_NAME=$2 ;;
 		-h | -help) usage ; exit 1 ;;
 		*) echo "Invalid argument: $1" >&2 ; exit 1 ;;
 	esac
@@ -164,8 +168,7 @@ fi
 # Determine IP address. Favor public IPs over private IPs.
 ips=`/sbin/ifconfig | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }' | grep -v '127\.'`
 for ip in ${ips}; do
-	# TODO: Include 172.16.0.0-172.31.0.0 as private IPs
-	if [ -z "${IP_ADDR}" ] || ! echo ${ip} | grep -q -E '(^192\.)|(^10\.)'; then
+	if [ -z "${IP_ADDR}" ] || ! echo ${ip} | grep -q -E '(^192\.)|(^10\.)|(^172\.((1[6-9])|([2][0-9])|(3[0-1]))\.)'; then
  		IP_ADDR=$ip
 	fi
 done
@@ -185,6 +188,7 @@ echo "GLIDEIN_GCB_BROKER = ${GCB_BROKER}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_DEBUG = ${DEBUG}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_IP_ADDR = ${IP_ADDR}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_X509_USER_PROXY = X509_USER_PROXY=${X509_USER_PROXY}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_SITE = ${SITE_NAME}" >> ${CONDOR_CONFIG}
 
 # If we got a signal, then Condor got it too, so just let Condor exit normally.
 # But record the fact that we got a signal so that we can leave the logs
