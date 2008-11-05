@@ -190,29 +190,40 @@ echo "GLIDEIN_IP_ADDR = ${IP_ADDR}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_X509_USER_PROXY = X509_USER_PROXY=${X509_USER_PROXY}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_SITE = ${SITE_NAME}" >> ${CONDOR_CONFIG}
 
-# If we got a signal, then Condor got it too, so just let Condor exit normally.
-# But record the fact that we got a signal so that we can leave the logs
-# in place for debugging.
-GOT_SIGNAL=0
+# Fork condor_master
+echo "Starting condor_master on host ${HOSTNAME}"
+PIDFILE="${LOCAL_DIR}/condor_master.pid"
+${INSTALL_PATH}/condor_master -f -r ${WALL_TIME} -pidfile ${PIDFILE} &
+MPID=$!
+
+# If we get a signal, pass it on to Condor
 handle_signal ()
 {
-	GOT_SIGNAL=1
+	kill $MPID
 }
 trap handle_signal SIGTERM
 trap handle_signal SIGQUIT
 
-# Run condor_master
-echo "Starting condor_master on host ${HOSTNAME}"
-${INSTALL_PATH}/condor_master -f -r ${WALL_TIME};
-RC=$?
-if [ $RC -ne 0 ]; then
-	echo "condor_master exited with code $?" >&2
-	exit 1
-fi
+# Poll for the master to exit or the job to be killed
+# Note: for some reason, breaking out of this loop doesn't work
+while [ true ]; do
 
-# If not debugging and no signal then remove the local dir
-if [ ${GOT_SIGNAL} -eq 0 ] && [ "$DEBUG" = "D_ALWAYS" ]; then
-	rm -rf ${LOCAL_DIR}
-fi
+	# Sleep for a little while
+	sleep 5
+	
+	# Did the master exit? (i.e. did the pid file disappear?)
+	if [ ! -f "$PIDFILE" ]; then
+		# If not debugging then remove the local dir
+		if [ "$DEBUG" = "D_ALWAYS" ]; then
+			rm -rf ${LOCAL_DIR}
+		fi
+		exit 0
+	fi
+	
+	# Did the job get killed? (i.e. did the scratch dir go away?)
+	if [ ! -d "$SCRATCH_DIRECTORY" ]; then
+		# Then kill the condor_master
+		kill $MPID
+	fi
 
-exit 0
+done
