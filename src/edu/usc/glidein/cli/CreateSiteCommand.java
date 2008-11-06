@@ -102,7 +102,8 @@ public class CreateSiteCommand extends Command implements SiteListener
 				  .setOption("ip")
 				  .setLongOption("install-path")
 				  .setUsage("-ip [--install-path] <path>")
-				  .setDescription("This is the remote path where executables are installed")
+				  .setDescription("This is the remote path where executables are installed. \n" +
+				  				  "Default: $HOME/glidein")
 				  .hasArgument()
 		);
 		
@@ -113,7 +114,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 				  .setLongOption("local-path")
 				  .setUsage("-lp [--local-path] <path>")
 				  .setDescription("This is the remote path where log files, etc. are placed \n" +
-				  				  "(i.e. local scratch)")
+				  				  "(i.e. local scratch). Default: /tmp/glidein")
 				  .hasArgument()
 		);
 		
@@ -272,8 +273,8 @@ public class CreateSiteCommand extends Command implements SiteListener
 			try {
 				Properties p = new Properties();
 				setProperty(p, NAME, siteName);
-				setProperty(p, INSTALL_PATH, cmdln.getOptionValue("ip"));
-				setProperty(p, LOCAL_PATH, cmdln.getOptionValue("lp"));
+				setProperty(p, INSTALL_PATH, cmdln.getOptionValue("ip","$HOME/glidein"));
+				setProperty(p, LOCAL_PATH, cmdln.getOptionValue("lp","/tmp/glidein"));
 				setProperty(p, STAGING_SERVICE, cmdln.getOptionValue("ss"));
 				setProperty(p, STAGING_SERVICE_PROJECT, cmdln.getOptionValue("ssp"));
 				setProperty(p, STAGING_SERVICE_QUEUE, cmdln.getOptionValue("ssq"));
