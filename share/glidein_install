@@ -64,6 +64,11 @@ if [ -z "${INSTALL_PATH}" ]; then
 	echo "Must specify -installPath" >&2
 	exit 1
 fi
+
+# Remove any shell variables
+INSTALL_PATH=`eval "echo ${INSTALL_PATH}"`
+
+# Make sure path is absolute
 if ! echo ${INSTALL_PATH} | grep -q -E "^/"; then
 	echo "Install path must be absolute: ${INSTALL_PATH}" >&2
 	exit 1

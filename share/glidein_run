@@ -67,10 +67,14 @@ if [ -z "${INSTALL_PATH}" ]; then
 	echo "Must specify -installPath" >&2
 	exit 1
 fi
+INSTALL_PATH=`eval "echo ${INSTALL_PATH}"`
+
 if [ -z "${LOCAL_PATH}" ]; then
 	echo "Must specify -localPath" >&2
 	exit 1
 fi
+LOCAL_PATH=`eval "echo ${LOCAL_PATH}"`
+
 if [ -z "${CONDOR_HOST}" ]; then
 	echo "Must specify -condorHost" >&2
 	exit 1
@@ -196,13 +200,21 @@ PIDFILE="${LOCAL_DIR}/condor_master.pid"
 ${INSTALL_PATH}/condor_master -f -r ${WALL_TIME} -pidfile ${PIDFILE} &
 MPID=$!
 
-# If we get a signal, pass it on to Condor
+# If we get a signal, notify Condor, remove the local dir and exit
+# Note: this doesn't always work for some reason. I am going to rewrite
+# all these scripts in Perl some day
 handle_signal ()
 {
+	# Notify condor
 	kill $MPID
+	
+	# If not debugging then remove the local dir
+	if [ "$DEBUG" = "D_ALWAYS" ]; then
+		rm -rf ${LOCAL_DIR}
+	fi
+	exit 0
 }
-trap handle_signal SIGTERM
-trap handle_signal SIGQUIT
+trap handle_signal SIGTERM SIGQUIT SIGINT
 
 # Poll for the master to exit or the job to be killed
 # Note: for some reason, breaking out of this loop doesn't work

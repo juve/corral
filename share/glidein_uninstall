@@ -38,10 +38,13 @@ if [ -z "${INSTALL_PATH}" ]; then
 	echo "Missing -installPath" >&2
 	exit 1
 fi
+INSTALL_PATH=`eval "echo ${INSTALL_PATH}"`
+
 if [ -z "${LOCAL_PATH}" ]; then
 	echo "Missing -localPath" >&2
 	exit 1
 fi
+LOCAL_PATH=`eval "echo ${LOCAL_PATH}"`
 
 # Remove installation directory
 if [ -d ${INSTALL_PATH} ]; then
