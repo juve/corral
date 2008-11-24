@@ -16,6 +16,10 @@
 #  GLIDEIN_GCB_ENABLE - Is GCB enabled? True or False 
 #  GLIDEIN_GCB_BROKER - The IP of the GCB Broker (if enabled)
 #  GLIDEIN_DEBUG - The debug level. Default: D_ALWAYS Enabled: D_FULLDEBUG
+#  GLIDEIN_IP_ADDR - The "best" IP address to advertise
+#  GLIDEIN_X509_USER_PROXY - Path to the user's X509 proxy file
+#  GLIDEIN_SITE - The name of the site specified when the site was created
+#  GLIDEIN_LOCK - The path to a node-local dir to use for lock files
 #
 #  NUM_CPUS - The number of CPUs to allocate. This has to be set explicitly.
 #
@@ -42,7 +46,8 @@ LOCAL_DIR = $(GLIDEIN_LOCAL_DIR)
 #LOG = $(LOCAL_DIR)/log
 #EXECUTE  = $(LOCAL_DIR)/execute
 
-LOCK = $(LOG)
+# This should be a non-network file system to prevent problems
+LOCK = $(GLIDEIN_LOCK)
 
 ###############################################################################
 # Security settings

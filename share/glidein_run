@@ -177,6 +177,10 @@ for ip in ${ips}; do
 	fi
 done
 
+# Create lock dir
+GLIDEIN_LOCK=/tmp/glidein/lock
+mkdir -p $GLIDEIN_LOCK
+
 # Add condor config entries
 printf "\n\n" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_CONDOR_CONFIG = ${CONDOR_CONFIG}" >> ${CONDOR_CONFIG}
@@ -193,6 +197,7 @@ echo "GLIDEIN_DEBUG = ${DEBUG}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_IP_ADDR = ${IP_ADDR}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_X509_USER_PROXY = X509_USER_PROXY=${X509_USER_PROXY}" >> ${CONDOR_CONFIG}
 echo "GLIDEIN_SITE = ${SITE_NAME}" >> ${CONDOR_CONFIG}
+echo "GLIDEIN_LOCK = ${GLIDEIN_LOCK}" >> ${CONDOR_CONFIG}
 
 # Fork condor_master
 echo "Starting condor_master on host ${HOSTNAME}"
