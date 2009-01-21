@@ -18,16 +18,16 @@ Installing the service
    be copied to the path given in the next step when you run 'ant deploy'.
 	
 4. Edit $GLOBUS_LOCATION/etc/glidein_service/jndi-config.xml.
-
-   4.1 Make sure the Database configuration points to a valid database.
-       The glidein service supports both SQLite and MySQL databases.
+       
+   4.1 Make sure the Condor configuration points to Condor. The service
+       uses a local Condor central manager to submit staging and glidein jobs.
+       The paths should be absolute.
+       
+   4.2 (Optional) Make sure the Database configuration points to a valid 
+       database. The glidein service supports both SQLite and MySQL databases.
        It will automatically install tables if pointed at a valid database
        instance. The default uses SQLite and should not require any
        configuration changes to work.
-       
-   4.2 Make sure the Condor configuration points to Condor. The service
-       uses a local Condor central manager to submit staging and glidein jobs.
-       The paths should be absolute.
 
 5. Restart your globus container
 
