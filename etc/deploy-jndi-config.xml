@@ -33,6 +33,7 @@
                 </parameter>
             </resourceParams>
         </resource>
+        
         <!-- Use a MySQL database											-->
         <!-- 																-->
         <!-- Parameters:													-->
@@ -44,8 +45,8 @@
        	<!-- 	schemaFile	- The path to the database creation script.		-->
        	<!-- 				  Relative paths are relative to GLOBUS_LOCATION-->
         <!-- 
-		<resource name="glidein/Database" 
-				  type="edu.usc.glidein.db.mysql.MySQLDatabase">
+        <resource name="glidein/Database" 
+                  type="edu.usc.glidein.db.mysql.MySQLDatabase">
             <resourceParams>
                 <parameter>
                     <name>factory</name>
@@ -74,6 +75,7 @@
             </resourceParams>
         </resource>
         -->
+        
         <!-- Condor configuration											-->
         <!-- 																-->
         <!-- Parameters:													-->
@@ -83,7 +85,7 @@
         <!--					  working directory.						-->
         <!-- 	codnorConfig	- Path to the condor configuration file		-->
         <resource name="glidein/Condor" 
-        		  type="edu.usc.glidein.condor.Condor">
+                  type="edu.usc.glidein.condor.Condor">
             <resourceParams>
                 <parameter>
                     <name>factory</name>
@@ -91,14 +93,15 @@
                 </parameter>
                 <parameter>
                     <name>condorHome</name>
-                    <value>/opt/condor/7.0.0</value>
+                    <value>/usr/local/condor/default</value>
                 </parameter>
                 <parameter>
-                	<name>condorConfig</name>
-                	<value>/etc/condor/condor_config</value>
+                    <name>condorConfig</name>
+                    <value>/etc/condor/condor_config</value>
                 </parameter>
             </resourceParams>
         </resource>
+        
         <!-- Glidein service configuration									-->
         <!-- 																-->
         <!-- Parameters:													-->
@@ -140,7 +143,7 @@
                 </parameter>
                 <parameter>
                 	<name>rls</name>
-                	<value>rls://aftershock.usc.edu</value>
+                	<value>rls://juve.isi.edu</value>
                 </parameter>
                 <parameter>
                 	<name>glideinCondorConfig</name>
@@ -152,6 +155,7 @@
                 </parameter>
             </resourceParams>
         </resource>
+        
         <!-- Event queue													 -->
         <!-- 																 -->
         <!-- Parameters:													 -->
