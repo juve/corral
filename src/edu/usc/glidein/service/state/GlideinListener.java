@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -35,29 +35,29 @@ public class GlideinListener extends BaseListener
 	
 	public void terminated(CondorEvent event)
 	{
-		// A glidein job finished successfully if it didn't 
-		// produce any output on stderr. Its ugly, but GT2 
-		// is broken.
-		CondorJob job = event.getJob();
-		File error = job.getError();
-		if(error.exists())
-		{
-			try
-			{
+		// A job finished successfully if it didn't produce any
+		// errors in the status file. Its ugly, but GT2 is broken.
+		try {
+			CondorJob job = event.getJob();
+			File status = new File(job.getJobDirectory(),"status");
+			String errors = IOUtil.read(status);
+			if(errors.length() > 0) {
+				// Read stderr and stdout of job
+				File error = job.getError();
 				String stderr = IOUtil.read(error);
-				if(stderr.length()>0)
-					failure("Glidein failed: "+stderr);
-				else
-					success(job);
+				File output = job.getOutput();
+				String stdout = IOUtil.read(output);
+				Exception exception = new Exception(
+						"ERRORS:\n"+errors+"\n\n" +
+						"STDOUT:\n"+stdout+"\n\n" +
+						"STDERR:\n"+stderr);
+				
+				failure("Glidein job failed",exception);
+			} else {
+				success(job);
 			}
-			catch(IOException ioe)
-			{
-				failure("Unable to read error file",ioe);
-			}
-		}
-		else
-		{
-			failure("Glidein job produced no error file");
+		} catch(IOException ioe) {
+			failure("Unable to read glidein job output file(s)",ioe);
 		}
 	}
 	
@@ -95,11 +95,6 @@ public class GlideinListener extends BaseListener
 		
 		// Generate success event
 		enqueue(GlideinEventCode.JOB_SUCCESS);
-	}
-	
-	private void failure(String message)
-	{
-		failure(message,null);
 	}
 	
 	private void failure(String message, Exception exception)

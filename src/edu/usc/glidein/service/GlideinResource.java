@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -544,6 +544,9 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 		job.addInputFile(configFile);
 		
+		// Add status output file
+		job.addOutputFile("status");
+		
 		// Set the credential
 		GlobusCredential cred = getDelegatedCredential();
 		if (validateCredentialLifetime(cred)) {
@@ -816,9 +819,14 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			// Instead, the database stores the entire stack trace
 			// in the long message.
 			String message = re.getMessage();
+			if (message.length() > 64) {
+				message = message.substring(0, 64);
+			}
 			int cause = message.indexOf("; nested exception is:");
-			if (cause > 0) {
-				failQuietly(message.substring(0, cause), re, event.getTime());
+			int lf = message.indexOf("\n");
+			int br = Math.min(cause, lf);
+			if (br > 0) {
+				failQuietly(message.substring(0, br), re, event.getTime());
 			} else {
 				failQuietly(message, re, event.getTime());
 			}

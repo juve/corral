@@ -1,10 +1,39 @@
 #!/bin/sh
+#
+# Copyright 2007-2009 University Of Southern California
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Create status file if not interactive
+if [ ! -t 0 ]; then
+	STATUS=`pwd`/status
+	touch $STATUS
+fi
+
+# Write error message to stderr and to status file if not interactive
+error ()
+{
+	echo "$@" >&2
+	if [ ! -t 0 ]; then
+		echo "$@" >>$STATUS
+	fi
+}
 
 # Usage
 CMD=`basename $0`
 usage ()
 {
-	echo """Usage: $CMD OPTIONS -i <path> (-v <version> | -p <package>)
+	error """Usage: $CMD OPTIONS -i <path> (-v <version> | -p <package>)
 
 OPTIONS
 
@@ -27,7 +56,7 @@ OPTIONS
 	  absolute path or URL.
   -h | -help
       Display this usage message
-""" >&2
+"""
 }
 
 # If we have GLOBUS_LOCATION, then source the env script
@@ -53,7 +82,7 @@ while [ $# -ge 1 ]; do
 		-p | -condorPackage) PACKAGE=$2 ;;
 		-r | -rls) RLS_URL=$2 ;;
 		-h | -help) usage ; exit 1 ;;
-		*) echo "Unknown argument: $1" >&2 ; exit 1 ;;
+		*) error "Unknown argument: $1" ; exit 1 ;;
 	esac
 	shift
 	shift
@@ -61,7 +90,7 @@ done
 
 # Must specify path
 if [ -z "${INSTALL_PATH}" ]; then
-	echo "Must specify -installPath" >&2
+	error "Must specify -installPath"
 	exit 1
 fi
 
@@ -70,20 +99,20 @@ INSTALL_PATH=`eval "echo ${INSTALL_PATH}"`
 
 # Make sure path is absolute
 if ! echo ${INSTALL_PATH} | grep -q -E "^/"; then
-	echo "Install path must be absolute: ${INSTALL_PATH}" >&2
+	error "Install path must be absolute: ${INSTALL_PATH}"
 	exit 1
 fi
 
 # Need either package or version
 if [ -z "${PACKAGE}" ] && [ -z "${VERSION}" ]; then
-	echo "Please specify either -condorPackage or -condorVersion" >&2
+	error "Please specify either -condorPackage or -condorVersion"
 	exit 1
 fi
 
 # Validate version
 if [ ! -z "$VERSION" ]; then
 	if ! echo "$VERSION" | grep -q -E "^[0-9]+[.][0-9]+[.][0-9]+$"; then
-		echo "Invalid Condor version: $VERSION" >&2
+		error "Invalid Condor version: $VERSION"
 		exit 1
 	fi
 fi
@@ -91,7 +120,7 @@ fi
 # Validate package name
 if [ ! -z "${PACKAGE}" ]; then
 	if ! echo "$PACKAGE" | grep -q -E ".tar.gz$"; then
-		echo "Condor package must be .tar.gz: $PACKAGE" >&2
+		error "Condor package must be .tar.gz: $PACKAGE"
 		exit 1
 	fi
 fi
@@ -192,7 +221,7 @@ if [ -z "${PACKAGE_URL}" ]; then
 
 	# Check to make sure we found globus-rls-cli
 	if [ ! -x $RLS ]; then
-		echo "Unable to locate globus-rls-cli" >&2
+		error "Unable to locate globus-rls-cli"
 		exit 1
 	fi
 
@@ -200,7 +229,7 @@ if [ -z "${PACKAGE_URL}" ]; then
 	RESULTS=`$RLS query lrc lfn $PACKAGE $RLS_URL`
 	rc=$?
 	if [ $rc != 0 ]; then
-		echo "Unable to get package URL from RLS" >&2
+		error "Unable to get package URL from RLS"
 		exit 1
 	fi
 	OLD_IFS=$IFS
@@ -239,7 +268,7 @@ for PACKAGE_URL in ${PACKAGE_URLS}; do
 		
 		# Check to make sure we have wget
 		if [ ! -x $WGET ]; then
-			echo "Unable to locate wget" >&2
+			error "Unable to locate wget"
 			exit 1
 		fi
 		
@@ -253,7 +282,7 @@ for PACKAGE_URL in ${PACKAGE_URLS}; do
 		
 		# Check to make sure we have globus-url-copy
 		if [ ! -x $GUC ]; then
-			echo "Unable to locate globus-url-copy" >&2
+			error "Unable to locate globus-url-copy"
 			exit 1
 		fi
 
@@ -275,7 +304,7 @@ done
 
 # If package could not be downloaded from any server
 if [ ! -f ${PACKAGE_PATH} ]; then
-	echo "Failed to retrieve binary worker package" >&2
+	error "Failed to retrieve binary worker package"
 	exit 1
 fi
 
@@ -283,7 +312,7 @@ fi
 if [ ! -d ${INSTALL_PATH} ]; then
 	mkdir -p ${INSTALL_PATH}
 	if [ ! -d ${INSTALL_PATH} ]; then
-		echo "Unable to create remote install directory: ${INSTALL_PATH}" >&2
+		error "Unable to create remote install directory: ${INSTALL_PATH}"
 		exit 1
 	fi
 fi
@@ -291,7 +320,7 @@ fi
 # Install package
 cd ${INSTALL_PATH}
 if ! tar -xzf ${PACKAGE_PATH}; then
-	echo "Failed to install Condor glidein package" >&2
+	error "Failed to install Condor glidein package"
 	exit 1
 fi
 

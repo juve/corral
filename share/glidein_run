@@ -1,10 +1,39 @@
 #!/bin/sh
+#
+# Copyright 2007-2009 University Of Southern California
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+ 
+# Create status file if not interactive
+if [ ! -t 0 ]; then
+	STATUS=`pwd`/status
+	touch $STATUS
+fi
+
+# Write error message to stderr and to status file if not interactive
+error ()
+{
+	echo "$@" >&2
+	if [ ! -t 0 ]; then
+		echo "$@" >>$STATUS
+	fi
+}
 
 # Usage
 CMD=`basename $0`
 usage ()
 {
-	echo """Usage: $CMD OPTIONS REQUIRED
+	error """Usage: $CMD OPTIONS REQUIRED
 
 REQUIRED
 
@@ -31,7 +60,7 @@ OPTIONS
       The number of CPUs to allocate for this glidein.
    -h | -help
       Display this usage message.
-""" >&2
+"""
 }
 
 INSTALL_PATH=""
@@ -43,6 +72,7 @@ DEBUG=""
 GCB_BROKER=""
 NUM_CPUS=""
 SITE_NAME=""
+JOB_DIR="`dirname $X509_USER_PROXY 2>/dev/null || pwd`"
 
 while [ $# -ge 1 ]; do
 	case $1 in 
@@ -56,7 +86,7 @@ while [ $# -ge 1 ]; do
 		-d | -debug) DEBUG="${DEBUG}$2 " ;;
 		-s | -site) SITE_NAME=$2 ;;
 		-h | -help) usage ; exit 1 ;;
-		*) echo "Invalid argument: $1" >&2 ; exit 1 ;;
+		*) error "Invalid argument: $1" ; exit 1 ;;
 	esac
 	shift
 	shift
@@ -64,23 +94,23 @@ done
 
 # Check arguments
 if [ -z "${INSTALL_PATH}" ]; then
-	echo "Must specify -installPath" >&2
+	error "Must specify -installPath"
 	exit 1
 fi
 INSTALL_PATH=`eval "echo ${INSTALL_PATH}"`
 
 if [ -z "${LOCAL_PATH}" ]; then
-	echo "Must specify -localPath" >&2
+	error "Must specify -localPath"
 	exit 1
 fi
 LOCAL_PATH=`eval "echo ${LOCAL_PATH}"`
 
 if [ -z "${CONDOR_HOST}" ]; then
-	echo "Must specify -condorHost" >&2
+	error "Must specify -condorHost"
 	exit 1
 fi
 if [ -z "${WALL_TIME}" ]; then
-	echo "Must specify -wallTime" >&2
+	error "Must specify -wallTime"
 	exit 1
 fi
 
@@ -100,14 +130,14 @@ fi
 
 # Check install path
 if [ ! -d "${INSTALL_PATH}" ]; then
-	echo "Install path does not exist: ${INSTALL_PATH}" >&2
+	error "Install path does not exist: ${INSTALL_PATH}"
 	exit 1
 fi
 
 # Create local path if it doesn't exist
 if [ ! -d "${LOCAL_PATH}" ]; then
 	if ! mkdir -p ${LOCAL_PATH}; then
-		echo "Unable to create local dir: ${LOCAL_PATH}" >&2
+		error "Unable to create local dir: ${LOCAL_PATH}"
 		exit 1
 	fi
 fi
@@ -115,7 +145,7 @@ fi
 # Set condor config file
 GLIDEIN_CONDOR_CONFIG=`pwd`/glidein_condor_config
 if [ ! -f "${GLIDEIN_CONDOR_CONFIG}" ]; then
-	echo "Configuration file 'glidein_condor_config' missing" >&2
+	error "Configuration file 'glidein_condor_config' missing"
 	exit 1
 fi
 
@@ -130,23 +160,23 @@ esac
 # Set local directory
 LOCAL_DIR="${LOCAL_PATH}/${HOSTNAME}_$$"
 if ! mkdir -p ${LOCAL_DIR}; then
-	echo "Unable to create glidein local dir: ${LOCAL_DIR}" >&2
+	error "Unable to create glidein local dir: ${LOCAL_DIR}"
 	exit 1
 fi
 
 # Copy config file
 if ! cp ${GLIDEIN_CONDOR_CONFIG} ${LOCAL_DIR}; then
-	echo "Unable to copy glidein_condor_config to ${LOCAL_DIR}" >&2
+	error "Unable to copy glidein_condor_config to ${LOCAL_DIR}"
 	exit 1
 fi
 
 # Create log and execute dirs
 if ! mkdir -p ${LOCAL_DIR}/log; then
-	echo "Unable to create log dir: ${LOCAL_DIR}/log" >&2
+	error "Unable to create log dir: ${LOCAL_DIR}/log"
 	exit 1
 fi
 if ! mkdir -p ${LOCAL_DIR}/execute; then
-	echo "Unable to create execute dir: ${LOCAL_DIR}/execute" >&2
+	error "Unable to create execute dir: ${LOCAL_DIR}/execute"
 	exit 1
 fi
 
@@ -176,10 +206,17 @@ for ip in ${ips}; do
  		IP_ADDR=$ip
 	fi
 done
+if [ -z "${IP_ADDR}" ]; then
+	error "Unable to determine IP address for $HOSTNAME"
+	exit 1
+fi
 
 # Create lock dir
 GLIDEIN_LOCK=/tmp/glidein/lock
-mkdir -p $GLIDEIN_LOCK
+if ! mkdir -p $GLIDEIN_LOCK; then
+	error "Unable to create lock dir: $GLIDEIN_LOCK"
+	exit 1
+fi
 
 # Add condor config entries
 printf "\n\n" >> ${CONDOR_CONFIG}
@@ -237,8 +274,8 @@ while [ true ]; do
 		exit 0
 	fi
 	
-	# Did the job get killed? (i.e. did the scratch dir go away?)
-	if [ ! -d "$SCRATCH_DIRECTORY" ]; then
+	# Did the job get killed? (i.e. did the job dir go away?)
+	if [ ! -d "$JOB_DIR" ]; then
 		# Then kill the condor_master
 		kill $MPID
 	fi

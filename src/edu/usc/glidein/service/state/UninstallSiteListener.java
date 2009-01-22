@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -58,27 +58,29 @@ public class UninstallSiteListener extends BaseListener
 	public void terminated(CondorEvent event)
 	{
 		// A job finished successfully if it didn't produce any
-		// output on stderr. Its ugly, but GT2 is broken.
-		CondorJob job = event.getJob();
-		File error = job.getError();
-		if(error.exists()) {
-			try {
+		// errors in the status file. Its ugly, but GT2 is broken.
+		try {
+			CondorJob job = event.getJob();
+			File status = new File(job.getJobDirectory(),"status");
+			String errors = IOUtil.read(status);
+			if(errors.length() > 0) {
+				// Read stderr and stdout of job
+				File error = job.getError();
 				String stderr = IOUtil.read(error);
-				if(stderr.length()>0)
-					failure("Uninstall job failed: "+stderr);
-				else
-					success(job);
-			} catch(IOException ioe) {
-				failure("Unable to read uninstall error file",ioe);
+				File output = job.getOutput();
+				String stdout = IOUtil.read(output);
+				Exception exception = new Exception(
+						"ERRORS:\n"+errors+"\n\n" +
+						"STDOUT:\n"+stdout+"\n\n" +
+						"STDERR:\n"+stderr);
+				
+				failure("Uninstall job failed",exception);
+			} else {
+				success(job);
 			}
-		} else {
-			failure("Install job produced no error file");
+		} catch(IOException ioe) {
+			failure("Unable to read uninstall job output file(s)",ioe);
 		}
-	}
-	
-	private void failure(String message)
-	{
-		failure(message,null);
 	}
 	
 	public void failure(String message, Exception exception)
