@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import edu.usc.glidein.util.SiteUtil;
 public class ListSiteCommand extends Command
 {
 	private boolean longFormat = false;
+	private String user = null;
+	private boolean allUsers = false;
 	private List<Integer> ids;
 	
 	public ListSiteCommand()
@@ -44,7 +46,22 @@ public class ListSiteCommand extends Command
 				  .setOption("l")
 				  .setLongOption("long")
 				  .setUsage("-l [--long]")
-				  .setDescription("Show detailed information")
+				  .setDescription("Show detailed site information")
+		);
+		options.add(
+			Option.create()
+				  .setOption("a")
+				  .setLongOption("all")
+				  .setUsage("-a [--all]")
+				  .setDescription("Show sites for all users")
+		);
+		options.add(
+			Option.create()
+				  .setOption("u")
+				  .setLongOption("user")
+				  .setUsage("-u [--user] <user>")
+				  .setDescription("Show sites for the specified user (default: current user)")
+				  .hasArgument()
 		);
 	}
 	
@@ -53,6 +70,16 @@ public class ListSiteCommand extends Command
 		/* Long format/short format */
 		if (cmdln.hasOption("l")) { 
 			longFormat = true;
+		}
+		
+		/* All users */
+		if (cmdln.hasOption("a")) {
+			allUsers = true;
+		}
+		
+		/* Specific user */
+		if (cmdln.hasOption("u")) {
+			user = cmdln.getOptionValue("user");
 		}
 		
 		/* Check for specific arguments */
@@ -84,7 +111,7 @@ public class ListSiteCommand extends Command
 			SiteFactoryService factory = new SiteFactoryService(
 					getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
 			factory.setDescriptor(getClientSecurityDescriptor());
-			Site[] sites = factory.listSites(longFormat);
+			Site[] sites = factory.listSites(longFormat, user, allUsers);
 			
 			// Print out the site list
 			printSites(sites);
@@ -127,6 +154,7 @@ public class ListSiteCommand extends Command
 		} else {
 			System.out.printf("%-8s","ID");
 			System.out.printf("%-20s","NAME");
+			System.out.printf("%-12s","OWNER");
 			System.out.printf("%-15s","CREATED");
 			System.out.printf("%-15s","LAST UPDATE");
 			System.out.printf("%-10s","STATE");
@@ -135,7 +163,7 @@ public class ListSiteCommand extends Command
 			for (Site site : sites) {
 				System.out.printf("%-8d",site.getId());
 				System.out.printf("%-20s",site.getName());
-				
+				System.out.printf("%-12s",site.getLocalUsername());
 				Calendar created = site.getCreated();
 				created.setTimeZone(TimeZone.getDefault());
 				System.out.printf("%1$tm-%1$td %1$TR    ",created);
@@ -153,7 +181,7 @@ public class ListSiteCommand extends Command
 	
 	public String getName()
 	{
-		return "list-site";
+		return "list-sites";
 	}
 	
 	public String[] getAliases()
@@ -163,11 +191,11 @@ public class ListSiteCommand extends Command
 	
 	public String getDescription()
 	{
-		return "list-site (ls): List available sites";
+		return "list-sites (ls): List available sites";
 	}
 	
 	public String getUsage()
 	{
-		return "Usage: list-site [SITE...]";
+		return "Usage: list-sites [SITE...]";
 	}
 }

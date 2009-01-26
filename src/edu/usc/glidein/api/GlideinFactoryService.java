@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinHistory;
 import edu.usc.glidein.stubs.types.GlideinHistoryEntry;
 import edu.usc.glidein.stubs.types.Identifiers;
+import edu.usc.glidein.stubs.types.ListingRequest;
 import edu.usc.glidein.util.AddressingUtil;
 
 public class GlideinFactoryService extends BaseService
@@ -61,12 +62,13 @@ public class GlideinFactoryService extends BaseService
 		}
 	}
 	
-	public Glidein[] listGlideins(boolean longFormat) 
+	public Glidein[] listGlideins(boolean longFormat, String user, boolean allUsers) 
 	throws GlideinException
 	{
 		try {
 			GlideinFactoryPortType factory = getPort();
-			Glidein[] glideins = factory.listGlideins(longFormat).getGlideins();
+			ListingRequest request = new ListingRequest(allUsers,longFormat,user);
+			Glidein[] glideins = factory.listGlideins(request).getGlideins();
 			return glideins;
 		} catch (RemoteException re) {
 			throw new GlideinException("Unable to list glideins: "+

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.apache.axis.message.addressing.EndpointReferenceType;
 import edu.usc.glidein.stubs.SiteFactoryPortType;
 import edu.usc.glidein.stubs.service.SiteFactoryServiceAddressingLocator;
 import edu.usc.glidein.stubs.types.Identifiers;
+import edu.usc.glidein.stubs.types.ListingRequest;
 import edu.usc.glidein.stubs.types.Site;
 import edu.usc.glidein.stubs.types.SiteHistory;
 import edu.usc.glidein.stubs.types.SiteHistoryEntry;
@@ -61,12 +62,13 @@ public class SiteFactoryService extends BaseService
 		}
 	}
 	
-	public Site[] listSites(boolean longFormat) 
+	public Site[] listSites(boolean longFormat, String user, boolean allUsers) 
 	throws GlideinException
 	{
 		try {
 			SiteFactoryPortType factory = getPort();
-			Site[] sites = factory.listSites(longFormat).getSites();
+			ListingRequest request = new ListingRequest(allUsers,longFormat,user);
+			Site[] sites = factory.listSites(request).getSites();
 			return sites;
 		} catch (RemoteException re) {
 			throw new GlideinException("Unable to list sites: "+

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import edu.usc.glidein.util.GlideinUtil;
 public class ListGlideinCommand extends Command
 {
 	private boolean longFormat = false;
+	private boolean allUsers = false;
+	private String user = null;
 	private List<Integer> ids;
 	
 	public ListGlideinCommand()
@@ -44,7 +46,22 @@ public class ListGlideinCommand extends Command
 				  .setOption("l")
 				  .setLongOption("long")
 				  .setUsage("-l [--long]")
-				  .setDescription("Show detailed information")
+				  .setDescription("Show detailed glidein information")
+		);
+		options.add(
+			Option.create()
+				  .setOption("a")
+				  .setLongOption("all")
+				  .setUsage("-a [--all]")
+				  .setDescription("Show glideins for all users")
+		);
+		options.add(
+			Option.create()
+				  .setOption("u")
+				  .setLongOption("user")
+				  .setUsage("-u [--user] <user>")
+				  .setDescription("Show glideins for the specified user (default: current user)")
+				  .hasArgument()
 		);
 	}
 
@@ -53,6 +70,16 @@ public class ListGlideinCommand extends Command
 		/* Long format/short format */
 		if (cmdln.hasOption("l")) { 
 			longFormat = true;
+		}
+		
+		/* All users */
+		if (cmdln.hasOption("a")) {
+			allUsers = true;
+		}
+		
+		/* Specific user */
+		if (cmdln.hasOption("u")) {
+			user = cmdln.getOptionValue("user");
 		}
 		
 		/* Remaining arguments */
@@ -86,7 +113,7 @@ public class ListGlideinCommand extends Command
 			GlideinFactoryService factory = new GlideinFactoryService(
 					getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
 			factory.setDescriptor(getClientSecurityDescriptor());
-			glideins = factory.listGlideins(longFormat);
+			glideins = factory.listGlideins(longFormat, user, allUsers);
 		} catch (Exception e) {
 			throw new CommandException("Unable to list glideins: "+
 					"Error communicating with service: "+e.getMessage(), e);
@@ -134,22 +161,22 @@ public class ListGlideinCommand extends Command
 				System.out.println();
 			}
 		} else {
-			System.out.printf("%-8s", "ID");
-			System.out.printf("%-20s", "SITE");
-			System.out.printf("%-20s", "CONDOR HOST");
-			System.out.printf("%-8s", "SLOTS");
-			System.out.printf("%-8s", "WTIME");
-			System.out.printf("%-15s", "CREATED");
-			System.out.printf("%-15s", "LAST UPDATE");
-			System.out.printf("%-10s", "STATE");
-			System.out.printf("%s", "MESSAGE");
+			System.out.printf("%-8s","ID");
+			System.out.printf("%-25s","SITE");
+			System.out.printf("%-12s","OWNER");
+			System.out.printf("%-8s","SLOTS");
+			System.out.printf("%-8s","WTIME");
+			System.out.printf("%-15s","CREATED");
+			System.out.printf("%-15s","LAST UPDATE");
+			System.out.printf("%-10s","STATE");
+			System.out.printf("%s","MESSAGE");
 			System.out.printf("\n");
 			for (Glidein g : glideins) {
 				System.out.printf("%-8d",g.getId());
-				System.out.printf("%-20s", ""+g.getSiteName()+" ("+g.getSiteId()+")");
-				System.out.printf("%-20s",g.getCondorHost());
-				System.out.printf("%-8d", (g.getCount()*g.getNumCpus()));
-				System.out.printf("%-8d", g.getWallTime());
+				System.out.printf("%-25s",""+g.getSiteName()+" ("+g.getSiteId()+")");
+				System.out.printf("%-12s",g.getLocalUsername());
+				System.out.printf("%-8d",(g.getCount()*g.getNumCpus()));
+				System.out.printf("%-8d",g.getWallTime());
 				
 				Calendar created = g.getCreated();
 				created.setTimeZone(TimeZone.getDefault());
@@ -170,7 +197,7 @@ public class ListGlideinCommand extends Command
 	
 	public String getName()
 	{
-		return "list-glidein";
+		return "list-glideins";
 	}
 	
 	public String[] getAliases()
@@ -180,11 +207,11 @@ public class ListGlideinCommand extends Command
 	
 	public String getDescription() 
 	{
-		return "list-glidein (lg): Display glideins";
+		return "list-glideins (lg): Display glideins";
 	}
 	
 	public String getUsage()
 	{
-		return "Usage: list-glidein";
+		return "Usage: list-glideins";
 	}
 }
