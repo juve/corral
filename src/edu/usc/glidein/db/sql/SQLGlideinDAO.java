@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -248,25 +248,28 @@ public class SQLGlideinDAO implements GlideinDAO
 		}
 	}
 	
-	public Glidein[] list(boolean longFormat) throws DatabaseException 
+	public Glidein[] list(boolean longFormat, String user, boolean allUsers) throws DatabaseException 
 	{
 		Connection conn = null;
 		try {
 			conn = getConnection();
-			return getGlideins(conn, longFormat);
+			return getGlideins(conn, user, allUsers);
 		} finally {
 			JDBCUtil.closeQuietly(conn);
 		}
 	}
 	
-	private Glidein[] getGlideins(Connection connection, boolean longFormat) throws DatabaseException
+	private Glidein[] getGlideins(Connection connection, String user, boolean allUsers) throws DatabaseException
 	{
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		LinkedList<Glidein> results = new LinkedList<Glidein>();
 		try {
 			// Join to get the site name
-			stmt = connection.prepareStatement("SELECT g.*, s.name as siteName FROM glidein g, site s WHERE g.site=s.id");
+			stmt = connection.prepareStatement("SELECT g.*, s.name as siteName FROM glidein g, site s WHERE g.site=s.id"+(allUsers?"":" AND g.localUsername=?"));
+			if (!allUsers) {
+				stmt.setString(1, user);
+			}
 			rs = stmt.executeQuery();
 			while (rs.next()) {
 				results.add(newGlidein(rs));

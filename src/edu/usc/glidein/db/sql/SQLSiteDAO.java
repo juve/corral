@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -355,13 +355,13 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	public Site[] list(boolean full) throws DatabaseException
+	public Site[] list(boolean longFormat, String user, boolean allUsers) throws DatabaseException
 	{
 		Connection conn = null;
 		try {
 			conn = getConnection();
-			Site[] sites = getSites(conn);
-			if (full) {
+			Site[] sites = getSites(conn, user, allUsers);
+			if (longFormat) {
 				for (Site site : sites) {
 					int id = site.getId();
 					site.setEnvironment(getEnvironment(conn, id));
@@ -377,13 +377,16 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	private Site[] getSites(Connection connection) throws DatabaseException
+	private Site[] getSites(Connection connection, String user, boolean allUsers) throws DatabaseException
 	{
 		LinkedList<Site> sites = new LinkedList<Site>();
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("SELECT * FROM site");
+			stmt = connection.prepareStatement("SELECT * FROM site"+(allUsers?"":" WHERE localUsername=?"));
+			if (!allUsers) {
+				stmt.setString(1, user);
+			}
 			rs = stmt.executeQuery();
 			while (rs.next()) {
 				Site site = newSite(rs);

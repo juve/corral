@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ public interface SiteDAO
 	public void delete(int siteId) throws DatabaseException;
 	public void updateState(int siteId, SiteState state, String shortMessage, 
 			String longMessage, Calendar time) throws DatabaseException;
-	public Site[] list(boolean full) throws DatabaseException;
+	public Site[] list(boolean longFormat, String user, boolean allUsers) throws DatabaseException;
 	public int[] listIds() throws DatabaseException;
 	public boolean hasGlideins(int siteId) throws DatabaseException;
 	public int[] getGlideinIds(int siteId) throws DatabaseException;

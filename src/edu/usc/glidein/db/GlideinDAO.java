@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ public interface GlideinDAO
 	public void updateState(int glideinId, GlideinState state, 
 			String shortMessage, String longMessage, Calendar time) 
 			throws DatabaseException;
-	public Glidein[] list(boolean longFormat) throws DatabaseException;
+	public Glidein[] list(boolean longFormat, String user, boolean allUsers) throws DatabaseException;
 	public int[] listIds() throws DatabaseException;
 	public void insertHistory(int glideinId, GlideinState state, Calendar time)
 			throws DatabaseException;
