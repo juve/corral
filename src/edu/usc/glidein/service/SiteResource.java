@@ -301,7 +301,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		
 		// Log it in the netlogger log
 		try {
-			NetLoggerEvent event = new NetLoggerEvent("glidein.site.new");
+			NetLoggerEvent event = new NetLoggerEvent("site.new");
 			event.setTimeStamp(site.getCreated().getTime());
 			event.put("site.id", site.getId());
 			event.put("name", site.getName());
@@ -491,7 +491,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		
 		// Log it in the netlogger log
 		try {
-			NetLoggerEvent event = new NetLoggerEvent("glidein.site."+state.toString().toLowerCase());
+			NetLoggerEvent event = new NetLoggerEvent("site."+state.toString().toLowerCase());
 			event.setTimeStamp(time.getTime());
 			event.put("site.id", site.getId());
 			event.put("message", shortMessage);
