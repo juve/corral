@@ -73,6 +73,9 @@ import edu.usc.glidein.condor.CondorUniverse;
 import edu.usc.glidein.db.Database;
 import edu.usc.glidein.db.DatabaseException;
 import edu.usc.glidein.db.GlideinDAO;
+import edu.usc.glidein.nl.NetLogger;
+import edu.usc.glidein.nl.NetLoggerEvent;
+import edu.usc.glidein.nl.NetLoggerException;
 import edu.usc.glidein.service.state.Event;
 import edu.usc.glidein.service.state.EventQueue;
 import edu.usc.glidein.service.state.GlideinEvent;
@@ -265,6 +268,33 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				throw new ResourceException("Unable to create glidein",dbe);
 			}
 			
+			// Log it in the netlogger log
+			try {
+				NetLoggerEvent event = new NetLoggerEvent("glidein.glidein.new");
+				event.setTimeStamp(glidein.getCreated().getTime());
+				event.put("glidein.id", glidein.getId());
+				event.put("site.id", site.getId());
+				event.put("condor.host", glidein.getCondorHost());
+				event.put("condor.debug", glidein.getCondorDebug());
+				event.put("count", glidein.getCount());
+				event.put("host_count", glidein.getHostCount());
+				event.put("wall_time", glidein.getWallTime());
+				event.put("num_cpus", glidein.getNumCpus());
+				event.put("gcb_broker", glidein.getGcbBroker());
+				event.put("idle_time", glidein.getIdleTime());
+				event.put("resubmit", glidein.isResubmit());
+				event.put("until", glidein.getUntil());
+				event.put("resubmits", glidein.getResubmits());
+				event.put("rsl", glidein.getRsl());
+				event.put("owner.subject", glidein.getSubject());
+				event.put("owner.username", glidein.getLocalUsername());
+				
+				NetLogger netlogger = NetLogger.getLog();
+				netlogger.log(event);
+			} catch (NetLoggerException nle) {
+				warn("Unable to log glidein event to NetLogger log",nle);
+			}
+			
 			// Set glidein
 			setGlidein(glidein);
 		}
@@ -422,6 +452,19 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		} catch (Exception e) {
 			warn("Unable to notify topic listeners", e);
 		}
+		
+		// Log it in the netlogger log
+		try {
+			NetLoggerEvent event = new NetLoggerEvent("glidein.glidein."+state.toString().toLowerCase());
+			event.setTimeStamp(time.getTime());
+			event.put("glidein.id", glidein.getId());
+			event.put("message", shortMessage);
+			
+			NetLogger netlogger = NetLogger.getLog();
+			netlogger.log(event);
+		} catch (NetLoggerException nle) {
+			warn("Unable to log glidein event to NetLogger log",nle);
+		}
 	}
 	
 	private void submitGlideinJob() throws ResourceException
@@ -456,40 +499,38 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		job.setGridContact(glideinService.getServiceContact());
 		
 		// Set rsl/xml
-		if (glidein.getRsl() == null) {
-			if (ServiceType.GT2.equals(glideinService.getServiceType())) {
-				// GT2 uses globus_rsl
-				StringBuilder rsl = new StringBuilder();
-				if(glideinService.getProject() != null)
-					rsl.append("(project="+glideinService.getProject()+")");
-				if(glideinService.getQueue() != null)
-					rsl.append("(queue="+glideinService.getQueue()+")");
+		StringBuilder rsl = new StringBuilder();
+		if (glidein.getRsl() != null) rsl.append(glidein.getRsl());
+		if (ServiceType.GT2.equals(glideinService.getServiceType())) {
+			// GT2 uses globus_rsl
+			if (rsl.indexOf("(project=")==-1 && glideinService.getProject() != null)
+				rsl.append("(project="+glideinService.getProject()+")");
+			if (rsl.indexOf("(queue=")==-1 && glideinService.getQueue() != null)
+				rsl.append("(queue="+glideinService.getQueue()+")");
+			if (rsl.indexOf("(hostCount=")==-1)
 				rsl.append("(hostCount="+glidein.getHostCount()+")");
+			if (rsl.indexOf("(count=")==-1)
 				rsl.append("(count="+glidein.getCount()+")");
+			if (rsl.indexOf("(jobType=")==-1)
 				rsl.append("(jobType=multiple)");
+			if (rsl.indexOf("(maxTime=")==-1)
 				rsl.append("(maxTime="+glidein.getWallTime()+")");
-				job.setGlobusRSL(rsl.toString());
-			} else {
-				// GT4 uses globus_xml
-				StringBuilder xml = new StringBuilder();
-				xml.append("<count>"+glidein.getCount()+"</count>");
-				xml.append("<hostCount>"+glidein.getHostCount()+"</hostCount>");
-				if(glideinService.getProject() != null)
-					xml.append("<project>"+glideinService.getProject()+"</project>");
-				if(glideinService.getQueue() != null)
-					xml.append("<queue>"+glideinService.getQueue()+"</queue>");
-				xml.append("<maxTime>"+glidein.getWallTime()+"</maxTime>");
-				xml.append("<jobType>multiple</jobType>");
-				job.setGlobusXML(xml.toString());
-			}
+			job.setGlobusRSL(rsl.toString());
 		} else {
-			if (ServiceType.GT2.equals(glideinService.getServiceType())) {
-				// GT2 uses globus_rsl
-				job.setGlobusRSL(glidein.getRsl());
-			} else {
-				// GT4 uses globus_xml
-				job.setGlobusXML(glidein.getRsl());
-			}
+			// GT4 uses globus_xml
+			if (rsl.indexOf("<count>")==-1)
+				rsl.append("<count>"+glidein.getCount()+"</count>");
+			if (rsl.indexOf("<hostCount>")==-1)
+				rsl.append("<hostCount>"+glidein.getHostCount()+"</hostCount>");
+			if (rsl.indexOf("<project>")==-1 && glideinService.getProject() != null)
+				rsl.append("<project>"+glideinService.getProject()+"</project>");
+			if (rsl.indexOf("<queue>")==-1 && glideinService.getQueue() != null)
+				rsl.append("<queue>"+glideinService.getQueue()+"</queue>");
+			if (rsl.indexOf("<maxTime>")==-1)
+				rsl.append("<maxTime>"+glidein.getWallTime()+"</maxTime>");
+			if (rsl.indexOf("<jobType>")==-1)
+				rsl.append("<jobType>multiple</jobType>");
+			job.setGlobusXML(rsl.toString());
 		}
 		
 		// Set glidein executable

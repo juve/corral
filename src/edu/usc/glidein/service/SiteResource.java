@@ -73,6 +73,9 @@ import edu.usc.glidein.condor.CondorUniverse;
 import edu.usc.glidein.db.Database;
 import edu.usc.glidein.db.DatabaseException;
 import edu.usc.glidein.db.SiteDAO;
+import edu.usc.glidein.nl.NetLogger;
+import edu.usc.glidein.nl.NetLoggerEvent;
+import edu.usc.glidein.nl.NetLoggerException;
 import edu.usc.glidein.service.state.Event;
 import edu.usc.glidein.service.state.EventQueue;
 import edu.usc.glidein.service.state.GlideinEvent;
@@ -296,6 +299,33 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			throw new ResourceException("Unable to create site", de);
 		}
 		
+		// Log it in the netlogger log
+		try {
+			NetLoggerEvent event = new NetLoggerEvent("glidein.site.new");
+			event.setTimeStamp(site.getCreated().getTime());
+			event.put("site.id", site.getId());
+			event.put("name", site.getName());
+			event.put("install_path", site.getInstallPath());
+			event.put("local_path", site.getLocalPath());
+			event.put("staging.type", stagingService.getServiceType());
+			event.put("staging.contact", stagingService.getServiceContact());
+			event.put("staging.queue", stagingService.getQueue());
+			event.put("staging.project", stagingService.getProject());
+			event.put("glidein.type", glideinService.getServiceType());
+			event.put("glidein.contact", glideinService.getServiceContact());
+			event.put("glidein.queue", glideinService.getQueue());
+			event.put("glidein.project", glideinService.getProject());
+			event.put("condor.version", site.getCondorVersion());
+			event.put("condor.package", site.getCondorPackage());
+			event.put("owner.subject",site.getSubject());
+			event.put("owner.username", site.getLocalUsername());
+			
+			NetLogger netlogger = NetLogger.getLog();
+			netlogger.log(event);
+		} catch (NetLoggerException nle) {
+			warn("Unable to log site event to NetLogger log",nle);
+		}
+		
 		// Set site
 		setSite(site);
 	}
@@ -457,6 +487,19 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	        stateChangeTopic.notify(new SiteStateChangeMessage(stateChange));
 		} catch (Exception e) {
 			warn("Unable to notify topic listeners", e);
+		}
+		
+		// Log it in the netlogger log
+		try {
+			NetLoggerEvent event = new NetLoggerEvent("glidein.site."+state.toString().toLowerCase());
+			event.setTimeStamp(time.getTime());
+			event.put("site.id", site.getId());
+			event.put("message", shortMessage);
+			
+			NetLogger netlogger = NetLogger.getLog();
+			netlogger.log(event);
+		} catch (NetLoggerException nle) {
+			warn("Unable to log site event to NetLogger log",nle);
 		}
 	}
 	
