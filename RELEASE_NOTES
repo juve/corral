@@ -1,38 +1,155 @@
 ===================================
-Release Notes for version 1.0-alpha
+  Release Notes for version 1.0.6
+===================================
+
+CHANGES
+-------
+1) Error messages no longer gum up the output of list-site and list-glidein.
+2) The glidein job has a better way of determining where the job directory
+   is. Previously, it was relying on a shell variable that wasn't available on
+   all sites.
+3) The pegasus.isi.edu web pages for the glidein service are now included in
+   this project.
+4) The -rsl/--globus-rsl parameter now appends/replaces values in the RSL
+   string instead of replacing the RSL string altogether. The advantage of
+   this is that you no longer have to specify everything when you want to use
+   a custom RSL parameter. The disadvantage is that you can't replace/omit
+   parameters that are assumed by the glidein service (like count, hostCount
+   and jobType).
+5) The list-glidein command is now called list-glideins and the list-site
+   command is now called list-sites.
+6) The list-glideins and list-sites commands now accept -a/--all to show
+   sites/glideins for all users, and -u/--user to list sites/glideins for a
+   specific user. The default is to display sites/glideins for the current
+   user only. The usernames are based on the server, not the client.
+7) The service now produces a Netlogger-formatted log file. By default, the
+   log is created in $GLOBUS_LOCATION/var/glidein_service/netlogger.log.
+   The path can be changed by modifying the jndi-config.xml file.
+
+KNOWN BUGS
+----------
+1) The --wait command-line option still doesn't work correctly.
+
+
+===================================
+  Release Notes for version 1.0.5
+===================================
+
+CHANGES
+-------
+1) --local-path and --install-path now have reasonable defaults. They are also
+   now allowed to contain shell variables which are expanded on the remote
+   host. So you can say you want --install-path to be $SCRATCH/username/glidein
+   and "$SCRATCH" will be evaluated on the remote side.
+2) The glidein job detects when the job directory disappears and kills Condor
+   on sites that don't send signals to the user's jobs on all nodes (e.g. 
+   skynet). This ensures that if the user kills the glidein job, then the
+   glideins will actually go away.
+
+KNOWN BUGS
+----------
+1) The --wait command-line option still doesn't work correctly.
+
+
+===================================
+  Release Notes for version 1.0.4
+===================================
+
+CHANGES
+-------
+1) Exclude interfaces with private IP addresses in 172.16.0.0-172.31.255.255.
+2) Use the site name as the UID_DOMAIN and FILE_SYSTEM_DOMAIN.
+
+KNOWN BUGS
+----------
+1) The --wait option still doesn't work correctly.
+
+
+===================================
+  Release Notes for version 1.0.3
+===================================
+
+CHANGES
+-------
+1) Also delete localPath when removing site.
+2) Add timestamp to history command output.
+3) Glidein job identifies usable IP address from output of /sbin/ifconfig. It
+   prefers public IPs over private IPs, but it will use private IPs if no
+   public IP is available (needed for HPCC glideins).
+4) Application jobs running on the glidein inherit the environment variables
+   of the remote site. This enables the application job to access variables
+   like $X509_USER_PROXY and $SCRATCH and $GLOBUS_LOCATION.
+5) Allow --condor-package to be a logical name, URL (http[s], ftp, gsiftp), 
+   or absolute file name.
+6) Avoid using globus-url-copy or globus-rls-cli on the remote side unless
+   they are really needed. This allows users to specify URLs or file names
+   for the Condor package when the remote site doesn't have Globus installed.
+7) Add --wait option for create-site and create-glidein. This allows the
+   command-line utility to block until the site/glidein reaches a success
+   or failed state. This makes scripting the command-line interface easier.
+   
+KNOWN BUGS
+----------
+1) The --wait option doesn't work correctly.
+
+
+===================================
+  Release Notes for version 1.0.2
+===================================
+
+CHANGES
+-------
+1) Implement notifications. Notifications allow asynchronous updates of
+   glidein and site state to be sent to clients.
+2) Binary worker packages can now be discovered by looking up the package
+   name in RLS. The RLS server to use is defined in the jndi.xml file for
+   the service.
+3) The service will store the EPR for the user's credential instead of the
+   credential itself so that the user can update their credential and the
+   service will automatically use the new one.
+
+KNOWN BUGS
+----------
+NONE
+
+
+===================================
+  Release Notes for version 1.0.1
+===================================
+
+CHANGES
+-------
+1) Logical package names should have ".tar.gz" on the end now.
+2) Fixed errors when determining host name on remote workers.
+3) Normalize all the parameter names across all config files and command-line
+   options.
+
+KNOWN BUGS
+----------
+NONE
+
+
+===================================
+  Release Notes for version 1.0.0
 ===================================
 
 This is the initial release of the glidein service to be used for testing and
 evaluation. If there are any questions or problems please email Gideon Juve
 <juve@usc.edu>.
 
-
-NEW FEATURES
-------------
+CHANGES
+-------
 1) Create sites, including staging of Condor executables and automatic
    identification of architecture, operating system, and glibc version.
-
 2) List current sites, including detailed format.
-
 3) Remove sites, including the removal of all staged executables and log files.
-
 4) Create glideins, with the ability to specify custom config files, and to
    submit glideins repeatedly N times or until a specified date.
-   
 5) List current glideins, including detailed format.
-
 6) Remove glideins, uncluding the removal of log files.
-
 7) State change history for both glideins and sites.
-
 8) Persistent storage in either SQLite or MySQL.
-
-
-BUGS FIXED
-----------
-1) All of the major bugs found in development have been fixed.
-
 
 KNOWN BUGS
 -----------
-1) There are no known bugs in this release!
+NONE
