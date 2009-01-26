@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinHistory;
 import edu.usc.glidein.stubs.types.Glideins;
 import edu.usc.glidein.stubs.types.Identifiers;
+import edu.usc.glidein.stubs.types.ListingRequest;
+import edu.usc.glidein.util.AuthenticationUtil;
 
 public class GlideinFactoryService
 {
@@ -74,14 +76,20 @@ public class GlideinFactoryService
 		return epr;
 	}
 	
-	public Glideins listGlideins(boolean longFormat)
+	public Glideins listGlideins(ListingRequest request)
 	throws RemoteException
 	{
 		Glideins glideins = null;
 		try {
+			if(request.getUser()==null && !request.isAllUsers()) {
+				request.setUser(AuthenticationUtil.getLocalUsername());
+			}
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
-			Glidein[] _glideins = dao.list(longFormat);
+			Glidein[] _glideins = dao.list(
+					request.isLongFormat(),
+					request.getUser(),
+					request.isAllUsers());
 			glideins = new Glideins(_glideins);
 		} catch (Throwable t) {
 			logAndRethrow("Unable to list glideins", t);

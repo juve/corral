@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,9 +30,11 @@ import org.globus.wsrf.utils.AddressingUtils;
 import edu.usc.glidein.db.Database;
 import edu.usc.glidein.db.SiteDAO;
 import edu.usc.glidein.stubs.types.Identifiers;
+import edu.usc.glidein.stubs.types.ListingRequest;
 import edu.usc.glidein.stubs.types.SiteHistory;
 import edu.usc.glidein.stubs.types.Sites;
 import edu.usc.glidein.stubs.types.Site;
+import edu.usc.glidein.util.AuthenticationUtil;
 
 public class SiteFactoryService
 {
@@ -73,14 +75,20 @@ public class SiteFactoryService
 		return epr;
 	}
 	
-	public Sites listSites(boolean longFormat)
+	public Sites listSites(ListingRequest request)
 	throws RemoteException
 	{
 		Sites sites = null;
 		try {
+			if(request.getUser()==null && !request.isAllUsers()) {
+				request.setUser(AuthenticationUtil.getLocalUsername());
+			}
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
-			Site[] _sites = dao.list(longFormat);
+			Site[] _sites = dao.list(
+					request.isLongFormat(),
+					request.getUser(),
+					request.isAllUsers());
 			sites = new Sites(_sites);
 		} catch (Throwable t) {
 			logAndRethrow("Unable to list sites", t);
