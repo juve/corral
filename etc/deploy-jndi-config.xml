@@ -173,6 +173,25 @@
                 </parameter>
             </resourceParams>
         </resource>
+        
+        <!-- NetLogger                                                       -->
+        <!--                                                                 -->
+        <!-- Parameters:													 -->
+        <!-- 	logFile - The file to write NetLogger events to. Relative    -->
+        <!--              paths are relative to GLOBUS_LOCATION.             -->
+        <resource name="glidein/NetLogger" 
+        		  type="edu.usc.glidein.nl.NetLogger">
+            <resourceParams>
+                <parameter>
+                    <name>factory</name>
+                    <value>org.globus.wsrf.jndi.BeanFactory</value>
+                </parameter>
+                <parameter>
+                	<name>logFile</name>
+                	<value>var/glidein_service/netlogger.log</value>
+                </parameter>
+            </resourceParams>
+        </resource>
 	</global>
 
 	<!-- GlideinService -->
