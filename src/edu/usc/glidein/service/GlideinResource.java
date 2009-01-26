@@ -270,7 +270,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			
 			// Log it in the netlogger log
 			try {
-				NetLoggerEvent event = new NetLoggerEvent("glidein.glidein.new");
+				NetLoggerEvent event = new NetLoggerEvent("glidein.new");
 				event.setTimeStamp(glidein.getCreated().getTime());
 				event.put("glidein.id", glidein.getId());
 				event.put("site.id", site.getId());
@@ -455,7 +455,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		
 		// Log it in the netlogger log
 		try {
-			NetLoggerEvent event = new NetLoggerEvent("glidein.glidein."+state.toString().toLowerCase());
+			NetLoggerEvent event = new NetLoggerEvent("glidein."+state.toString().toLowerCase());
 			event.setTimeStamp(time.getTime());
 			event.put("glidein.id", glidein.getId());
 			event.put("message", shortMessage);
