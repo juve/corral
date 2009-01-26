@@ -40,7 +40,7 @@
 	</message>
 	
 	<message name="listGlideinsRequestMessage">
-		<part name="longFormat" type="xsd:boolean"/>
+		<part name="request" type="glidein:ListingRequest"/>
 	</message>
 	<message name="listGlideinsResponseMessage">
 		<part name="glideins" type="glidein:Glideins"/>

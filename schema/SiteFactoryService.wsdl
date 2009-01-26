@@ -40,7 +40,7 @@
 	</message>
 	
 	<message name="listSitesRequestMessage">
-		<part name="longFormat" type="xsd:boolean"/>
+		<part name="listingRequest" type="glidein:ListingRequest"/>
 	</message>
 	<message name="listSitesResponseMessage">
 		<part name="sites" type="glidein:Sites"/>

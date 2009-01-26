@@ -6,6 +6,14 @@
 	
 	<xsd:complexType name="EmptyObject"/>
 	
+	<xsd:complexType name="ListingRequest">
+		<xsd:sequence>
+			<xsd:element name="longFormat" type="xsd:boolean" default="false"/>
+			<xsd:element name="user" type="xsd:string" nillable="true"/>
+			<xsd:element name="allUsers" type="xsd:boolean" default="false"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	
 	<xsd:complexType name="Identifiers">
 		<xsd:sequence>
 			<xsd:element name="ids" type="xsd:int"
