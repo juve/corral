@@ -9,8 +9,11 @@ include_once("../../includes/header.inc");
 
 <p>The latest stable release is <b>1.0.6</b>. Click <a href="..">here</a> for older releases.</p>
 
-<a href="glidein_service.gar">Service and Client</a>
-<a href="glidein_service_client.gar">Client Only</a>
+<h3>Service and Client</h3>
+<ul><li><a href="glidein_service.gar">glidein_service.gar</a><br>Download this if you want both the service and the client</li></ul>
+
+<h3>Client Only</h3>
+<ul><li><a href="glidein_service_client.gar">glidein_service_client.gar</a><br>Download this if you want the client only</li></ul>
 
 <h2>Source Code</h2>
 

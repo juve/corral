@@ -8,7 +8,7 @@ include_once("../../includes/header.inc");
 <ul>
 <li><a href="download.php">Download</a></li>
 <li><a href="doc.php">Documentation</a></li>
-<li><a href="../support.php">Support</a></li>
+<li><a href="../../support.php">Support</a></li>
 </ul>
 
 <p>The Glidein Service is a resource provisioning tool designed to help 
