@@ -17,7 +17,7 @@
 	<property name="etc.dir" location="etc"/>
 	<property name="share.dir" location="share"/>
 	<property name="classes.dir" location="${build.dir}/classes"/>
-	<property name="jars.dir" location="${build.dir}/jars"/>
+	<property name="jars.dir" location="${build.dir}/lib"/>
 	<property name="bin.dir" location="bin"/>
 	<property name="lib.dir" location="lib"/>
 	<property name="service.dir" location="src"/>
@@ -29,6 +29,7 @@
     
 	<property name="jar.name" value="${base.name}.jar"/>
     <property name="gar.name" value="${package.name}.gar"/>
+	<property name="client.name" value="${package.name}_client.gar"/>
 	
 	<!-- Globus build scripts -->
     <property name="build.stubs" location="${globus.location}/share/globus_wsrf_tools/build-stubs.xml"/>
@@ -251,8 +252,10 @@
 		</copy>
 	</target>
 	
-	<!-- Creates the GAR file -->
+	<!-- Creates the GAR files -->
 	<target name="gar" depends="jar,globus">
+		
+		<!-- Combined Client+Service GAR -->
 		<ant antfile="${build.packages}" target="makeGar">
 			<property name="garserverdeployment.file" value="${etc.dir}/deploy-server.wsdd" />
 			<property name="garclientdeployment.file" value="${etc.dir}/deploy-client.wsdd" />
@@ -264,6 +267,16 @@
 			<reference refid="${garbin.id}" />
 			<reference refid="${garshare.id}" />
 		</ant>
+		
+		<!-- Client GAR -->
+		<jar destfile="${package.name}_client.gar">
+			<fileset dir=".">
+				<include name="bin/*"/>
+			</fileset>
+			<fileset dir="${build.dir}">
+				<include name="lib/${jar.name}"/>
+			</fileset>
+		</jar>
 	</target>
 	
 	<target name="dist" depends="gar"/>
