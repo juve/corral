@@ -1,11 +1,12 @@
-======================
-Installing the service
-======================
+==================================
+Installing the service from source
+==================================
 
 1. Set your GLOBUS_LOCATION environment variable to point to the globus 
-   directory where you want to install the service.
+   directory where you want to install the service. The Glidein Service
+   has been tested with Globus 4.0.x (it has not been tested with 4.2.x).
 
-2. Make sure ant (> 1.7) and java (> 1.5) are on your path
+2. Make sure ant (> 1.7) and java (> 1.5) are on your path.
 
 3. Run:
 
