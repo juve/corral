@@ -25,6 +25,10 @@ CHANGES
 7) The service now produces a Netlogger-formatted log file. By default, the
    log is created in $GLOBUS_LOCATION/var/glidein_service/netlogger.log.
    The path can be changed by modifying the jndi-config.xml file.
+8) There is now a GAR file for the glidein service client.
+9) The glidein command allows the user to specify defaults for --host using
+   the GLIDEIN_HOST environment variable and --port using the GLIDEIN_PORT
+   environment variable.
 
 KNOWN BUGS
 ----------
