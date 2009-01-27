@@ -89,7 +89,8 @@ public abstract class Command
 				  .setOption("h")
 				  .setLongOption("host")
 				  .setUsage("-h [--host] <host|ip>")
-				  .setDescription("Service host (default: "+getLocalHost()+")")
+				  .setDescription("Service host (default: '"+getDefaultHost()+"'. The default can be set by\n" +
+				  		          "specifying the GLIDEIN_HOST environment variable.)")
 				  .hasArgument()
 		);
 		options.add(
@@ -97,7 +98,12 @@ public abstract class Command
 				  .setOption("p")
 				  .setLongOption("port")
 				  .setUsage("-p [--port] <port>")
-				  .setDescription("Service port (default: 8443 for transport security, 8080 otherwise)")
+				  .setDescription("Service port (default: "+(getDefaultPort()==null
+						  		 ?"'8443' for transport security, '8080' otherwise.\n"+
+						  		  "The default can be set by specifying the GLIDEIN_PORT environment variable.)"
+								 :"'"+getDefaultPort()+"'. The default can be set by\n" +
+								  "specifying the GLIDEIN_PORT environment variable.)"
+								  ))
 				  .hasArgument()	 
 		);
 		options.add(
@@ -121,7 +127,7 @@ public abstract class Command
 				  .setOption("P")
 				  .setLongOption("protection")
 				  .setUsage("-P [--protection] <type>")
-				  .setDescription("Protection type. Either 'sig', or 'enc'. (default: sig)")
+				  .setDescription("Protection type. Either 'sig', or 'enc'. (default: 'sig')")
 				  .hasArgument()
 		);
 		options.add(
@@ -293,12 +299,12 @@ public abstract class Command
 		if (cmdln.hasOption("h")) {
 			host = cmdln.getOptionValue("h");
 		} else {
-			host = getLocalHost();
+			host = getDefaultHost();
 		}
 		
 		// Port
-		if (cmdln.hasOption("p")) {
-			String portString = cmdln.getOptionValue("p");
+		if (cmdln.hasOption("p") || getDefaultPort()!=null) {
+			String portString = cmdln.getOptionValue("p",getDefaultPort());
 			if (portString.matches("[0-9]+")) {
 				port = Integer.parseInt(portString);
 			} else {
@@ -427,6 +433,15 @@ public abstract class Command
 		}
 	}
 	
+	public String getDefaultHost()
+	{
+		// If $GLIDEIN_HOST is specified, use that. Otherwise
+		// use the local host name.
+		String host = System.getenv("GLIDEIN_HOST");
+		if (host == null) return getLocalHost();
+		else return host;
+	}
+	
 	public String getLocalHost()
 	{
 		// Set the default condor host
@@ -436,6 +451,11 @@ public abstract class Command
 		}  catch (UnknownHostException uhe) {
 			return null;
 		}
+	}
+	
+	public String getDefaultPort()
+	{
+		return System.getenv("GLIDEIN_PORT");
 	}
 	
 	abstract public String getUsage();
