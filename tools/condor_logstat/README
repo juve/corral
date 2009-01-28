@@ -1,0 +1,37 @@
+OVERVIEW
+--------
+
+condor_logstat is a tool that produces a Netlogger log file containing periodic
+status information for a Condor pool.
+
+INSTALLATION
+------------
+
+The easiest way to install condor_logstat is to add it to the list of Condor
+daemons in condor_config for your central manager. Add these:
+
+LOGSTAT = /full/path/to/condor_logstat
+LOGSTAT_ARGS = -l /path/to/condor/status.log -i 60
+
+Where -l specifies the path to the log file and -i specifies the logging 
+interval in seconds (see 'condor_logstat -help'). 
+
+Finally, add it to the daemon list and restart Condor:
+
+DAEMONS = MASTER, SCHEDD, NEGOTIATOR, COLLECTOR, LOGSTAT
+
+LOG FILE
+--------
+
+condor_logstat produces a file with lines such as:
+
+ts=2009-01-28T22:30:31.000Z event=condor.status machine.total=2 machine.owner=0 \
+	machine.claimed=0 machine.unclaimed=2 machine.matched=0 machine.backfill=0 \
+	machine.preempting=0 job.total=0 job.unexpanded=0 job.idle=0 job.running=0 \
+	job.removed=0 job.completed=0 job.held=0
+	
+This line tells Netlogger how many machines there were in your pool, and how
+many of those machines were currently in each state when the snapshot was
+taken. It also lists the total number of jobs and the total number of jobs
+in each status. Netlogger stores this information and it is mined to produce
+useful charts.

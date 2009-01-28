@@ -1,0 +1,114 @@
+#!/bin/bash
+
+# Defaults
+LOG=/dev/stdout
+INTERVAL=300
+
+# Usage
+usage ()
+{
+	echo """Usage: `basename $0` [-l LOG] [-i INTERVAL]
+
+This script periodically prints the state and activity status of resources in a
+Condor pool. The output is printed in Netlogger format.
+
+OPTIONS
+
+   -l | -log | --log
+      The log file to write output to. Defaults to /dev/stdout.
+   -i | -interval | --interval
+      The number of seconds to wait between logging events. Defaults to 500.
+   -h | -help | --help
+      Prints this usage message.
+""" >&2
+}
+
+# Parse arguments
+while [ $# -ge 1 ]; do
+	case $1 in 
+		-i | -interval | --interval) INTERVAL=$2 ;;
+		-l | -log | --log) LOG=$2 ;;
+		-h* | --h*) usage ; exit 1 ;;
+		*) echo "Invalid argument: $1" >&2 ; exit 1 ;;
+	esac
+	shift
+	shift
+done
+
+# Exit nicely if sent a TERM signal
+trap "kill 0 ; exit 0" SIGTERM
+
+# Create log if it doesn't exist
+touch $LOG
+if [ $? -ne 0 ]; then
+	echo "Unable to create log: $LOG"
+	exit 1
+fi
+
+# Loop forever collecting status
+while [ true ]; do
+
+	# Reset machine variables to 0
+	Owner=0
+	Unclaimed=0
+	Matched=0
+	Claimed=0
+	Preempting=0
+	Backfill=0
+
+	# Reset job variables to 0
+	Unexpanded=0
+	Idle=0
+	Running=0
+	Removed=0
+	Completed=0
+	Held=0
+
+	# Determine the status of all the jobs
+	jstatus=`condor_q -format '%s\n' JobStatus 2>/dev/null`
+	if [ $? -ne 0 ]; then
+		# If condor_q fails, then just wait until the next interval
+		sleep $INTERVAL
+		continue
+	fi
+
+	# Set all the job variables
+	while read count code; do
+		case $code in
+			0) Unexpanded=$count ;;
+			1) Idle=$count ;;
+			2) Running=$count ;;
+			3) Removed=$count ;;
+			4) Completed=$count ;;
+			5) Held=$count ;;
+		esac
+	done < <(echo "$jstatus" | sed '/^$/d' | sort | uniq -c)
+
+	# Add up the job Statuses to determine the total
+	jobs=`expr $Unexpanded + $Idle + $Running + $Removed + $Completed + $Held`
+
+	# Determine the status of all the resources
+	mstatus=`condor_status -format '%s\n' State 2>/dev/null`
+	if [ $? -ne 0 ]; then
+		# If condor_status fails, then just wait until the next interval
+		sleep $INTERVAL
+		continue
+	fi
+
+	# Set all the machine variables
+	while read value variable; do
+		let $variable=$value
+	done < <(echo "$mstatus" | sed '/^$/d' | sort | uniq -c)
+
+	# Add up the machine States to determine the total
+	machines=`expr $Owner + $Unclaimed + $Matched + $Claimed + $Preempting + $Backfill`
+
+	# Determine the time
+	ts=`date -u +%Y-%m-%dT%H:%M:%S.000Z`
+
+	# Print a netlogger-formatted logging message to the log file
+	echo "ts=$ts event=condor.status machine.total=$machines machine.owner=$Owner machine.claimed=$Claimed machine.unclaimed=$Unclaimed machine.matched=$Matched machine.backfill=$Backfill machine.preempting=$Preempting job.total=$jobs job.unexpanded=$Unexpanded job.idle=$Idle job.running=$Running job.removed=$Removed job.completed=$Completed job.held=$Held" >> $LOG
+
+	# Wait for next event
+	sleep $INTERVAL
+done
