@@ -3,11 +3,12 @@
 # Defaults
 LOG=/dev/stdout
 INTERVAL=300
+MAXSIZE=1024
 
 # Usage
 usage ()
 {
-	echo """Usage: `basename $0` [-l LOG] [-i INTERVAL]
+	echo """Usage: `basename $0` [-l LOG] [-i INTERVAL] [-m MAXSIZE]
 
 This script periodically prints the state and activity status of resources in a
 Condor pool. The output is printed in Netlogger format.
@@ -17,10 +18,21 @@ OPTIONS
    -l | -log | --log
       The log file to write output to. Defaults to /dev/stdout.
    -i | -interval | --interval
-      The number of seconds to wait between logging events. Defaults to 500.
+      The number of seconds to wait between logging events. Defaults to 300.
+   -m | -maxsize | --maxsize
+      The maximum log file size in KB. Defaults to 1024 KB (1 MB, or ~2 weeks
+      using 5 min interval). When the log reaches this size, its name gets a 
+      .0 appended onto it and a new log is started.
    -h | -help | --help
       Prints this usage message.
 """ >&2
+}
+
+# Interruptible sleep
+isleep ()
+{
+	sleep "$@" &
+	wait $!
 }
 
 # Parse arguments
@@ -28,6 +40,7 @@ while [ $# -ge 1 ]; do
 	case $1 in 
 		-i | -interval | --interval) INTERVAL=$2 ;;
 		-l | -log | --log) LOG=$2 ;;
+		-m | -maxsize | --maxsize) MAXSIZE=$2 ;;
 		-h* | --h*) usage ; exit 1 ;;
 		*) echo "Invalid argument: $1" >&2 ; exit 1 ;;
 	esac
@@ -68,7 +81,7 @@ while [ true ]; do
 	jstatus=`condor_q -format '%s\n' JobStatus 2>/dev/null`
 	if [ $? -ne 0 ]; then
 		# If condor_q fails, then just wait until the next interval
-		sleep $INTERVAL
+		isleep $INTERVAL
 		continue
 	fi
 
@@ -91,7 +104,7 @@ while [ true ]; do
 	mstatus=`condor_status -format '%s\n' State 2>/dev/null`
 	if [ $? -ne 0 ]; then
 		# If condor_status fails, then just wait until the next interval
-		sleep $INTERVAL
+		isleep $INTERVAL
 		continue
 	fi
 
@@ -105,10 +118,16 @@ while [ true ]; do
 
 	# Determine the time
 	ts=`date -u +%Y-%m-%dT%H:%M:%S.000Z`
+	
+	# If log file is larger than the max, rotate it and create a new one
+	if [ `ls -sk $LOG | awk '{print $1}'` -ge $MAXSIZE ]; then
+		mv -f $LOG ${LOG}.0
+		touch $LOG
+	fi
 
 	# Print a netlogger-formatted logging message to the log file
 	echo "ts=$ts event=condor.status machine.total=$machines machine.owner=$Owner machine.claimed=$Claimed machine.unclaimed=$Unclaimed machine.matched=$Matched machine.backfill=$Backfill machine.preempting=$Preempting job.total=$jobs job.unexpanded=$Unexpanded job.idle=$Idle job.running=$Running job.removed=$Removed job.completed=$Completed job.held=$Held" >> $LOG
 
 	# Wait for next event
-	sleep $INTERVAL
+	isleep $INTERVAL
 done
