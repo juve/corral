@@ -4,6 +4,7 @@
 LOG=/dev/stdout
 INTERVAL=300
 MAXSIZE=1024
+POOL=
 
 # Usage
 usage ()
@@ -16,13 +17,17 @@ Condor pool. The output is printed in Netlogger format.
 OPTIONS
 
    -l | -log | --log
-      The log file to write output to. Defaults to /dev/stdout.
+      The log file to write output to. Defaults to $LOG.
    -i | -interval | --interval
-      The number of seconds to wait between logging events. Defaults to 300.
+      The number of seconds to wait between logging events. Defaults to $INTERVAL.
    -m | -maxsize | --maxsize
-      The maximum log file size in KB. Defaults to 1024 KB (1 MB, or ~2 weeks
+      The maximum log file size in KB. Defaults to $MAXSIZE KB (1 MB, or ~2 weeks
       using 5 min interval). When the log reaches this size, its name gets a 
       .0 appended onto it and a new log is started.
+   -p | -pool | --pool
+      The pool to query. The machine from which `basename $0` runs should have
+      READ permissions for the pool. Defaults to the pool currently set in the
+      local condor_config file.
    -h | -help | --help
       Prints this usage message.
 """ >&2
@@ -41,12 +46,21 @@ while [ $# -ge 1 ]; do
 		-i | -interval | --interval) INTERVAL=$2 ;;
 		-l | -log | --log) LOG=$2 ;;
 		-m | -maxsize | --maxsize) MAXSIZE=$2 ;;
+		-p | -pool | --pool) POOL=$2 ;;
 		-h* | --h*) usage ; exit 1 ;;
 		*) echo "Invalid argument: $1" >&2 ; exit 1 ;;
 	esac
 	shift
 	shift
 done
+
+# Set condor_q and condor_status
+CONDOR_Q=condor_q
+CONDOR_STATUS=condor_status
+if [ ! -z "$POOL" ]; then
+	CONDOR_Q="${CONDOR_Q} -pool ${POOL}"
+	CONDOR_STATUS="${CONDOR_STATUS} -pool ${POOL}"
+fi
 
 # Exit nicely if sent a TERM signal
 trap "kill 0 ; exit 0" SIGTERM
@@ -78,7 +92,7 @@ while [ true ]; do
 	Held=0
 
 	# Determine the status of all the jobs
-	jstatus=`condor_q -format '%s\n' JobStatus 2>/dev/null`
+	jstatus=`$CONDOR_Q -format '%s\n' JobStatus 2>/dev/null`
 	if [ $? -ne 0 ]; then
 		# If condor_q fails, then just wait until the next interval
 		isleep $INTERVAL
@@ -101,7 +115,7 @@ while [ true ]; do
 	jobs=`expr $Unexpanded + $Idle + $Running + $Removed + $Completed + $Held`
 
 	# Determine the status of all the resources
-	mstatus=`condor_status -format '%s\n' State 2>/dev/null`
+	mstatus=`$CONDOR_STATUS -format '%s\n' State 2>/dev/null`
 	if [ $? -ne 0 ]; then
 		# If condor_status fails, then just wait until the next interval
 		isleep $INTERVAL
