@@ -38,7 +38,7 @@ public abstract class Command
 {
 	static { Util.registerTransport(); }
 	
-	public static final String COMMAND_NAME = "glidein";
+	public static final String COMMAND_NAME = "corral";
 	
 	public static final Class[] SUBCOMMANDS = {
 		HelpCommand.class,
