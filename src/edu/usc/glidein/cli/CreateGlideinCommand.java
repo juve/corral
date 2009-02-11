@@ -172,6 +172,22 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 				  .setUsage("-W [--wait]")
 				  .setDescription("Block waiting for the glidein to become RUNNING, FAILED, or DELETED.")
 		);
+		options.add(
+			Option.create()
+				  .setOption("hp")
+				  .setLongOption("highport")
+				  .setUsage("-hp [--highport]")
+				  .setDescription("The high end of the port range to allow the glidein to use at the remote site.")
+				  .hasArgument()
+		);
+		options.add(
+			Option.create()
+				  .setOption("lp")
+				  .setLongOption("lowport")
+				  .setUsage("-lp [--lowport]")
+				  .setDescription("The low end of the port range to allow the glidein to use at the remote site.")
+				  .hasArgument()
+		);
 	}
 	
 	private void setProperty(Properties p, String name, String value)
@@ -235,6 +251,8 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			setProperty(p, GCB_BROKER, cmdln.getOptionValue("b"));
 			setProperty(p, RESUBMIT, cmdln.getOptionValue("r"));
 			setProperty(p, RSL, cmdln.getOptionValue("rsl"));
+			setProperty(p, LOWPORT, cmdln.getOptionValue("lp"));
+			setProperty(p, HIGHPORT, cmdln.getOptionValue("hp"));
 			glidein = GlideinUtil.createGlidein(p);
 		} catch (Exception e) {
 			throw new CommandException(e);
