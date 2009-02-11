@@ -94,6 +94,7 @@ import edu.usc.glidein.stubs.types.SiteStateChangeMessage;
 import edu.usc.glidein.util.AddressingUtil;
 import edu.usc.glidein.util.AuthenticationUtil;
 import edu.usc.glidein.util.FilesystemUtil;
+import edu.usc.glidein.util.ServiceUtil;
 
 public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, 
 	ResourceProperties, TopicListAccessor
@@ -591,6 +592,11 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				job.addEnvironment(var.getVariable(), var.getValue());
 		}
 		
+		// Add some default environment entries
+		job.addEnvironment("CORRAL_SERVER", ServiceUtil.getServiceHost());
+		job.addEnvironment("CORRAL_SITE_ID", Integer.toString(site.getId()));
+		job.addEnvironment("CORRAL_SITE_NAME", site.getName());
+		
 		// Add arguments
 		job.addArgument("-installPath "+site.getInstallPath());
 		if (site.getCondorPackage()==null) {
@@ -599,6 +605,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			job.addArgument("-condorPackage "+site.getCondorPackage());
 		}
 		job.addArgument("-rls "+config.getRls());
+		job.addArgument("-mapper "+config.getMapper());
 		
 		// Add status output file
 		job.addOutputFile("status");
@@ -612,6 +619,18 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			condor.submitJob(job);
 		} catch (CondorException ce) {
 			throw new ResourceException("Unable to submit install job",ce);
+		}
+		
+		// Log the condor job id in netlogger
+		try {
+			NetLoggerEvent event = new NetLoggerEvent("site.submit.install");
+			event.put("site.id", site.getId());
+			event.put("condor.id", job.getJobId());
+			
+			NetLogger netlogger = NetLogger.getLog();
+			netlogger.log(event);
+		} catch (NetLoggerException nle) {
+			warn("Unable to log site event to NetLogger log",nle);
 		}
 	}
 	
@@ -871,9 +890,13 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				job.addEnvironment(var.getVariable(), var.getValue());
 		}
 		
+		// Add some default environment entries
+		job.addEnvironment("CORRAL_SERVER", ServiceUtil.getServiceHost());
+		job.addEnvironment("CORRAL_SITE_ID", Integer.toString(site.getId()));
+		job.addEnvironment("CORRAL_SITE_NAME", site.getName());
+		
 		// Add arguments
 		job.addArgument("-installPath "+site.getInstallPath());
-		job.addArgument("-localPath "+site.getLocalPath());
 		
 		// Add status output file
 		job.addOutputFile("status");
@@ -888,6 +911,19 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		} catch (CondorException ce) {
 			throw new ResourceException("Unable to submit uninstall job",ce);
 		}
+		
+		// Log the condor job id in netlogger
+		try {
+			NetLoggerEvent event = new NetLoggerEvent("site.submit.uninstall");
+			event.put("site.id", site.getId());
+			event.put("condor.id", job.getJobId());
+			
+			NetLogger netlogger = NetLogger.getLog();
+			netlogger.log(event);
+		} catch (NetLoggerException nle) {
+			warn("Unable to log site event to NetLogger log",nle);
+		}
+		
 	}
 	
 	private void deleteFromDatabase() throws ResourceException
