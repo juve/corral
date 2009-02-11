@@ -103,7 +103,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 				  .setLongOption("install-path")
 				  .setUsage("-ip [--install-path] <path>")
 				  .setDescription("This is the remote path where executables are installed. \n" +
-				  				  "Default: $HOME/glidein")
+				  				  "Default: '$HOME/.corral/$CORRAL_SERVER/$CORRAL_SITE_ID'")
 				  .hasArgument()
 		);
 		
@@ -114,7 +114,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 				  .setLongOption("local-path")
 				  .setUsage("-lp [--local-path] <path>")
 				  .setDescription("This is the remote path where log files, etc. are placed \n" +
-				  				  "(i.e. local scratch). Default: /tmp/glidein")
+				  				  "(i.e. local scratch). Default: '/tmp'")
 				  .hasArgument()
 		);
 		
@@ -273,8 +273,8 @@ public class CreateSiteCommand extends Command implements SiteListener
 			try {
 				Properties p = new Properties();
 				setProperty(p, NAME, siteName);
-				setProperty(p, INSTALL_PATH, cmdln.getOptionValue("ip","$HOME/glidein"));
-				setProperty(p, LOCAL_PATH, cmdln.getOptionValue("lp","/tmp/glidein"));
+				setProperty(p, INSTALL_PATH, cmdln.getOptionValue("ip","$HOME/.corral/$CORRAL_SERVER/$CORRAL_SITE_ID"));
+				setProperty(p, LOCAL_PATH, cmdln.getOptionValue("lp","/tmp"));
 				setProperty(p, STAGING_SERVICE, cmdln.getOptionValue("ss"));
 				setProperty(p, STAGING_SERVICE_PROJECT, cmdln.getOptionValue("ssp"));
 				setProperty(p, STAGING_SERVICE_QUEUE, cmdln.getOptionValue("ssq"));
