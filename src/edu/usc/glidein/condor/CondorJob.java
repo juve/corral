@@ -525,13 +525,13 @@ public class CondorJob implements Serializable
 		Map<String,String> env = getEnvironment();
 		if(env.size()>0)
 		{
-			out.write("environment =");
+			out.write("environment = ");
 			for(String name : env.keySet())
 			{
-				out.write(" ");
 				out.write(name);
 				out.write("=");
 				out.write(env.get(name));
+				out.write(";");
 			}
 			out.write("\n");
 		}
