@@ -1,0 +1,19 @@
+INTRODUCTION
+------------
+
+This directory contains the package mapper. The package mapper is a web
+application that maps the Condor package names used by Corral into URLs where
+those packages can be  downloaded.
+
+RUNNING
+-------
+
+To run the package mapper type:
+
+$ package_mapper
+
+That's it! By default, the package mapper listens on port 10960. 
+
+For more information type:
+
+$ package_mapper --help
