@@ -26,9 +26,11 @@ public class ServiceConfiguration
 	private File install;
 	private File uninstall;
 	private File run;
+	private File start;
 	private String rls;
 	private File glideinCondorConfig;
 	private File workingDirectory;
+	private String mapper;
 	
 	public ServiceConfiguration() { }
 	
@@ -81,6 +83,20 @@ public class ServiceConfiguration
 		}
 	}
 
+	public String getStart()
+	{
+		return start.getAbsolutePath();
+	}
+
+	public void setStart(String start)
+	{
+		this.start = new File(start);
+		if (!this.start.isAbsolute()) {
+			this.start = new File(
+					System.getProperty("GLOBUS_LOCATION"),start);
+		}
+	}
+	
 	public String getRls()
 	{
 		return rls;
@@ -89,6 +105,16 @@ public class ServiceConfiguration
 	public void setRls(String rls)
 	{
 		this.rls = rls;
+	}
+	
+	public String getMapper()
+	{
+		return mapper;
+	}
+	
+	public void setMapper(String mapper)
+	{
+		this.mapper = mapper;
 	}
 
 	public String getGlideinCondorConfig()

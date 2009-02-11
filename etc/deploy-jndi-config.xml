@@ -112,11 +112,16 @@
         <!-- 	uninstall			- Path to the site uninstall shell		--> 
         <!-- 						  script. Relative paths are relative 	-->
         <!-- 						  to GLOBUS_LOCATION.					-->
+        <!--    start               - Path to the glidein start shell scrip -->
+        <!--                          t. Relative paths are relative to     -->
+        <!--                          GLOBUS_LOCATION                       -->
         <!-- 	run					- Path to the glidein run shell script.	-->
         <!-- 						  Relative paths are relative to 		-->
         <!-- 						  GLOBUS_LOCATION						-->
         <!-- 	rls					- URL of the RLS service that should be	-->
         <!-- 						  used to locate binary worker packages -->
+        <!--    mapper              - The host:port of the package mapper   -->
+        <!--                          service.                              -->
         <!-- 	glideinCondorConfig	- Default glidein config file. Relative	-->
         <!-- 						  paths are relative to GLOBUS_LOCATION -->
         <!-- 	workingDirectory	- Directory to store working files.		-->
@@ -138,12 +143,20 @@
                 	<value>share/glidein_service/glidein_uninstall</value>
                 </parameter>
                 <parameter>
+                	<name>start</name>
+                	<value>share/glidein_service/glidein_start</value>
+                </parameter>
+                <parameter>
                 	<name>run</name>
                 	<value>share/glidein_service/glidein_run</value>
                 </parameter>
                 <parameter>
                 	<name>rls</name>
                 	<value>rls://juve.isi.edu</value>
+                </parameter>
+                <parameter>
+                	<name>mapper</name>
+                	<value>juve.isi.edu:10960</value>
                 </parameter>
                 <parameter>
                 	<name>glideinCondorConfig</name>
