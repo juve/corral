@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Require GLOBUS_LOCATION
+if [ -z "$GLOBUS_LOCATION" ]; then
+	echo "ERROR: Please set the GLOBUS_LOCATION environment variable"
+	exit 1
+fi
+
+exec $GLOBUS_LOCATION/bin/glidein "$@"
