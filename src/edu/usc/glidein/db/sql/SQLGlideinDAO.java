@@ -70,7 +70,7 @@ public class SQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, created, lastUpdate, condorHost, resubmit, submits, resubmits, until, rsl, subject, localUsername) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, created, lastUpdate, condorHost, resubmit, submits, resubmits, until, rsl, subject, localUsername, lowport, highport) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
@@ -109,6 +109,8 @@ public class SQLGlideinDAO implements GlideinDAO
 			stmt.setString(i++, glidein.getRsl());
 			stmt.setString(i++, glidein.getSubject());
 			stmt.setString(i++, glidein.getLocalUsername());
+			stmt.setInt(i++, glidein.getLowport());
+			stmt.setInt(i++, glidein.getHighport());
 			
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create glidein: wrong number of db updates");
@@ -405,6 +407,8 @@ public class SQLGlideinDAO implements GlideinDAO
 			glidein.setRsl(rs.getString("rsl"));
 			glidein.setSubject(rs.getString("subject"));
 			glidein.setLocalUsername(rs.getString("localUsername"));
+			glidein.setLowport(rs.getInt("lowport"));
+			glidein.setHighport(rs.getInt("highport"));
 			
 			return glidein;
 		} catch (SQLException sqle) {
