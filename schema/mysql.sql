@@ -97,6 +97,8 @@ CREATE TABLE glidein (
 	rsl					TEXT,							-- Globus RSL or XML to override other parameters
 	subject				VARCHAR(256) NOT NULL,			-- Owner of resource
 	localUsername		VARCHAR(64) NOT NULL,			-- Local username of owner
+	highport			INTEGER,						-- Highest port number used by Condor
+	lowport				INTEGER,						-- Lowest port number used by Condor
 	CONSTRAINT pk_glidein PRIMARY KEY (id),
 	CONSTRAINT fk_glidein_01 FOREIGN KEY (site) REFERENCES site(id) ON DELETE SET NULL
 ) type=InnoDB;

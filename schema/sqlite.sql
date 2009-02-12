@@ -93,7 +93,9 @@ CREATE TABLE glidein (
 	submits			INTEGER	NOT NULL,	-- Total number of times this glidein has be submitted
 	rsl				TEXT,				-- Globus RSL or XML to override other parameters
 	subject			TEXT NOT NULL,		-- Owner of resource
-	localUsername	TEXT NOT NULL		-- Local username of owner
+	localUsername	TEXT NOT NULL,		-- Local username of owner
+	highport		INTEGER,			-- Highest port number used by Condor
+	lowport			INTEGER				-- Lowest port number used by Condor
 );
 
 /**
