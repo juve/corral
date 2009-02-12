@@ -6,20 +6,25 @@
 #
 # The following parameters will be set at runtime:
 #
-#  GLIDEIN_LOCAL_DIR - The path to the local directory
-#  GLIDEIN_CONDOR_HOST - The condor central manager host/host:port
-#  GLIDEIN_WALL_TIME - The runtime of the glidein job in minutes
-#  GLIDEIN_WALL_TIME_SECONDS - The runtime of the glidein job in seconds
-#  GLIDEIN_IDLE_TIME - The maximum idle time for the glidein in minutes
-#  GLIDEIN_IDLE_TIME_SECONDS - The maximum idle time for the glidein in seconds
-#  GLIDEIN_SBIN - Path to the condor daemon executables
-#  GLIDEIN_GCB_ENABLE - Is GCB enabled? True or False 
-#  GLIDEIN_GCB_BROKER - The IP of the GCB Broker (if enabled)
-#  GLIDEIN_DEBUG - The debug level. Default: D_ALWAYS Enabled: D_FULLDEBUG
-#  GLIDEIN_IP_ADDR - The "best" IP address to advertise
-#  GLIDEIN_X509_USER_PROXY - Path to the user's X509 proxy file
-#  GLIDEIN_SITE - The name of the site specified when the site was created
-#  GLIDEIN_LOCK - The path to a node-local dir to use for lock files
+#  CORRAL_LOCAL_DIR - The path to the local directory
+#  CORRAL_CONDOR_HOST - The condor central manager host/host:port
+#  CORRAL_WALL_TIME - The runtime of the glidein job in minutes
+#  CORRAL_WALL_TIME_SECONDS - The runtime of the glidein job in seconds
+#  CORRAL_IDLE_TIME - The maximum idle time for the glidein in minutes
+#  CORRAL_IDLE_TIME_SECONDS - The maximum idle time for the glidein in seconds
+#  CORRAL_SBIN - Path to the condor daemon executables
+#  CORRAL_GCB_ENABLE - Is GCB enabled? True or False 
+#  CORRAL_GCB_BROKER - The IP of the GCB Broker (if enabled)
+#  CORRAL_DEBUG - The debug level. Default: D_ALWAYS Enabled: D_FULLDEBUG
+#  CORRAL_IP_ADDR - The "best" IP address to advertise
+#  CORRAL_X509_USER_PROXY - Path to the user's X509 proxy file
+#  CORRAL_SERVER - The server that submitted this glidein
+#  CORRAL_SITE_ID - The ID of the Corral site
+#  CORRAL_SITE_NAME - The name of the Corral site
+#  CORRAL_GLIDEIN_ID - The ID of the Corral glidein
+#  CORRAL_LOCK - The path to a node-local dir to use for lock files
+#  CORRAL_HIGHPORT - The high port number to allow Condor to use
+#  CORRAL_LOWPORT - The low port number to allow Condor to use
 #
 #  NUM_CPUS - The number of CPUs to allocate. This has to be set explicitly.
 #
@@ -29,9 +34,9 @@
 ###############################################################################
 # Pool settings
 ###############################################################################
-COLLECTOR_HOST = $(GLIDEIN_CONDOR_HOST)
-UID_DOMAIN = $(GLIDEIN_SITE)
-FILESYSTEM_DOMAIN = $(GLIDEIN_SITE)
+COLLECTOR_HOST = $(CORRAL_CONDOR_HOST)
+UID_DOMAIN = $(CORRAL_SITE_NAME)
+FILESYSTEM_DOMAIN = $(CORRAL_SITE_NAME)
 USE_NFS = False
 USE_AFS = False
 USE_CKPT_SERVER = False
@@ -39,7 +44,7 @@ USE_CKPT_SERVER = False
 ###############################################################################
 # Local paths
 ###############################################################################
-LOCAL_DIR = $(GLIDEIN_LOCAL_DIR)
+LOCAL_DIR = $(CORRAL_LOCAL_DIR)
 
 # LOG and EXECUTE are set automatically by the startup script. They can't be
 # changed here.
@@ -47,19 +52,19 @@ LOCAL_DIR = $(GLIDEIN_LOCAL_DIR)
 #EXECUTE  = $(LOCAL_DIR)/execute
 
 # This should be a non-network file system to prevent problems
-LOCK = $(GLIDEIN_LOCK)
+LOCK = $(CORRAL_LOCK)
 
 ###############################################################################
 # Security settings
 ###############################################################################
-HOSTALLOW_ADMINISTRATOR = $(FULL_HOSTNAME), $(GLIDEIN_CONDOR_HOST)
+HOSTALLOW_ADMINISTRATOR = $(FULL_HOSTNAME), $(CORRAL_CONDOR_HOST)
 
 ###############################################################################
 # Glide-in settings
 ###############################################################################
 
 # This is only checked every UPDATE_INTERVAL seconds, by the way
-STARTD_NOCLAIM_SHUTDOWN = $(GLIDEIN_IDLE_TIME_SECONDS)
+STARTD_NOCLAIM_SHUTDOWN = $(CORRAL_IDLE_TIME_SECONDS)
 
 # Don't count a hyperthreaded CPU as multiple CPUs
 COUNT_HYPERTHREAD_CPUS = False
@@ -89,16 +94,16 @@ JOB_INHERITS_STARTER_ENVIRONMENT = True
 # configure security in your condor central manager. You should only allow
 # trusted users to submit jobs to this pool because they could gain access
 # to your proxy by submitting a job to read it.
-STARTER_JOB_ENVIRONMENT = $(GLIDEIN_X509_USER_PROXY)
+STARTER_JOB_ENVIRONMENT = $(CORRAL_X509_USER_PROXY)
 
 ###############################################################################
 # Daemon settings
 ###############################################################################
 DAEMON_LIST = MASTER, STARTD
 
-SBIN = $(GLIDEIN_SBIN)
+SBIN = $(CORRAL_SBIN)
 
-ALL_DEBUG = $(GLIDEIN_DEBUG)
+ALL_DEBUG = $(CORRAL_DEBUG)
 
 MASTER = $(SBIN)/condor_master
 MASTER_ADDRESS_FILE = $(LOG)/.master_address
@@ -131,9 +136,14 @@ SUSPEND_VANILLA = False
 WANT_SUSPEND_VANILLA = True
 KILL = False
 IsGlidein = True
-DaemonRunTime = $(GLIDEIN_WALL_TIME_SECONDS)
-DaemonStopTime = DaemonStartTime+$(GLIDEIN_WALL_TIME_SECONDS)
-STARTD_EXPRS = IsGlidein, START, DaemonRunTime, DaemonStopTime
+DaemonRunTime = $(CORRAL_WALL_TIME_SECONDS)
+DaemonStopTime = DaemonStartTime+$(CORRAL_WALL_TIME_SECONDS)
+CorralSiteName = "$(CORRAL_SITE_NAME)"
+CorralSiteId = $(CORRAL_SITE_ID)
+CorralGlideinId = $(CORRAL_GLIDEIN_ID)
+CorralServer = "$(CORRAL_SERVER)"
+STARTD_EXPRS = IsGlidein, START, DaemonRunTime, DaemonStopTime, CorralSiteId, \
+               CorralGlideinId, CorralSiteName, CorralServer
 
 ###############################################################################
 # Network settings
@@ -146,16 +156,20 @@ UPDATE_COLLECTOR_WITH_TCP = True
 BIND_ALL_INTERFACES = True
 
 # The glidein_run script should determine the correct value for this
-NETWORK_INTERFACE = $(GLIDEIN_IP_ADDR)
+NETWORK_INTERFACE = $(CORRAL_IP_ADDR)
 
 # Use random numbers here so the glideins don't all hit the collector at 
 # the same time. If there are many glideins the collector can get overwhelmed.
 UPDATE_INTERVAL = $RANDOM_INTEGER(230, 370)
 MASTER_UPDATE_INTERVAL = $RANDOM_INTEGER(230, 370)
 
+# The port range
+HIGHPORT = $(CORRAL_HIGHPORT)
+LOWPORT = $(CORRAL_LOWPORT)
+
 ###############################################################################
 # GCB Settings
 ###############################################################################
-NET_REMAP_ENABLE = $(GLIDEIN_GCB_ENABLE)
+NET_REMAP_ENABLE = $(CORRAL_GCB_ENABLE)
 NET_REMAP_SERVICE = GCB
-NET_REMAP_INAGENT = $(GLIDEIN_GCB_BROKER)
+NET_REMAP_INAGENT = $(CORRAL_GCB_BROKER)
