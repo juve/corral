@@ -58,7 +58,7 @@ done
 CONDOR_Q=condor_q
 CONDOR_STATUS=condor_status
 if [ ! -z "$POOL" ]; then
-	CONDOR_Q="${CONDOR_Q} -pool ${POOL}"
+	CONDOR_Q="${CONDOR_Q} -pool ${POOL} -global"
 	CONDOR_STATUS="${CONDOR_STATUS} -pool ${POOL}"
 fi
 
