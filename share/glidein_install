@@ -54,6 +54,8 @@ OPTIONS
 	  up to find an appropriate replica of the binary worker node package to
 	  download. This is only used if the -v is specified or if -p is not an
 	  absolute path or URL.
+  -m | -mapper <host:port>
+      The host:port of the package manager service.
   -h | -help
       Display this usage message
 """
@@ -74,6 +76,7 @@ VERSION=""
 PACKAGE=""
 PACKAGE_URL=""
 RLS_URL=""
+MAPPER=""
 
 while [ $# -ge 1 ]; do
 	case $1 in
@@ -81,6 +84,7 @@ while [ $# -ge 1 ]; do
 		-v | -condorVersion) VERSION=$2 ;;
 		-p | -condorPackage) PACKAGE=$2 ;;
 		-r | -rls) RLS_URL=$2 ;;
+		-m | -mapper) MAPPER=$2 ;;
 		-h | -help) usage ; exit 1 ;;
 		*) error "Unknown argument: $1" ; exit 1 ;;
 	esac
@@ -219,32 +223,38 @@ PACKAGE_URLS=""
 # Find package URLs if needed
 if [ -z "${PACKAGE_URL}" ]; then
 
-	# Check to make sure we found globus-rls-cli
-	if [ ! -x $RLS ]; then
-		error "Unable to locate globus-rls-cli"
-		exit 1
-	fi
-
-	# Get list of urls from RLS
-	RESULTS=`$RLS query lrc lfn $PACKAGE $RLS_URL`
-	rc=$?
-	if [ $rc != 0 ]; then
-		error "Unable to get package URL from RLS"
-		exit 1
-	fi
-	OLD_IFS=$IFS
-	IFS="
+	# Try globus-rls-cli first
+	if [ -x $RLS ]; then
+		# Get list of urls from RLS
+		RESULTS=`$RLS query lrc lfn $PACKAGE $RLS_URL`
+		rc=$?
+		if [ $rc -eq 0 ]; then
+			OLD_IFS=$IFS
+			IFS="
 "
-	for RESULT in "$RESULTS"; do
-		URL=`echo $RESULT | cut -f2- -d:`
-		PACKAGE_URLS="$PACKAGE_URLS$URL "
-	done
-	IFS=$OLD_IFS
+			for RESULT in "$RESULTS"; do
+				URL=`echo $RESULT | cut -d" " -f4-`
+				PACKAGE_URLS="$PACKAGE_URLS$URL "
+			done
+			IFS=$OLD_IFS
+		fi
+	fi
+	
+	# If RLS didn't have it, then try the Package Mapper
+	if [ -z "$PACKAGE_URLS" ] && [ ! -z "$MAPPER" ] && [ -x $WGET ]; then
+		PACKAGE_URLS="`$WGET -T 10 -q -O - http://$MAPPER/$PACKAGE 2>&1`"
+	fi
 else
 	# The package url is the list
 	PACKAGE_URLS="${PACKAGE_URL}"
 fi
 
+# If the package is not found, then fail
+if [ -z "$PACKAGE_URLS" ]; then
+	error "Unable to resolve $PACKAGE"
+	exit 1
+fi
+	
 # Download Condor package
 PACKAGE_PATH=`pwd`/package.tar.gz
 for PACKAGE_URL in ${PACKAGE_URLS}; do
@@ -273,7 +283,7 @@ for PACKAGE_URL in ${PACKAGE_URLS}; do
 		fi
 		
 		# Attempt to download package
-		wget -q -O ${PACKAGE_PATH} "${PACKAGE_URL}" 2>&1
+		$WGET -q -O ${PACKAGE_PATH} "${PACKAGE_URL}" 2>&1
 		rc=$?
 		
 	else
