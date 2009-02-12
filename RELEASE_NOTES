@@ -1,4 +1,54 @@
 ===================================
+  Release Notes for version 1.0.7
+===================================
+
+UPGRADING
+---------
+This release requires a database upgrade to add support for lowport and 
+highport. See the upgrade directory in SVN for more information.
+
+CHANGES
+-------
+1)  Added condor_logstat to the tools. This tool monitors a Condor pool and
+    periodically records statistics about the machines and jobs in the pool
+    in a NetLogger-formatted log file.
+2)  Fixed the annoying uninterruptible sleep issue in glidein_run. Now when
+    you send a sigterm to glidein_run it immediately signals condor_master
+    instead of waiting. Now it should quickly and cleanly shut down.
+3)  Added support for setting the HIGHPORT and LOWPORT used by Condor. THIS
+    CHANGE REQUIRES A DATABASE UPGRADE (See upgrade directory in SVN).
+4)  Added CORRAL_SERVER, CORRAL_SITE_ID, CORRAL_SITE_NAME, and 
+    CORRAL_GLIDEIN_ID to the environment of glidein jobs and CORRAL_SERVER, 
+    CORRAL_SITE_ID and CORRAL_SITE_NAME to the environment of install and 
+    uninstall jobs.
+5)  Changed the default local-path to /tmp and the default install-path 
+    to $HOME/.corral/$CORRAL_SERVER/$CORRAL_SITE_ID.
+6)  Log the condor job ID for glidein jobs, install jobs, and uninstall jobs
+    in the NetLogger log file.
+7)  Added package_mapper to the tools. This is a web application that takes
+    requests from glidein_install for packages that can't be found in RLS and
+    maps them to the appropriate URL.
+8)  Created a glidein_start script to wrap glidein_run. This will prevent 
+    Globus from prematurely deleting the glidein_run script before it is 
+    finished cleaning up.
+9)  Fixed a bug in glidein_install that parsed the output of globus-rls-cli
+    incorrectly for old versions of globus-rls-cli that don't separate the
+    lfn and pfn with a ':' character.
+10) glidein_uninstall no longer attempts to remove the LOCAL_PATH. It is
+    assumed that LOCAL_PATH will either be cleaned up automatically, or
+    will be located in a local file system that glidein_uninstall will not
+    have access to anyway.
+11) Glideins now advertise CorralSiteId, CorralGlideinId, CorralSiteName,
+    and CorralServer.
+12) Fix a bug where environment variables are not written correctly to the 
+    Condor job script
+
+KNOWN BUGS
+----------
+1) The --wait command-line option still doesn't work correctly.
+
+
+===================================
   Release Notes for version 1.0.6
 ===================================
 
