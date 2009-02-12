@@ -69,7 +69,7 @@ $ glidein ls
 
 <p>If you are upgrading from a previous version of the service you may need to apply
 changes to the database. Check the  
-<a href="https://smarty.isi.edu/svn/repo1/glidein/trunk/RELEASE_NOTES">Release Notes<a>
+<a href="https://smarty.isi.edu/svn/repo1/glidein/trunk/RELEASE_NOTES">Release Notes</a>
 and <a href="https://smarty.isi.edu/svn/repo1/glidein/trunk/upgrade">upgrade directory</a>
 in Subversion for more information.</p>
 
