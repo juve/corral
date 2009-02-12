@@ -1,0 +1,34 @@
+This directory contains scripts and tools to upgrade from one version of Corral
+to another.
+
+DATABASE UPGRADES
+-----------------
+
+NAMING SCHEME:
+
+All SQL scripts in this directory have a common naming scheme:
+
+DATABASE-FROM-TO.sql
+
+Where DATABASE is either sqlite or mysql, FROM is the version of Corral you are
+starting with, and TO is the version you want to have. You may need to perform
+multiple updates to get to the version you want from the version you have.
+
+SQLITE:
+
+To perform an upgrade on an SQLite database run:
+
+$ sqlite3 $GLIDEIN_LOCATION/var/glidein_service/glidein.db < sqlite-FROM-TO.sql
+
+Where sqlite-FROM-TO.sql is the script to upgrade the database from version 
+FROM to version TO.
+
+MYSQL:
+
+To upgrade a MySQL database run:
+
+$ mysql -u USER -p DATABASE < mysql-FROM-TO.sql
+
+Where USER is the username, DATABASE is the database name, and 
+mysql-FROM-TO.sql is the script to upgrade the database from version FROM
+to version TO.
