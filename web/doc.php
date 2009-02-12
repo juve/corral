@@ -65,6 +65,14 @@ $ glidein ls
 
 <b>If you have trouble with installation contact: pegasus-support [at] isi [dot] edu</b>
 
+<h2>Upgrading</h2>
+
+<p>If you are upgrading from a previous version of the service you may need to apply
+changes to the database. Check the  
+<a href="https://smarty.isi.edu/svn/repo1/glidein/trunk/RELEASE_NOTES">Release Notes<a>
+and <a href="https://smarty.isi.edu/svn/repo1/glidein/trunk/upgrade">upgrade directory</a>
+in Subversion for more information.</p>
+
 <h2>Getting Started</h2>
 
 <p>If you have the Globus tools on your path ($GLOBUS_LOCATION/bin) then when you
