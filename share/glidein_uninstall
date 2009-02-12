@@ -39,8 +39,6 @@ REQUIRED
 
   -i | -installPath <path>
       The path where the Condor executables are installed.
-  -l | -localPath <path>
-      The path where log files have been written.
       
 OPTIONS
 
@@ -54,7 +52,6 @@ INSTALL_PATH=""
 while [ $# -ge 1 ]; do
 	case $1 in
 		-i | -installPath) INSTALL_PATH=$2 ;;
-		-l | -localPath) LOCAL_PATH=$2 ;;
 		-h | -help) usage ; exit 1 ;;
 		*) error "Invalid argument $1" ; exit 1 ;;
 	esac
@@ -69,12 +66,6 @@ if [ -z "${INSTALL_PATH}" ]; then
 fi
 INSTALL_PATH=`eval "echo ${INSTALL_PATH}"`
 
-if [ -z "${LOCAL_PATH}" ]; then
-	error "Missing -localPath"
-	exit 1
-fi
-LOCAL_PATH=`eval "echo ${LOCAL_PATH}"`
-
 # Remove installation directory
 if [ -d ${INSTALL_PATH} ]; then
 	rm -rf ${INSTALL_PATH}
@@ -83,13 +74,6 @@ if [ -d ${INSTALL_PATH} ]; then
 		error "Unable to delete install directory: ${INSTALL_PATH}"
 		exit 1
 	fi
-fi
-
-# Remove log directory if it exists
-if [ -d ${LOCAL_PATH} ]; then
-	rm -rf ${LOCAL_PATH}
-	# The local path may be local to each node, so we may not
-	# be able to delete it here
 fi
 
 exit 0
