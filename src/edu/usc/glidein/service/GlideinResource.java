@@ -97,6 +97,7 @@ import edu.usc.glidein.util.AuthenticationUtil;
 import edu.usc.glidein.util.Base64;
 import edu.usc.glidein.util.FilesystemUtil;
 import edu.usc.glidein.util.IOUtil;
+import edu.usc.glidein.util.ServiceUtil;
 
 public class GlideinResource implements Resource, ResourceIdentifier, 
 	PersistenceCallback, ResourceProperties, TopicListAccessor
@@ -197,6 +198,10 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 					GlideinNames.RP_SUBMITS,"submits",glidein));
 			resourceProperties.add(new ReflectionResourceProperty(
 					GlideinNames.RP_RSL,"rsl",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_HIGHPORT,"highport",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_LOWPORT,"lowport",glidein));
 		} catch(Exception e) {
 			throw new RuntimeException("Unable to set glidein resource properties",e);
 		}
@@ -286,6 +291,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				event.put("until", glidein.getUntil());
 				event.put("resubmits", glidein.getResubmits());
 				event.put("rsl", glidein.getRsl());
+				event.put("lowport", glidein.getLowport());
+				event.put("highport", glidein.getHighport());
 				event.put("owner.subject", glidein.getSubject());
 				event.put("owner.username", glidein.getLocalUsername());
 				
@@ -533,10 +540,14 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			job.setGlobusXML(rsl.toString());
 		}
 		
-		// Set glidein executable
-		String run = config.getRun();
-		job.setExecutable(run);
+		// glidein_start is the executable to call
+		String start = config.getStart();
+		job.setExecutable(start);
 		job.setLocalExecutable(true);
+		
+		// glidein_run is an input file
+		String run = config.getRun();
+		job.addInputFile(run);
 		
 		// Add environment
 		EnvironmentVariable env[] = site.getEnvironment();
@@ -545,8 +556,13 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				job.addEnvironment(var.getVariable(), var.getValue());
 		}
 		
+		// Add some default environment variables
+		job.addEnvironment("CORRAL_SERVER", ServiceUtil.getServiceHost());
+		job.addEnvironment("CORRAL_SITE_ID", Integer.toString(site.getId()));
+		job.addEnvironment("CORRAL_GLIDEIN_ID", Integer.toString(glidein.getId()));
+		job.addEnvironment("CORRAL_SITE_NAME", site.getName());
+		
 		// Add arguments
-		job.addArgument("-site "+site.getName());
 		job.addArgument("-installPath "+site.getInstallPath());
 		job.addArgument("-localPath "+site.getLocalPath());
 		job.addArgument("-condorHost "+glidein.getCondorHost());
@@ -565,6 +581,12 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 		if(glidein.getNumCpus()>0)
 			job.addArgument("-numCpus "+glidein.getNumCpus());
+		
+		// Set port range if specified
+		if (glidein.getHighport()>0)
+			job.addArgument("-highport "+glidein.getHighport());
+		if (glidein.getLowport()>0)
+			job.addArgument("-lowport "+glidein.getLowport());
 		
 		// If there is a special config file, use it
 		String configFile = null;
@@ -605,6 +627,19 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			condor.submitJob(job);
 		} catch (CondorException ce) {
 			throw new ResourceException("Unable to submit glidein job",ce);
+		}
+		
+		// Log the condor job id in netlogger
+		try {
+			NetLoggerEvent event = new NetLoggerEvent("glidein.submit");
+			event.put("glidein.id", glidein.getId());
+			event.put("site.id", site.getId());
+			event.put("condor.id", job.getJobId());
+			
+			NetLogger netlogger = NetLogger.getLog();
+			netlogger.log(event);
+		} catch (NetLoggerException nle) {
+			warn("Unable to log glidein event to NetLogger log",nle);
 		}
 		
 		// Increment the number of submits
