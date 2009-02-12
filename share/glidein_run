@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Redirect output to log
+LOG=/tmp/glidein_run.$$.log
+exec >$LOG 2>&1
+
 # Create status file if not interactive
 if [ ! -t 0 ]; then
 	STATUS=`pwd`/status
@@ -299,6 +303,11 @@ SCRIPT=/tmp/glidein_run.$$
 if [ -f "$SCRIPT" ]; then
 	echo "Removing ${SCRIPT}..."
 	rm -f ${SCRIPT}
+fi
+
+# Remove log if it exists
+if [ -f "$LOG" ]; then
+	rm -f ${LOG}
 fi
 
 # Exit nicely
