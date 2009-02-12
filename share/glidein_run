@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
- 
+
 # Create status file if not interactive
 if [ ! -t 0 ]; then
 	STATUS=`pwd`/status
@@ -45,8 +45,6 @@ REQUIRED
       The condor central manager host.
    -t | -wallTime <minutes>
       The glidein runtime in minutes.
-   -s | -site <name>
-      The name of the site.
       
 OPTIONS
 
@@ -58,6 +56,10 @@ OPTIONS
       The IP of the GCB broker for this glidein.
    -n | -numCpus
       The number of CPUs to allocate for this glidein.
+   -hp | -highport
+      The high end of the port range to allow Condor to use.
+   -lp | -lowport
+      The low end of the port range to allow Condor to use.
    -h | -help
       Display this usage message.
 """
@@ -71,8 +73,9 @@ IDLE_TIME="0"
 DEBUG=""
 GCB_BROKER=""
 NUM_CPUS=""
-SITE_NAME=""
 JOB_DIR="`dirname $X509_USER_PROXY 2>/dev/null || pwd`"
+HIGHPORT=""
+LOWPORT=""
 
 while [ $# -ge 1 ]; do
 	case $1 in 
@@ -84,7 +87,8 @@ while [ $# -ge 1 ]; do
 		-b | -gcbBroker) GCB_BROKER=$2 ;;
 		-n | -numCpus) NUM_CPUS=$2 ;;
 		-d | -debug) DEBUG="${DEBUG}$2 " ;;
-		-s | -site) SITE_NAME=$2 ;;
+		-hp | -highport) HIGHPORT=$2 ;;
+		-lp | -lowport) LOWPORT=$2 ;;
 		-h | -help) usage ; exit 1 ;;
 		*) error "Invalid argument: $1" ; exit 1 ;;
 	esac
@@ -128,23 +132,15 @@ if [ ! -z "${IDLE_TIME}" ]; then
 	IDLE_TIME_SECONDS=`expr ${IDLE_TIME} \* 60`
 fi
 
-# Check install path
+# Check install dir
 if [ ! -d "${INSTALL_PATH}" ]; then
-	error "Install path does not exist: ${INSTALL_PATH}"
+	error "Install directory does not exist: ${INSTALL_PATH}"
 	exit 1
 fi
 
-# Create local path if it doesn't exist
-if [ ! -d "${LOCAL_PATH}" ]; then
-	if ! mkdir -p ${LOCAL_PATH}; then
-		error "Unable to create local dir: ${LOCAL_PATH}"
-		exit 1
-	fi
-fi
-
 # Set condor config file
-GLIDEIN_CONDOR_CONFIG=`pwd`/glidein_condor_config
-if [ ! -f "${GLIDEIN_CONDOR_CONFIG}" ]; then
+CORRAL_CONDOR_CONFIG=`pwd`/glidein_condor_config
+if [ ! -f "${CORRAL_CONDOR_CONFIG}" ]; then
 	error "Configuration file 'glidein_condor_config' missing"
 	exit 1
 fi
@@ -158,14 +154,14 @@ case `uname` in
 esac
 
 # Set local directory
-LOCAL_DIR="${LOCAL_PATH}/${HOSTNAME}_$$"
+LOCAL_DIR="${LOCAL_PATH}/glidein_${CORRAL_GLIDEIN_ID}_${HOSTNAME}_$$"
 if ! mkdir -p ${LOCAL_DIR}; then
 	error "Unable to create glidein local dir: ${LOCAL_DIR}"
 	exit 1
 fi
 
 # Copy config file
-if ! cp ${GLIDEIN_CONDOR_CONFIG} ${LOCAL_DIR}; then
+if ! cp ${CORRAL_CONDOR_CONFIG} ${LOCAL_DIR}; then
 	error "Unable to copy glidein_condor_config to ${LOCAL_DIR}"
 	exit 1
 fi
@@ -212,72 +208,98 @@ if [ -z "${IP_ADDR}" ]; then
 fi
 
 # Create lock dir
-GLIDEIN_LOCK=/tmp/glidein/lock
-if ! mkdir -p $GLIDEIN_LOCK; then
-	error "Unable to create lock dir: $GLIDEIN_LOCK"
+LOCK=/tmp/glidein_${CORRAL_GLIDEIN_ID}_${HOSTNAME}_$$
+if ! mkdir -p $LOCK; then
+	error "Unable to create lock dir: $LOCK"
 	exit 1
 fi
 
 # Add condor config entries
 printf "\n\n" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_CONDOR_CONFIG = ${CONDOR_CONFIG}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_LOCAL_DIR = ${LOCAL_DIR}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_CONDOR_HOST = ${CONDOR_HOST}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_WALL_TIME = ${WALL_TIME}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_WALL_TIME_SECONDS = ${WALL_TIME_SECONDS}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_SBIN = ${INSTALL_PATH}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_IDLE_TIME = ${IDLE_TIME}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_IDLE_TIME_SECONDS = ${IDLE_TIME_SECONDS}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_GCB_ENABLE = ${GCB_ENABLE}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_GCB_BROKER = ${GCB_BROKER}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_DEBUG = ${DEBUG}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_IP_ADDR = ${IP_ADDR}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_X509_USER_PROXY = X509_USER_PROXY=${X509_USER_PROXY}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_SITE = ${SITE_NAME}" >> ${CONDOR_CONFIG}
-echo "GLIDEIN_LOCK = ${GLIDEIN_LOCK}" >> ${CONDOR_CONFIG}
+echo "CORRAL_CONDOR_CONFIG = ${CONDOR_CONFIG}" >> ${CONDOR_CONFIG}
+echo "CORRAL_LOCAL_DIR = ${LOCAL_DIR}" >> ${CONDOR_CONFIG}
+echo "CORRAL_CONDOR_HOST = ${CONDOR_HOST}" >> ${CONDOR_CONFIG}
+echo "CORRAL_WALL_TIME = ${WALL_TIME}" >> ${CONDOR_CONFIG}
+echo "CORRAL_WALL_TIME_SECONDS = ${WALL_TIME_SECONDS}" >> ${CONDOR_CONFIG}
+echo "CORRAL_SBIN = ${INSTALL_PATH}" >> ${CONDOR_CONFIG}
+echo "CORRAL_IDLE_TIME = ${IDLE_TIME}" >> ${CONDOR_CONFIG}
+echo "CORRAL_IDLE_TIME_SECONDS = ${IDLE_TIME_SECONDS}" >> ${CONDOR_CONFIG}
+echo "CORRAL_GCB_ENABLE = ${GCB_ENABLE}" >> ${CONDOR_CONFIG}
+echo "CORRAL_GCB_BROKER = ${GCB_BROKER}" >> ${CONDOR_CONFIG}
+echo "CORRAL_DEBUG = ${DEBUG}" >> ${CONDOR_CONFIG}
+echo "CORRAL_IP_ADDR = ${IP_ADDR}" >> ${CONDOR_CONFIG}
+echo "CORRAL_X509_USER_PROXY = X509_USER_PROXY=${X509_USER_PROXY}" >> ${CONDOR_CONFIG}
+echo "CORRAL_LOCK = ${LOCK}" >> ${CONDOR_CONFIG}
+echo "CORRAL_HIGHPORT = ${HIGHPORT}" >> ${CONDOR_CONFIG}
+echo "CORRAL_LOWPORT = ${LOWPORT}" >> ${CONDOR_CONFIG}
+echo "CORRAL_SITE_ID = ${CORRAL_SITE_ID}" >> ${CONDOR_CONFIG}
+echo "CORRAL_GLIDEIN_ID = ${CORRAL_GLIDEIN_ID}" >> ${CONDOR_CONFIG}
+echo "CORRAL_SITE_NAME = ${CORRAL_SITE_NAME}" >> ${CONDOR_CONFIG}
+echo "CORRAL_SERVER = ${CORRAL_SERVER}" >> ${CONDOR_CONFIG}
 
 # Fork condor_master
 echo "Starting condor_master on host ${HOSTNAME}"
-PIDFILE="${LOCAL_DIR}/condor_master.pid"
-${INSTALL_PATH}/condor_master -f -r ${WALL_TIME} -pidfile ${PIDFILE} &
+${INSTALL_PATH}/condor_master -f -r ${WALL_TIME} &
 MPID=$!
 
-# If we get a signal, notify Condor, remove the local dir and exit
-# Note: this doesn't always work for some reason. I am going to rewrite
-# all these scripts in Perl some day
-handle_signal ()
+# If we get a signal, notify condor_master
+notify_condor()
 {
-	# Notify condor
+	echo "Notifying Condor..."
+
+	# Prevent subsequent signals from killing this script
+	trap "" SIGTERM SIGQUIT SIGINT
+	
+	# Send a TERM to condor_master to tell it to exit
 	kill $MPID
 	
-	# If not debugging then remove the local dir
-	if [ "$DEBUG" = "D_ALWAYS" ]; then
-		rm -rf ${LOCAL_DIR}
-	fi
-	exit 0
+	# Wait fo condor_master to exit
+	wait $MPID
 }
-trap handle_signal SIGTERM SIGQUIT SIGINT
+trap "echo 'Got signal' ; notify_condor" SIGTERM SIGQUIT SIGINT
 
 # Poll for the master to exit or the job to be killed
-# Note: for some reason, breaking out of this loop doesn't work
 while [ true ]; do
 
-	# Sleep for a little while
-	sleep 5
+	# Sleep & wait so signal handler can be called
+	sleep 10 & wait $!
 	
-	# Did the master exit? (i.e. did the pid file disappear?)
-	if [ ! -f "$PIDFILE" ]; then
-		# If not debugging then remove the local dir
-		if [ "$DEBUG" = "D_ALWAYS" ]; then
-			rm -rf ${LOCAL_DIR}
-		fi
-		exit 0
+	# Signal handler returns here
+	
+	# Did the master exit?
+	if ! kill -0 $MPID >/dev/null 2>&1; then
+		echo "Master exited"
+		break
 	fi
 	
 	# Did the job get killed? (i.e. did the job dir go away?)
 	if [ ! -d "$JOB_DIR" ]; then
-		# Then kill the condor_master
-		kill $MPID
+		echo "Job dir went away"
+		notify_condor
+		break
 	fi
 
 done
+
+echo "Exiting..."
+
+# Kill any remaining processes
+echo "Killing remaining processes..."
+kill 0
+wait
+
+# If not debugging then remove the lock dir, local dir and log
+if [ "$DEBUG" = "D_ALWAYS" ]; then
+	echo "Cleaning up..."
+	rm -rf ${LOCK} ${LOCAL_DIR}
+fi
+
+# Remove this script if it exists
+SCRIPT=/tmp/glidein_run.$$
+if [ -f "$SCRIPT" ]; then
+	echo "Removing ${SCRIPT}..."
+	rm -f ${SCRIPT}
+fi
+
+# Exit nicely
+exit 0
