@@ -77,6 +77,8 @@ public class GlideinUtil
 			out.printf("%s = %tc\n", UNTIL, until);
 		}
 		out.printf("%s = %s\n", RSL, glidein.getRsl());
+		out.printf("%s = %d\n", HIGHPORT, glidein.getHighport());
+		out.printf("%s = %d\n", LOWPORT, glidein.getLowport());
 		out.printf("%s = %s\n", SUBJECT, glidein.getSubject());
 		out.printf("%s = %s\n", LOCAL_USERNAME, glidein.getLocalUsername());
 	}
@@ -109,6 +111,12 @@ public class GlideinUtil
 		glidein.setCondorDebug(p.getProperty(CONDOR_DEBUG));
 		glidein.setGcbBroker(p.getProperty(GCB_BROKER));
 		glidein.setRsl(p.getProperty(RSL));
+		
+		/* Optional port range */
+		String highport = p.getProperty(HIGHPORT);
+		if (highport != null) glidein.setHighport(Integer.parseInt(highport));
+		String lowport = p.getProperty(LOWPORT);
+		if (lowport != null) glidein.setLowport(Integer.parseInt(lowport));
 		
 		/* Custom glidein_condor_config file */
 		String fileName = p.getProperty(CONDOR_CONFIG);
