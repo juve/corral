@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# First, redirect output if we have a log file
+OUT=`condor_config_val LOGSTAT_LOG`
+rc=$?
+if [ $rc -eq 0 ]; then
+	exec >$OUT 2>&1
+fi
+
 # Defaults
 LOG=/dev/stdout
 INTERVAL=300
@@ -95,6 +102,7 @@ while [ true ]; do
 	jstatus=`$CONDOR_Q -format '%s\n' JobStatus 2>/dev/null`
 	if [ $? -ne 0 ]; then
 		# If condor_q fails, then just wait until the next interval
+		echo "[`date`] condor_q failed"
 		isleep $INTERVAL
 		continue
 	fi
@@ -118,6 +126,7 @@ while [ true ]; do
 	mstatus=`$CONDOR_STATUS -format '%s\n' State 2>/dev/null`
 	if [ $? -ne 0 ]; then
 		# If condor_status fails, then just wait until the next interval
+		echo "[`date`] condor_status failed"
 		isleep $INTERVAL
 		continue
 	fi

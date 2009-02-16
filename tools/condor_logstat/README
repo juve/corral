@@ -12,10 +12,11 @@ daemons in condor_config for your central manager. Add these:
 
 LOGSTAT = /full/path/to/condor_logstat
 LOGSTAT_ARGS = -l /path/to/condor/status.log -i 300 -m 1024
+LOGSTAT_LOG = $(LOG)/LogstatLog
 
-Where -l specifies the path to the log file, -i specifies the logging 
+Where -l specifies the path to the status log file, -i specifies the logging 
 interval in seconds, and -m specifies the max log file size in KB 
-(see 'condor_logstat -help').
+(see 'condor_logstat -help'). LOGSTAT_LOG is for error messages.
 
 Finally, add it to the daemon list and restart Condor:
 
