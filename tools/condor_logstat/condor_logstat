@@ -161,6 +161,8 @@ if os.getuid()==0:
 	os.setgid(ids[1])
 	os.setuid(ids[0])
 
+# Set umask so that any files created will be readable by all
+os.umask(0022)
 
 # Redirect output to log if it is specified and we are not interactive
 if not os.isatty(0):
