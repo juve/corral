@@ -60,7 +60,7 @@ def condor_config_val(key):
 	ccv = popen2.Popen4("condor_config_val %s" % key)
 	val = ccv.fromchild.readline() ; ccv.fromchild.readlines()
 	if ccv.wait() == 0:
-		return val
+		return val.strip()
 	else:
 		return None
 
