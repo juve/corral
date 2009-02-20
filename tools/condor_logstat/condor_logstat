@@ -1,156 +1,257 @@
-#!/bin/bash
+#!/usr/bin/env python
+#
+# Copyright 2007-2009 University Of Southern California
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-# First, redirect output if we have a log file
-OUT=`condor_config_val LOGSTAT_LOG`
-rc=$?
-if [ $rc -eq 0 ]; then
-	exec >$OUT 2>&1
-fi
+import os, time, datetime, popen2, sys, getopt, signal, pwd, grp
 
-# Defaults
-LOG=/dev/stdout
+
+# Set some defaults
+OUTPUT="/dev/stdout"
 INTERVAL=300
 MAXSIZE=1024
-POOL=
+POOL=None
 
-# Usage
-usage ()
-{
-	echo """Usage: `basename $0` [-l LOG] [-i INTERVAL] [-m MAXSIZE]
+
+# Print usage message
+def usage():
+	print """Usage: %s [-o FILE] [-i INTERVAL] [-m MAXSIZE]
 
 This script periodically prints the state and activity status of resources in a
 Condor pool. The output is printed in Netlogger format.
 
 OPTIONS
 
-   -l | -log | --log
-      The log file to write output to. Defaults to $LOG.
-   -i | -interval | --interval
-      The number of seconds to wait between logging events. Defaults to $INTERVAL.
-   -m | -maxsize | --maxsize
-      The maximum log file size in KB. Defaults to $MAXSIZE KB (1 MB, or ~2 weeks
+   -o | --output FILE
+      The file to write output to. Defaults to %s.
+   -i | --interval SECONDS
+      The number of seconds to wait between logging events. Defaults to %d.
+   -m | --maxsize KB
+      The maximum output file size in KB. Defaults to %d KB (1 MB, or ~2 weeks
       using 5 min interval). When the log reaches this size, its name gets a 
       .0 appended onto it and a new log is started.
-   -p | -pool | --pool
-      The pool to query. The machine from which `basename $0` runs should have
+   -p | --pool HOST
+      The pool to query. The machine from which this service runs should have
       READ permissions for the pool. Defaults to the pool currently set in the
       local condor_config file.
-   -h | -help | --help
+   -h | --help
       Prints this usage message.
-""" >&2
-}
+""" % (os.path.basename(sys.argv[0]), OUTPUT, INTERVAL, MAXSIZE)
 
-# Interruptible sleep
-isleep ()
-{
-	sleep "$@" &
-	wait $!
-}
+
+# Print an informational message
+def info(message):
+	print datetime.datetime.now().isoformat(), message
+
+
+# Get the value of a configuration parameter from condor
+def condor_config_val(key):
+	ccv = popen2.Popen4("condor_config_val %s" % key)
+	val = ccv.fromchild.readline() ; ccv.fromchild.readlines()
+	if ccv.wait() == 0:
+		return val
+	else:
+		return None
+
+
+# Get the condor user id's UID and GID
+def get_condor_ids():
+	# Try condor's CONDOR_IDS config val first
+	uidgid = condor_config_val("CONDOR_IDS")
+	if uidgid:
+		ids = uidgid.split(".")
+		ids[0] = int(ids[0])
+		ids[1] = int(ids[1])
+		return ids
+	else:
+		info("CONDOR_IDS not set")
+		# Look for 'condor' user
+		try:
+			pw = pwd.getpwnam("condor")
+			return pw[2:4]
+		except KeyError:
+			info("Unable to get UID/GID for user 'condor'")
+			return None
+
+
+# Get job statistics from condor_q
+def condor_q():
+	# Initialize stats
+	jstatn = ['unexpanded','idle','running','removed','completed','held']
+	jstats = {'unexpanded':0, 'idle':0, 'running':0, 
+			  'removed':0, 'completed':0, 'held':0, 'total':0}
+	
+	# Run condor_q
+	cmd = "condor_q"
+	if POOL: cmd += " -pool %s -global" % pool
+	cmd += " -format '%s\n' JobStatus"
+	cq = popen2.Popen4(cmd)
+	stats = cq.fromchild.readlines()
+	if cq.wait() == 0:
+		for stat in stats:
+			stat = int(stat)
+			jstats[jstatn[stat]] += 1
+	else:
+		return None
+
+	# Set the total number of jobs
+	jstats['total'] = reduce(lambda x,y: x+y, jstats.values())
+	
+	return jstats
+
+
+# Get machine statistics from condor_status	
+def condor_status():
+	# Initialize stats
+	sstats = {'owner':0, 'unclaimed':0, 'matched':0, 'claimed':0, 
+			  'preempting':0, 'backfill':0, 'total':0}
+	
+	# Run condor_status
+	cmd = "condor_status"
+	if POOL:
+		cmd += " -pool %s" % POOL
+	cmd += " -format '%s\n' State"
+	cs = popen2.Popen4(cmd)
+	stats = cs.fromchild.readlines()
+	if cs.wait() ==0:
+		for stat in stats:
+			stat = stat[:-1].lower()
+			if stat: sstats[stat] += 1
+	else:
+		return None
+
+	# Add up the total number of slots
+	sstats['total'] = reduce(lambda x,y: x+y, sstats.values())
+	
+	return sstats
+
+
+# Trap signals and exit gracefully
+def trap(sig, frame):
+	info("Shutting down...")
+	sys.exit(0)
+
+
+# Install signal handlers
+signal.signal(signal.SIGTERM, trap)
+signal.signal(signal.SIGINT, trap)
+signal.signal(signal.SIGHUP, trap)
+signal.signal(signal.SIGUSR1, trap)
+signal.signal(signal.SIGUSR2, trap)
+
+
+# If running as root, set effective uid & gid to condor user
+if os.getuid()==0:
+	ids = get_condor_ids()
+	if ids == None:
+		info("No condor user found")
+		info("Cannot run command as root")
+		sys.exit(1)
+	os.setgid(ids[1])
+	os.setuid(ids[0])
+
+
+# Redirect output to log if it is specified and we are not interactive
+if not os.isatty(0):
+	logname = condor_config_val("LOGSTAT_LOG")
+	if logname:
+		try:
+			log = open(logname,"a",1)
+			sys.stdout.close()
+			sys.stderr.close()
+			sys.stdout = log
+			sys.stderr = log	
+		except IOError, err:
+			info(str(err))
+			sys.exit(2)
+
 
 # Parse arguments
-while [ $# -ge 1 ]; do
-	case $1 in 
-		-i | -interval | --interval) INTERVAL=$2 ;;
-		-l | -log | --log) LOG=$2 ;;
-		-m | -maxsize | --maxsize) MAXSIZE=$2 ;;
-		-p | -pool | --pool) POOL=$2 ;;
-		-h* | --h*) usage ; exit 1 ;;
-		*) echo "Invalid argument: $1" >&2 ; exit 1 ;;
-	esac
-	shift
-	shift
-done
+try:
+	opts, args = getopt.getopt(sys.argv[1:], "hl:o:i:m:p:", 
+					["help","log=","output=","interval=","maxsize=","pool="])
+except getopt.GetoptError, err:
+	# print help information and exit:
+	print str(err) # will print something like "option -a not recognized"
+	sys.exit(3)
+for o, a in opts:
+	if o in ("-h","--help"):
+		usage()
+		sys.exit(0)
+	elif o in ("-o","--output","-l","--log"):
+		OUTPUT=a
+	elif o in ("-i","--interval"):
+		INTERVAL=int(a)
+	elif o in ("-m","--maxsize"):
+		MAXSIZE=int(a)
+	elif o in ("-p","--pool"):
+		POOL=a
+	else:
+		info("unhandled argument: %s" % o)
+		sys.exit(5)
 
-# Set condor_q and condor_status
-CONDOR_Q=condor_q
-CONDOR_STATUS=condor_status
-if [ ! -z "$POOL" ]; then
-	CONDOR_Q="${CONDOR_Q} -pool ${POOL} -global"
-	CONDOR_STATUS="${CONDOR_STATUS} -pool ${POOL}"
-fi
 
-# Exit nicely if sent a TERM signal
-trap "kill 0 ; exit 0" SIGTERM
+# Welcome message
+info("Pool status monitor starting...")
 
-# Create log if it doesn't exist
-touch $LOG
-if [ $? -ne 0 ]; then
-	echo "Unable to create log: $LOG"
-	exit 1
-fi
 
 # Loop forever collecting status
-while [ true ]; do
+firstime = True
+while True:
 
-	# Reset machine variables to 0
-	Owner=0
-	Unclaimed=0
-	Matched=0
-	Claimed=0
-	Preempting=0
-	Backfill=0
+	# Go to sleep for a while
+	if not firstime:
+		time.sleep(INTERVAL)
+	firstime = False
 
-	# Reset job variables to 0
-	Unexpanded=0
-	Idle=0
-	Running=0
-	Removed=0
-	Completed=0
-	Held=0
-
-	# Determine the status of all the jobs
-	jstatus=`$CONDOR_Q -format '%s\n' JobStatus 2>/dev/null`
-	if [ $? -ne 0 ]; then
-		# If condor_q fails, then just wait until the next interval
-		echo "[`date`] condor_q failed"
-		isleep $INTERVAL
+	# Get job status
+	jstats = condor_q()
+	if not jstats:
+		info("condor_q failed")
 		continue
-	fi
 
-	# Set all the job variables
-	while read count code; do
-		case $code in
-			0) Unexpanded=$count ;;
-			1) Idle=$count ;;
-			2) Running=$count ;;
-			3) Removed=$count ;;
-			4) Completed=$count ;;
-			5) Held=$count ;;
-		esac
-	done < <(echo "$jstatus" | sed '/^$/d' | sort | uniq -c)
-
-	# Add up the job Statuses to determine the total
-	jobs=`expr $Unexpanded + $Idle + $Running + $Removed + $Completed + $Held`
-
-	# Determine the status of all the resources
-	mstatus=`$CONDOR_STATUS -format '%s\n' State 2>/dev/null`
-	if [ $? -ne 0 ]; then
-		# If condor_status fails, then just wait until the next interval
-		echo "[`date`] condor_status failed"
-		isleep $INTERVAL
+	# Get machine status
+	sstats = condor_status()
+	if not sstats:
+		info("condor_status failed")
 		continue
-	fi
 
-	# Set all the machine variables
-	while read value variable; do
-		let $variable=$value
-	done < <(echo "$mstatus" | sed '/^$/d' | sort | uniq -c)
+	# Get timestamp
+	now = datetime.datetime.utcnow()
+	ts = now.strftime("%Y-%m-%dT%H:%M:%S")
+	ts += ".%06dZ" % now.microsecond # For older pythons without %f
 
-	# Add up the machine States to determine the total
-	machines=`expr $Owner + $Unclaimed + $Matched + $Claimed + $Preempting + $Backfill`
+	# Create record
+	rec = "ts=%s event=condor.status" % ts
+	for k,v in sstats.items():
+		rec += " machine.%s=%s" % (k,v)
+	for k,v in jstats.items():
+		rec += " job.%s=%s" % (k,v)
 
-	# Determine the time
-	ts=`date -u +%Y-%m-%dT%H:%M:%S.000Z`
+	# Rotate log if necessary
+	if os.path.isfile(OUTPUT):
+		st = os.stat(OUTPUT)
+		if (st.st_size/1024) >= MAXSIZE:
+			os.rename(OUTPUT,OUTPUT+".0")
 	
-	# If log file is larger than the max, rotate it and create a new one
-	if [ `ls -sk $LOG | awk '{print $1}'` -ge $MAXSIZE ]; then
-		mv -f $LOG ${LOG}.0
-		touch $LOG
-	fi
+	# Write output record
+	try:
+		output = open(OUTPUT,"a",1)
+		output.write(rec+"\n")
+		output.close()
+	except IOError, err:
+		info(str(err))
+		sys.exit(4)
 
-	# Print a netlogger-formatted logging message to the log file
-	echo "ts=$ts event=condor.status machine.total=$machines machine.owner=$Owner machine.claimed=$Claimed machine.unclaimed=$Unclaimed machine.matched=$Matched machine.backfill=$Backfill machine.preempting=$Preempting job.total=$jobs job.unexpanded=$Unexpanded job.idle=$Idle job.running=$Running job.removed=$Removed job.completed=$Completed job.held=$Held" >> $LOG
 
-	# Wait for next event
-	isleep $INTERVAL
-done

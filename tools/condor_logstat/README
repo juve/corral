@@ -1,8 +1,8 @@
 OVERVIEW
 --------
 
-condor_logstat is a tool that produces a Netlogger log file containing periodic
-status information for a Condor pool.
+condor_logstat is a tool that produces a Netlogger-formatted file containing
+periodic status information for a Condor pool.
 
 INSTALLATION
 ------------
@@ -11,19 +11,20 @@ The easiest way to install condor_logstat is to add it to the list of Condor
 daemons in condor_config for your central manager. Add these:
 
 LOGSTAT = /full/path/to/condor_logstat
-LOGSTAT_ARGS = -l /path/to/condor/status.log -i 300 -m 1024
-LOGSTAT_LOG = $(LOG)/LogstatLog
+LOGSTAT_ARGS = -o /path/to/condor/status.log -i 300 -m 1024
+LOGSTAT_LOG = $(LOG)/LogStat
 
-Where -l specifies the path to the status log file, -i specifies the logging 
-interval in seconds, and -m specifies the max log file size in KB 
-(see 'condor_logstat -help'). LOGSTAT_LOG is for error messages.
+Where -o specifies the path to the status log file, -i specifies the polling
+interval in seconds, and -m specifies the max output file size in KB 
+(see 'condor_logstat -help'). LOGSTAT_LOG is for normal output and error 
+messages.
 
 Finally, add it to the daemon list and restart Condor:
 
 DAEMONS = MASTER, SCHEDD, NEGOTIATOR, COLLECTOR, LOGSTAT
 
-LOG FILE
---------
+OUTPUT FILE
+-----------
 
 condor_logstat produces a file with lines such as:
 
