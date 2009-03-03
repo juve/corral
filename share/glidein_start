@@ -22,6 +22,9 @@
 # clean up everything. 
 
 echo "Starting glidein_run..."
+if [ ! -z "$SCRATCH_DIRECTORY" ]; then
+	cd $SCRATCH_DIRECTORY
+fi
 SCRIPT=/tmp/glidein_run.$$
 cat glidein_run > $SCRIPT
 chmod 700 $SCRIPT
