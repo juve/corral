@@ -94,14 +94,18 @@ def condor_q():
 	
 	# Run condor_q
 	cmd = "condor_q"
-	if POOL: cmd += " -pool %s -global" % pool
+	if POOL: cmd += " -pool %s -global" % POOL
 	cmd += " -format '%s\n' JobStatus"
 	cq = popen2.Popen4(cmd)
 	stats = cq.fromchild.readlines()
 	if cq.wait() == 0:
 		for stat in stats:
-			stat = int(stat)
-			jstats[jstatn[stat]] += 1
+			if 'empty' in stat: continue
+			try:
+				stat = int(stat)
+				jstats[jstatn[stat]] += 1
+			except ValueError:
+				return None
 	else:
 		return None
 
