@@ -110,7 +110,7 @@ public class Condor
 					"CONDOR_CONFIG",getCondorConfig());
 			
 			// Run condor_submit
-			submit.executeAs(job.getOwner());
+			submit.execute();
 		} catch(IOException ioe) {
 			throw new CondorException("Unable to submit job",ioe);
 		}
@@ -169,7 +169,7 @@ public class Condor
 					getCondorConfig());
 			
 			// Run condor_rm
-			cancel.executeAs(job.getOwner());
+			cancel.execute();
 		} catch(IOException ioe) {
 			throw new CondorException("Unable to cancel job",ioe);
 		}

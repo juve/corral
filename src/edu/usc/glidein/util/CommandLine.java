@@ -31,8 +31,6 @@ import java.util.Map;
  */
 public class CommandLine
 {
-	public static final String SUDO = "/usr/bin/sudo";
-	
 	/**
 	 * The arguments for the command
 	 */
@@ -245,30 +243,11 @@ public class CommandLine
 	}
 	
 	/**
-	 * Execute this command as the current user. You can execute it multiple
-	 * times if you like.
+	 * Execute this command. You can execute it multiple times if you like.
 	 */
 	public void execute() throws IOException
 	{
-		executeAs(null);
-	}
-	
-	/**
-	 * Execute this command as a specific user. You can execute it multiple
-	 * times if you like.
-	 */
-	public void executeAs(String username) throws IOException
-	{
 		LinkedList<String> cmdList = new LinkedList<String>();
-		
-		// If we want to run as another user and that user is not the current user
-		if (username != null && !System.getProperty("user.name").equals(username)) {
-			cmdList.add("sudo");
-			cmdList.add("-S");
-			cmdList.add("-H");
-			cmdList.add("-u");
-			cmdList.add(username);
-        }
 		
 		// Add executable
 		cmdList.add(command);
