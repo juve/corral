@@ -28,4 +28,4 @@ fi
 SCRIPT=/tmp/glidein_run.$$
 cat glidein_run > $SCRIPT
 chmod 700 $SCRIPT
-exec $SCRIPT "$@"
+$SCRIPT "$@"
