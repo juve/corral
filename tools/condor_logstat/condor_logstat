@@ -22,6 +22,7 @@ OUTPUT="/dev/stdout"
 INTERVAL=300
 MAXSIZE=1024
 POOL=None
+LOG=None
 
 
 # Print usage message
@@ -34,7 +35,7 @@ Condor pool. The output is printed in Netlogger format.
 OPTIONS
 
    -o | --output FILE
-      The file to write output to. Defaults to %s.
+      The file to write NetLogger output to. Defaults to %s.
    -i | --interval SECONDS
       The number of seconds to wait between logging events. Defaults to %d.
    -m | --maxsize KB
@@ -45,6 +46,8 @@ OPTIONS
       The pool to query. The machine from which this service runs should have
       READ permissions for the pool. Defaults to the pool currently set in the
       local condor_config file.
+   -l | --log FILE
+      The log file for debugging output. Defaults to stdout.
    -h | --help
       Prints this usage message.
 """ % (os.path.basename(sys.argv[0]), OUTPUT, INTERVAL, MAXSIZE)
@@ -93,7 +96,7 @@ def condor_q():
 			  'removed':0, 'completed':0, 'held':0, 'total':0}
 	
 	# Run condor_q
-	cmd = "condor_q"
+	cmd = "%s/bin/condor_q" % CONDOR_HOME
 	if POOL: cmd += " -pool %s -global" % POOL
 	cmd += " -format '%s\n' JobStatus"
 	cq = popen2.Popen4(cmd)
@@ -105,8 +108,10 @@ def condor_q():
 				stat = int(stat)
 				jstats[jstatn[stat]] += 1
 			except ValueError:
+				print stats
 				return None
 	else:
+		print stats
 		return None
 
 	# Set the total number of jobs
@@ -122,7 +127,7 @@ def condor_status():
 			  'preempting':0, 'backfill':0, 'total':0}
 	
 	# Run condor_status
-	cmd = "condor_status"
+	cmd = "%s/bin/condor_status" % CONDOR_HOME
 	if POOL:
 		cmd += " -pool %s" % POOL
 	cmd += " -format '%s\n' State"
@@ -168,20 +173,6 @@ if os.getuid()==0:
 # Set umask so that any files created will be readable by all
 os.umask(0022)
 
-# Redirect output to log if it is specified and we are not interactive
-if not os.isatty(0):
-	logname = condor_config_val("LOGSTAT_LOG")
-	if logname:
-		try:
-			log = open(logname,"a",1)
-			sys.stdout.close()
-			sys.stderr.close()
-			sys.stdout = log
-			sys.stderr = log	
-		except IOError, err:
-			info(str(err))
-			sys.exit(2)
-
 
 # Parse arguments
 try:
@@ -195,8 +186,10 @@ for o, a in opts:
 	if o in ("-h","--help"):
 		usage()
 		sys.exit(0)
-	elif o in ("-o","--output","-l","--log"):
+	elif o in ("-o","--output"):
 		OUTPUT=a
+	elif o in ("-l","--log"):
+		LOG=a
 	elif o in ("-i","--interval"):
 		INTERVAL=int(a)
 	elif o in ("-m","--maxsize"):
@@ -206,6 +199,27 @@ for o, a in opts:
 	else:
 		info("unhandled argument: %s" % o)
 		sys.exit(5)
+
+
+# Redirect output to log
+if LOG is not None:
+	try:
+		log = open(LOG,"a",1)
+		sys.stdout.close()
+		sys.stderr.close()
+		sys.stdout = log
+		sys.stderr = log
+	except IOError, err:
+		info(str(err))
+		sys.exit(2)
+
+
+# Find CONDOR_HOME
+try:
+	CONDOR_HOME = os.environ['CONDOR_HOME']
+except KeyError, err:
+	print "Please set CONDOR_HOME"
+	sys.exit(3)
 
 
 # Welcome message
