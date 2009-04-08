@@ -144,8 +144,8 @@ CorralSiteName = "$(CORRAL_SITE_NAME)"
 CorralSiteId = $(CORRAL_SITE_ID)
 CorralGlideinId = $(CORRAL_GLIDEIN_ID)
 CorralServer = "$(CORRAL_SERVER)"
-STARTD_EXPRS = IsGlidein, START, DaemonRunTime, DaemonStopTime, CorralSiteId, \
-               CorralGlideinId, CorralSiteName, CorralServer
+STARTD_EXPRS = IsGlidein, START, CorralRunTime, CorralStopTime, CorralTimeLeft, \
+               CorralSiteId, CorralGlideinId, CorralSiteName, CorralServer
 
 ###############################################################################
 # Network settings
