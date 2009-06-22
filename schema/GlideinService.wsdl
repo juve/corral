@@ -5,18 +5,18 @@
 	xmlns:tns="http://www.usc.edu/glidein/GlideinService"
 	xmlns:glidein="http://www.usc.edu/glidein/GlideinTypes"
 	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
-	xmlns:wsrp="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
-	xmlns:wsrpw="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
+	xmlns:wsrp="http://docs.oasis-open.org/wsrf/rp-2"
+	xmlns:wsrpw="http://docs.oasis-open.org/wsrf/rpw-2"
 	xmlns:wsdlpp="http://www.globus.org/namespaces/2004/10/WSDLPreprocessor"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-	xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing"
-	xmlns:wsntw="http://docs.oasis-open.org/wsn/2004/06/wsn-WS-BaseNotification-1.2-draft-01.wsdl">
+	xmlns:wsa="http://www.w3.org/2005/08/addressing"
+	xmlns:wsntw="http://docs.oasis-open.org/wsn/bw-2">
 	
-	<wsdl:import namespace="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
-		location="../wsrf/properties/WS-ResourceProperties.wsdl" />
-		
-	<wsdl:import namespace="http://docs.oasis-open.org/wsn/2004/06/wsn-WS-BaseNotification-1.2-draft-01.wsdl"
-		location="../wsrf/notification/WS-BaseN.wsdl" />
+	<wsdl:import namespace="http://docs.oasis-open.org/wsn/bw-2"
+		location="../wsrf/notification/bw-2.wsdl" />
+	
+	<wsdl:import namespace="http://docs.oasis-open.org/wsrf/rpw-2"
+        location="../wsrf/properties/rpw-2.wsdl" />
 	
 	<!--============================================================
 								TYPES
@@ -27,8 +27,8 @@
 			xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 			
 			<xsd:import
-				namespace="http://schemas.xmlsoap.org/ws/2004/03/addressing"
-				schemaLocation="../ws/addressing/WS-Addressing.xsd" />
+				namespace="http://www.w3.org/2005/08/addressing"
+				schemaLocation="../ws/addressing/ws-addr.xsd" />
 				
 			<xsd:import
 				namespace="http://www.usc.edu/glidein/GlideinTypes"
