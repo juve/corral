@@ -223,6 +223,9 @@
 					<include name="*.jar" />
 					<exclude name="${base.name}_*.jar" />
 				</fileset>
+				<fileset dir="${globus.location}/lib/common">
+					<include name="*.jar" />
+				</fileset>
 			</classpath>
 		</javac>
 		<!-- Compile service -->
@@ -232,6 +235,9 @@
 				<fileset dir="${globus.location}/lib">
 					<include name="*.jar" />
 					<exclude name="${base.name}_*.jar" />
+				</fileset>
+				<fileset dir="${globus.location}/lib/common">
+					<include name="*.jar" />
 				</fileset>
 			</classpath>
 		</javac>
