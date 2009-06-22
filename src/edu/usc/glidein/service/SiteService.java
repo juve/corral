@@ -17,7 +17,7 @@ package edu.usc.glidein.service;
 
 import java.rmi.RemoteException;
 
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceContext;
 
