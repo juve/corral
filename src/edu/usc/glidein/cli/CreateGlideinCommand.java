@@ -21,7 +21,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
