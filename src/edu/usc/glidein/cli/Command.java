@@ -24,13 +24,16 @@ import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.globus.axis.util.Util;
 import org.globus.delegation.DelegationUtil;
 import org.globus.gsi.GlobusCredential;
-import org.globus.wsrf.impl.security.authorization.Authorization;
+
+import org.globus.wsrf.security.authorization.client.Authorization;
+import org.globus.wsrf.impl.security.authorization.HostAuthorization;
+import org.globus.wsrf.impl.security.authorization.IdentityAuthorization;
+import org.globus.wsrf.impl.security.authorization.HostOrSelfAuthorization;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
-import org.globus.wsrf.impl.security.util.AuthUtil;
 import org.globus.wsrf.security.Constants;
 import org.globus.wsrf.utils.AddressingUtils;
 
@@ -281,9 +284,18 @@ public abstract class Command
 		if (cmdln.hasOption("authz")) {
 			authz = cmdln.getOptionValue("authz");
 		} else {
-			authz = "host";
+			authz = "host"; // default is host
 		}
-		authorization = AuthUtil.getClientAuthorization(authz);
+		if (authz.equalsIgnoreCase("host")) {
+			authorization = new HostAuthorization();
+		} else if (authz.equalsIgnoreCase("self")) {
+			authorization = new HostOrSelfAuthorization();
+		} else if (authz.equalsIgnoreCase("none")) {
+			authorization = null;
+		} else {
+			authorization = new IdentityAuthorization(authz);
+		}
+		
 		if (debug) {
 			System.out.println("Using "+authz+" authorization");
 		}
@@ -390,16 +402,19 @@ public abstract class Command
 		} else if (Constants.GSI_SEC_MSG.equals(security)) {
 			desc.setGSISecureMsg(protection);
 		} else if (Constants.GSI_SEC_CONV.equals(security)) {
-			desc.setGSISecureConv(protection);
+			if (anonymous) {
+				desc.setSecConvAnonymous();
+			} else {
+				desc.setGSISecureConv(protection);
+			}
 		} else if (Constants.GSI_TRANSPORT.equals(security)) {
-			desc.setGSITransport(protection);
+			if (anonymous) {
+				desc.setSecTransportAnonymous();
+			} else {
+				desc.setGSISecureTransport(protection);
+			}
 		} else {
 			throw new IllegalStateException("Invalid security: "+security);
-		}
-        
-		// Set anonymous authentication
-		if (anonymous) {
-			desc.setAnonymous();
 		}
 		
 		// Set authorization
