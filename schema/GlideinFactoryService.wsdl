@@ -4,7 +4,7 @@
 	xmlns="http://schemas.xmlsoap.org/wsdl/"
 	xmlns:tns="http://www.usc.edu/glidein/GlideinFactoryService"
 	xmlns:glidein="http://www.usc.edu/glidein/GlideinTypes"
-	xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing"
+	xmlns:wsa="http://www.w3.org/2005/08/addressing"
 	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
@@ -18,8 +18,8 @@
 			xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 			
 			<xsd:import
-				namespace="http://schemas.xmlsoap.org/ws/2004/03/addressing"
-				schemaLocation="../ws/addressing/WS-Addressing.xsd" />
+				namespace="http://www.w3.org/2005/08/addressing"
+				schemaLocation="../ws/addressing/ws-addr.xsd" />
 			
 			<xsd:import
 				namespace="http://www.usc.edu/glidein/GlideinTypes"
