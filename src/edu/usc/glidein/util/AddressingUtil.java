@@ -18,9 +18,9 @@ package edu.usc.glidein.util;
 import java.net.URL;
 
 import org.apache.axis.message.MessageElement;
-import org.apache.axis.message.addressing.Address;
-import org.apache.axis.message.addressing.EndpointReferenceType;
-import org.apache.axis.message.addressing.ReferencePropertiesType;
+import org.globus.axis.message.addressing.Address;
+import org.globus.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.message.addressing.ReferenceParametersType;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.impl.SimpleResourceKey;
 
@@ -41,12 +41,12 @@ public class AddressingUtil
 	    EndpointReferenceType reference = new EndpointReferenceType();
 	    if(key != null)
 	    {
-	        ReferencePropertiesType referenceProperties = new ReferencePropertiesType();
+	        ReferenceParametersType parameters = new ReferenceParametersType();
 	        MessageElement elem = (MessageElement)key.toSOAPElement();
-	        referenceProperties.set_any(new MessageElement[] {
+	        parameters.set_any(new MessageElement[] {
 	                (MessageElement)elem
 	        });
-	        reference.setProperties(referenceProperties);
+	        reference.setParameters(parameters);
 	    }
 	    reference.setAddress(new Address(address.toString()));
 	    return reference;
