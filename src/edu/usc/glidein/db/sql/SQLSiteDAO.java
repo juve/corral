@@ -260,7 +260,10 @@ public class SQLSiteDAO implements SiteDAO
 			if (rs.next()) {
 				String variable = rs.getString("variable");
 				String value = rs.getString("value");
-				env.add(new EnvironmentVariable(value,variable));
+				EnvironmentVariable ev = new EnvironmentVariable();
+				ev.setValue(value);
+				ev.setVariable(variable);
+				env.add(ev);
 			}
 		} catch(SQLException sqle) {
 			throw new DatabaseException("Unable to load site environment: select failed",sqle);
