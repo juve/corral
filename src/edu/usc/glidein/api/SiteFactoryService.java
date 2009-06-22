@@ -21,7 +21,7 @@ import java.rmi.RemoteException;
 import javax.xml.rpc.ServiceException;
 import javax.xml.rpc.Stub;
 
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 
 import edu.usc.glidein.stubs.SiteFactoryPortType;
 import edu.usc.glidein.stubs.service.SiteFactoryServiceAddressingLocator;
@@ -67,7 +67,7 @@ public class SiteFactoryService extends BaseService
 	{
 		try {
 			SiteFactoryPortType factory = getPort();
-			ListingRequest request = new ListingRequest(allUsers,longFormat,user);
+			ListingRequest request = new ListingRequest(longFormat,user,allUsers);
 			Site[] sites = factory.listSites(request).getSites();
 			return sites;
 		} catch (RemoteException re) {
