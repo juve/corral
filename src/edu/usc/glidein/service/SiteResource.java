@@ -34,7 +34,7 @@ import java.util.HashSet;
 import javax.naming.NamingException;
 import javax.security.auth.Subject;
 
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
 import org.globus.delegation.DelegationException;
 import org.globus.delegation.DelegationUtil;
@@ -59,7 +59,6 @@ import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
 import org.globus.wsrf.impl.SimpleTopic;
 import org.globus.wsrf.impl.SimpleTopicList;
-import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
 import org.globus.wsrf.security.SecurityException;
 import org.globus.wsrf.utils.SubscriptionPersistenceUtils;
 import org.xml.sax.InputSource;
@@ -485,7 +484,11 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 	        stateChange.setLongMessage(longMessage);
 	        stateChange.setTime(time);
 	        
-	        stateChangeTopic.notify(new SiteStateChangeMessage(stateChange));
+	        Object msg = ObjectSerializer.toSOAPElement(
+	        		new SiteStateChangeMessage(stateChange),
+	        		GlideinNames.TOPIC_STATE_CHANGE);
+	        
+	        stateChangeTopic.notify(msg);
 		} catch (Exception e) {
 			warn("Unable to notify topic listeners", e);
 		}
@@ -1162,7 +1165,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	public synchronized void recoverState() throws InitializeException
+	public synchronized void recoverState() throws Exception
 	{
 		try {
 			
@@ -1178,7 +1181,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			} catch (ResourceException re2) {
 				
 				// If that fails, then fail the entire recovery process
-				throw new InitializeException(
+				throw new Exception(
 						"Unable to recover site "+site.getId(),re);
 				
 			}
