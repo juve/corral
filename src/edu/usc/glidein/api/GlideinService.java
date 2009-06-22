@@ -17,19 +17,25 @@ package edu.usc.glidein.api;
 
 import java.net.URL;
 import java.rmi.RemoteException;
+import java.util.LinkedList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.xml.namespace.QName;
 import javax.xml.rpc.ServiceException;
 import javax.xml.rpc.Stub;
 
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.apache.axis.message.MessageElement;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.globus.wsrf.NotificationConsumerManager;
 import org.globus.wsrf.NotifyCallback;
 import org.globus.wsrf.WSNConstants;
 import org.globus.wsrf.encoding.DeserializationException;
 import org.globus.wsrf.encoding.ObjectDeserializer;
+import org.globus.wsrf.encoding.ObjectSerializer;
+import org.oasis.wsn.FilterType;
+import org.oasis.wsn.NotificationMessageHolderTypeMessage;
 import org.oasis.wsn.NotificationProducer;
 import org.oasis.wsn.Subscribe;
 import org.oasis.wsn.TopicExpressionType;
@@ -45,11 +51,10 @@ import edu.usc.glidein.stubs.types.GlideinStateChange;
 import edu.usc.glidein.stubs.types.GlideinStateChangeMessage;
 import edu.usc.glidein.util.AddressingUtil;
 
-public class GlideinService extends BaseService
+public class GlideinService extends BaseService implements NotifyCallback
 {	
 	private NotificationConsumerManager consumer = null;
 	private EndpointReferenceType consumerEPR = null;
-	private GlideinHandler handler = null;
 	private Set<GlideinListener> listeners = new HashSet<GlideinListener>();
 	
 	public GlideinService(EndpointReferenceType epr)
@@ -127,21 +132,26 @@ public class GlideinService extends BaseService
 	private void subscribe() throws GlideinException
 	{
 		try {
-			handler = new GlideinHandler();
-			
 			consumer = NotificationConsumerManager.getInstance();
 			consumer.startListening();
 			
-			consumerEPR = consumer.createNotificationConsumer(handler);
-			
+			List<QName> topicPath = new LinkedList<QName>();
+	        topicPath.add(GlideinNames.TOPIC_STATE_CHANGE);
+	        
+	        consumerEPR = consumer.createNotificationConsumer(topicPath, this, null);
+	        
 			TopicExpressionType topicExpression = new TopicExpressionType();
 			topicExpression.setDialect(WSNConstants.SIMPLE_TOPIC_DIALECT);
 			topicExpression.setValue(GlideinNames.TOPIC_STATE_CHANGE);
 			
 			Subscribe subscribe = new Subscribe();
-			subscribe.setUseNotify(Boolean.TRUE);
 			subscribe.setConsumerReference(consumerEPR);
-			subscribe.setTopicExpression(topicExpression);
+			MessageElement element =
+                (MessageElement) ObjectSerializer.toSOAPElement(
+                    topicExpression, WSNConstants.TOPIC_EXPRESSION);
+            FilterType filter = new FilterType();
+            filter.set_any(new MessageElement[] { element });
+            subscribe.setFilter(filter);
 	
 			NotificationProducer producer = getProducerPort();
 			
@@ -158,7 +168,6 @@ public class GlideinService extends BaseService
 			consumer.stopListening();
 			consumer = null;
 			consumerEPR = null;
-			handler = null;
 		} catch (Exception e) {
 			throw new GlideinException("Unable to unsubscribe from glidein",e);
 		}
@@ -173,16 +182,18 @@ public class GlideinService extends BaseService
 			NotificationProducer producer = 
 				locator.getNotificationProducerPort(getEPR());
 			
-			if (getDescriptor() != null) {
-				((Stub)producer)._setProperty(
-						"clientDescriptor", getDescriptor());
-			}
+			// TODO Is this needed?
+			//if (getDescriptor() != null) {
+			//	((Stub)producer)._setProperty(
+			//			"clientDescriptor", getDescriptor());
+			//}
 			
 			return producer;
 		} catch (ServiceException e) {
 			throw new GlideinException("Unable to get notification producer",e);
 		}
 	}
+	
 	private GlideinPortType getPort() throws GlideinException
 	{
 		try {
@@ -201,29 +212,40 @@ public class GlideinService extends BaseService
 		}
 	}
 	
-	private class GlideinHandler implements NotifyCallback
-	{
-		public void deliver(List list, EndpointReferenceType producer, Object message)
-		{
-			GlideinStateChange stateChange = null;
-			
-			if (message instanceof GlideinStateChangeMessage) {
-				stateChange = ((GlideinStateChangeMessage) message).getGlideinStateChange();
-			} else if (message instanceof GlideinStateChange) {
-				stateChange = (GlideinStateChange)message;
-			} else {
-				try {
-					stateChange = (GlideinStateChange) ObjectDeserializer.toObject(
-							(Element) message, GlideinStateChange.class);
-				} catch (DeserializationException e) {
-					throw new RuntimeException(
-							"Unable to deserialize glidein state change message",e);
-				}
+	public void deliver(List list, EndpointReferenceType producer, Object message) {
+		GlideinStateChange stateChange = null;
+		
+		// Who knows?
+		if (message instanceof GlideinStateChangeMessage) {
+			stateChange = ((GlideinStateChangeMessage) message).getGlideinStateChange();
+		} else if (message instanceof GlideinStateChange) {
+			stateChange = (GlideinStateChange)message;
+		} else if (message instanceof NotificationMessageHolderTypeMessage) {
+			 NotificationMessageHolderTypeMessage notifMsg =
+		            (NotificationMessageHolderTypeMessage) message;
+			MessageElement[] msgElem = notifMsg.get_any();
+	        try {
+	        	GlideinStateChangeMessage stateChangeMessage =
+	                (GlideinStateChangeMessage) ObjectDeserializer.toObject(
+	                		msgElem[0],
+	                        GlideinStateChangeMessage.class);
+	        	stateChange = stateChangeMessage.getGlideinStateChange();
+	        } catch (DeserializationException e) {
+	        	throw new RuntimeException(
+	        			"Unable to deserialize glidein state change message",e);
+	        }
+		} else {
+			try {
+				stateChange = (GlideinStateChange) ObjectDeserializer.toObject(
+						(Element) message, GlideinStateChange.class);
+			} catch (DeserializationException e) {
+				throw new RuntimeException(
+						"Unable to deserialize glidein state change message",e);
 			}
+		}
 			
-			for (GlideinListener listener : listeners) {
-				listener.stateChanged(stateChange);
-			}
+		for (GlideinListener listener : listeners) {
+			listener.stateChanged(stateChange);
 		}
 	}
 	
