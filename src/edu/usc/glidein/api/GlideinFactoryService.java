@@ -21,7 +21,7 @@ import java.rmi.RemoteException;
 import javax.xml.rpc.ServiceException;
 import javax.xml.rpc.Stub;
 
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 
 import edu.usc.glidein.stubs.GlideinFactoryPortType;
 import edu.usc.glidein.stubs.service.GlideinFactoryServiceAddressingLocator;
@@ -67,7 +67,7 @@ public class GlideinFactoryService extends BaseService
 	{
 		try {
 			GlideinFactoryPortType factory = getPort();
-			ListingRequest request = new ListingRequest(allUsers,longFormat,user);
+			ListingRequest request = new ListingRequest(longFormat,user,allUsers);
 			Glidein[] glideins = factory.listGlideins(request).getGlideins();
 			return glideins;
 		} catch (RemoteException re) {
