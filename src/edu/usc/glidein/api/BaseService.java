@@ -15,7 +15,7 @@
  */
 package edu.usc.glidein.api;
 
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.globus.axis.util.Util;
 import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
