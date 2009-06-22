@@ -40,6 +40,9 @@ LOCALCLASSPATH=${GLOBUS_LOCATION}
 for jar in `ls $GLOBUS_LOCATION/lib/*.jar`; do
 	LOCALCLASSPATH="${LOCALCLASSPATH}:${jar}"
 done
+for jar in `ls $GLOBUS_LOCATION/lib/common/*.jar`; do
+	LOCALCLASSPATH="${LOCALCLASSPATH}:${jar}"
+done
 export CLASSPATH=$LOCALCLASSPATH
 
 # Set other variables
