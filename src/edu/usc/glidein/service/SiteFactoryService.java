@@ -21,7 +21,7 @@ import java.rmi.RemoteException;
 import javax.naming.NamingException;
 
 import org.apache.axis.MessageContext;
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.container.ServiceHost;
