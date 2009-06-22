@@ -1,8 +1,10 @@
-<securityConfig xmlns="http://www.globus.org">
+<serviceSecurityConfig xmlns="http://www.globus.org/security/descriptor/service">
 	<auth-method>
-		<GSITransport/>
-		<GSISecureMessage/>
 		<GSISecureConversation/>
+        <GSISecureMessage/>
+        <GSISecureTransport/>
 	</auth-method>
-	<authz value="gridmap"/>
-</securityConfig>
+	<authzChain>
+		<pdps><interceptor name="gridmap"/></pdps>
+	</authzChain>
+</serviceSecurityConfig>		
