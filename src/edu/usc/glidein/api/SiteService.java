@@ -24,12 +24,16 @@ import java.util.Set;
 import javax.xml.rpc.ServiceException;
 import javax.xml.rpc.Stub;
 
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.apache.axis.message.MessageElement;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.globus.wsrf.NotificationConsumerManager;
 import org.globus.wsrf.NotifyCallback;
 import org.globus.wsrf.WSNConstants;
 import org.globus.wsrf.encoding.DeserializationException;
 import org.globus.wsrf.encoding.ObjectDeserializer;
+import org.globus.wsrf.encoding.ObjectSerializer;
+import org.oasis.wsn.FilterType;
+import org.oasis.wsn.NotificationMessageHolderTypeMessage;
 import org.oasis.wsn.NotificationProducer;
 import org.oasis.wsn.Subscribe;
 import org.oasis.wsn.TopicExpressionType;
@@ -46,11 +50,10 @@ import edu.usc.glidein.stubs.types.SiteStateChange;
 import edu.usc.glidein.stubs.types.SiteStateChangeMessage;
 import edu.usc.glidein.util.AddressingUtil;
 
-public class SiteService extends BaseService
+public class SiteService extends BaseService implements NotifyCallback
 {
 	private NotificationConsumerManager consumer = null;
 	private EndpointReferenceType consumerEPR = null;
-	private SiteHandler handler = null;
 	private Set<SiteListener> listeners = new HashSet<SiteListener>();
 	
 	public SiteService(EndpointReferenceType epr)
@@ -100,7 +103,7 @@ public class SiteService extends BaseService
 	{
 		try {
 			SitePortType instance = getPort();
-			RemoveRequest request = new RemoveRequest(credentialEPR, force);
+			RemoveRequest request = new RemoveRequest(force, credentialEPR);
 			instance.remove(request);
 		} catch (RemoteException re) {
 			throw new GlideinException("Unable to remove site: "+
@@ -129,22 +132,24 @@ public class SiteService extends BaseService
 	private void subscribe() throws GlideinException
 	{
 		try {
-			handler = new SiteHandler();
-			
 			consumer = NotificationConsumerManager.getInstance();
 			consumer.startListening();
 			
-			consumerEPR = consumer.createNotificationConsumer(handler);
+			consumerEPR = consumer.createNotificationConsumer(this);
 			
 			TopicExpressionType topicExpression = new TopicExpressionType();
 			topicExpression.setDialect(WSNConstants.SIMPLE_TOPIC_DIALECT);
 			topicExpression.setValue(SiteNames.TOPIC_STATE_CHANGE);
 			
 			Subscribe subscribe = new Subscribe();
-			subscribe.setUseNotify(Boolean.TRUE);
 			subscribe.setConsumerReference(consumerEPR);
-			subscribe.setTopicExpression(topicExpression);
-	
+			MessageElement element =
+                (MessageElement) ObjectSerializer.toSOAPElement(
+                    topicExpression, WSNConstants.TOPIC_EXPRESSION);
+            FilterType filter = new FilterType();
+            filter.set_any(new MessageElement[] { element });
+            subscribe.setFilter(filter);
+			
 			NotificationProducer producer = getProducerPort();
 			
 			producer.subscribe(subscribe);
@@ -160,7 +165,6 @@ public class SiteService extends BaseService
 			consumer.stopListening();
 			consumer = null;
 			consumerEPR = null;
-			handler = null;
 		} catch (Exception e) {
 			throw new GlideinException("Unable to unsubscribe from site",e);
 		}
@@ -175,10 +179,11 @@ public class SiteService extends BaseService
 			NotificationProducer producer = 
 				locator.getNotificationProducerPort(getEPR());
 			
-			if (getDescriptor() != null) {
-				((Stub)producer)._setProperty(
-						"clientDescriptor", getDescriptor());
-			}
+			// TODO Is this needed?
+			//if (getDescriptor() != null) {
+			//	((Stub)producer)._setProperty(
+			//			"clientDescriptor", getDescriptor());
+			//}
 			
 			return producer;
 		} catch (ServiceException e) {
@@ -203,30 +208,41 @@ public class SiteService extends BaseService
 					se.getMessage(),se);
 		}
 	}
-	
-	private class SiteHandler implements NotifyCallback
-	{
-		public void deliver(List list, EndpointReferenceType producer, Object message)
-		{
-			SiteStateChange stateChange = null;
-			
-			if (message instanceof SiteStateChangeMessage) {
-				stateChange = ((SiteStateChangeMessage) message).getSiteStateChange();
-			} else if (message instanceof SiteStateChange) {
-				stateChange = (SiteStateChange)message;
-			} else {
-				try {
-					stateChange = (SiteStateChange) ObjectDeserializer.toObject(
-							(Element) message, SiteStateChange.class);
-				} catch (DeserializationException e) {
-					throw new RuntimeException(
-							"Unable to deserialize site state change message",e);
-				}
+
+	public void deliver(List list, EndpointReferenceType producer, Object message) {
+		SiteStateChange stateChange = null;
+		
+		// Who knows?
+		if (message instanceof SiteStateChangeMessage) {
+			stateChange = ((SiteStateChangeMessage) message).getSiteStateChange();
+		} else if (message instanceof SiteStateChange) {
+			stateChange = (SiteStateChange)message;
+		} else if (message instanceof NotificationMessageHolderTypeMessage) {
+			NotificationMessageHolderTypeMessage notifMsg =
+		            (NotificationMessageHolderTypeMessage) message;
+			MessageElement[] msgElem = notifMsg.get_any();
+			try {
+				SiteStateChangeMessage stateChangeMessage =
+					(SiteStateChangeMessage) ObjectDeserializer.toObject(
+							msgElem[0],
+							SiteStateChangeMessage.class);
+				stateChange = stateChangeMessage.getSiteStateChange();
+			} catch (DeserializationException e) {
+				throw new RuntimeException(
+						"Unable to deserialize site state change message",e);
+	        }
+		} else {
+			try {
+				stateChange = (SiteStateChange) ObjectDeserializer.toObject(
+						(Element) message, SiteStateChange.class);	
+			} catch (DeserializationException e) {
+				throw new RuntimeException(
+						"Unable to deserialize site state change message",e);
 			}
+		}
 			
-			for (SiteListener listener : listeners) {
-				listener.stateChanged(stateChange);
-			}
+		for (SiteListener listener : listeners) {
+			listener.stateChanged(stateChange);
 		}
 	}
 	
