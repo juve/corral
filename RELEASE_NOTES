@@ -1,4 +1,24 @@
 ===================================
+  Release Notes for version 1.2.0
+===================================
+
+UPGRADING
+---------
+This version requires Globus 4.2.x and is incompatible with the 4.0.x series.
+
+CHANGES
+-------
+1) Modified the service to work with Globus 4.2. Unfortunately, this involved
+   many changes all over the place and I didn't write them all down. Look in
+   SVN in you want a complete diff.
+2) Updated the web pages to say "Corral" instead of "Glidein Service".
+
+KNOWN BUGS
+----------
+1) The --wait command-line option still doesn't work correctly, and probably
+   never will.
+
+===================================
   Release Notes for version 1.0.7
 ===================================
 
