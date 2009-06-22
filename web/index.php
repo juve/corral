@@ -1,17 +1,20 @@
 <?php
-$title = "Glidein Service";
+$title = "Corral";
 include_once("../../includes/header.inc");
 ?>
 
-<h1>Glidein Service</h1>
+<h1>Corral</h1>
 
+<table>
+<tr>
+<td valign=top width=500px>
 <ul>
 <li><a href="download.php">Download</a></li>
 <li><a href="doc.php">Documentation</a></li>
 <li><a href="../../support.php">Support</a></li>
 </ul>
 
-<p>The Glidein Service is a resource provisioning tool designed to help 
+<p>Corral is a resource provisioning tool designed to help 
 improve the performance of loosely-coupled applications on the grid.</p>
 
 <p>The service is based on the concept of Condor "glideins." Glidein is 
@@ -30,6 +33,13 @@ submitted using traditional grid mechanisms. It also allows users to
 allocate resources once, and reuse them for many jobs, which eliminates 
 the queueing delays that are detrimental to applications with many 
 fine-grained tasks.</p>
+</td>
+
+<td>
+<img src="system.png" height=350px/>
+</td>
+</tr>
+</table>
 
 <?php
 include_once("../../includes/footer.inc");
