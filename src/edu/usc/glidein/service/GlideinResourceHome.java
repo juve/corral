@@ -24,7 +24,6 @@ import org.globus.wsrf.ResourceException;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.impl.ResourceHomeImpl;
 import org.globus.wsrf.impl.SimpleResourceKey;
-import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
 
 import edu.usc.glidein.db.Database;
 import edu.usc.glidein.db.DatabaseException;
@@ -61,7 +60,7 @@ public class GlideinResourceHome extends ResourceHomeImpl
 				resource.recoverState();
 			}
 		} catch (DatabaseException de) {
-			throw new InitializeException(
+			throw new Exception(
 					"Unable to get glideins from database",de);
 		}
 		
