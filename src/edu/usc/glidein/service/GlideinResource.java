@@ -34,7 +34,7 @@ import java.util.HashSet;
 import javax.naming.NamingException;
 import javax.security.auth.Subject;
 
-import org.apache.axis.message.addressing.EndpointReferenceType;
+import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
 import org.globus.delegation.DelegationException;
 import org.globus.delegation.DelegationUtil;
@@ -49,7 +49,6 @@ import org.globus.wsrf.ResourceIdentifier;
 import org.globus.wsrf.ResourceKey;
 import org.globus.wsrf.ResourceProperties;
 import org.globus.wsrf.ResourcePropertySet;
-import org.globus.wsrf.Topic;
 import org.globus.wsrf.TopicList;
 import org.globus.wsrf.TopicListAccessor;
 import org.globus.wsrf.encoding.ObjectDeserializer;
@@ -59,7 +58,6 @@ import org.globus.wsrf.impl.SimpleResourceKey;
 import org.globus.wsrf.impl.SimpleResourcePropertySet;
 import org.globus.wsrf.impl.SimpleTopic;
 import org.globus.wsrf.impl.SimpleTopicList;
-import org.globus.wsrf.impl.security.authorization.exceptions.InitializeException;
 import org.globus.wsrf.security.SecurityException;
 import org.globus.wsrf.utils.SubscriptionPersistenceUtils;
 import org.xml.sax.InputSource;
@@ -104,8 +102,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 {
 	private Logger logger = Logger.getLogger(GlideinResource.class);
 	private SimpleResourcePropertySet resourceProperties;
-	private Topic stateChangeTopic;
 	private TopicList topicList;
+	private SimpleTopic stateChangeTopic;
 	private Glidein glidein = null;
 	
 	/**
@@ -114,8 +112,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 	public GlideinResource()
 	{
 		resourceProperties = new SimpleResourcePropertySet(SiteNames.RESOURCE_PROPERTIES);
-		stateChangeTopic = new SimpleTopic(GlideinNames.TOPIC_STATE_CHANGE);
 		topicList = new SimpleTopicList(this);
+		stateChangeTopic = new SimpleTopic(GlideinNames.TOPIC_STATE_CHANGE);
 		topicList.addTopic(stateChangeTopic);
 	}
 
@@ -455,7 +453,11 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 	        stateChange.setLongMessage(longMessage);
 	        stateChange.setTime(time);
 	        
-	        stateChangeTopic.notify(new GlideinStateChangeMessage(stateChange));
+	        Object msg = ObjectSerializer.toSOAPElement(
+	        		new GlideinStateChangeMessage(stateChange),
+	        		GlideinNames.TOPIC_STATE_CHANGE);
+	        
+	        stateChangeTopic.notify(msg);
 		} catch (Exception e) {
 			warn("Unable to notify topic listeners", e);
 		}
@@ -1138,8 +1140,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			return false;
 		}
 	}
-
-	public synchronized void recoverState() throws InitializeException
+	
+	public synchronized void recoverState() throws Exception
 	{
 		try {
 			// Try to recover state
@@ -1153,7 +1155,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			} catch (ResourceException re2) {
 				
 				// If that fails, then fail the entire recovery process
-				throw new InitializeException(
+				throw new Exception(
 						"Unable to recover glidein "+glidein.getId(),re);
 				
 			}
