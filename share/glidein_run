@@ -64,6 +64,8 @@ OPTIONS
       The high end of the port range to allow Condor to use.
    -lp | -lowport
       The low end of the port range to allow Condor to use.
+   -ccb | -ccbAddress <host:port>
+      The CCB connection broker to use.
    -h | -help
       Display this usage message.
 """
@@ -80,6 +82,7 @@ NUM_CPUS=""
 JOB_DIR="`dirname $X509_USER_PROXY 2>/dev/null || pwd`"
 HIGHPORT=""
 LOWPORT=""
+CCB_ADDRESS=""
 
 while [ $# -ge 1 ]; do
 	case $1 in 
@@ -93,6 +96,7 @@ while [ $# -ge 1 ]; do
 		-d | -debug) DEBUG="${DEBUG}$2 " ;;
 		-hp | -highport) HIGHPORT=$2 ;;
 		-lp | -lowport) LOWPORT=$2 ;;
+		-ccb | -ccbAddress) CCB_ADDRESS=$2 ;;
 		-h | -help) usage ; exit 1 ;;
 		*) error "Invalid argument: $1" ; exit 1 ;;
 	esac
@@ -240,6 +244,9 @@ echo "CORRAL_SITE_ID = ${CORRAL_SITE_ID}" >> ${CONDOR_CONFIG}
 echo "CORRAL_GLIDEIN_ID = ${CORRAL_GLIDEIN_ID}" >> ${CONDOR_CONFIG}
 echo "CORRAL_SITE_NAME = ${CORRAL_SITE_NAME}" >> ${CONDOR_CONFIG}
 echo "CORRAL_SERVER = ${CORRAL_SERVER}" >> ${CONDOR_CONFIG}
+if [ ! -z "${CCB_ADDRESS}" ]; then
+    echo "CORRAL_CCB_ADDRESS = ${CCB_ADDRESS}" >> ${CONDOR_CONFIG}
+fi
 
 # Fork condor_master
 echo "Starting condor_master on host ${HOSTNAME}"
