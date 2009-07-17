@@ -25,6 +25,7 @@
 #  CORRAL_LOCK - The path to a node-local dir to use for lock files
 #  CORRAL_HIGHPORT - The high port number to allow Condor to use
 #  CORRAL_LOWPORT - The low port number to allow Condor to use
+#  CORRAL_CCB_ADDRESS - The CCB broker to use.
 #
 #  NUM_CPUS - The number of CPUs to allocate. This has to be set explicitly.
 #
@@ -168,6 +169,11 @@ MASTER_UPDATE_INTERVAL = $RANDOM_INTEGER(230, 370)
 # The port range
 HIGHPORT = $(CORRAL_HIGHPORT)
 LOWPORT = $(CORRAL_LOWPORT)
+
+# CCB settings
+CCB_ADDRESS = $(CORRAL_CCB_ADDRESS)
+PRIVATE_NETWORK_NAME = $(CORRAL_SITE_NAME)
+
 
 ###############################################################################
 # GCB Settings
