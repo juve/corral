@@ -38,7 +38,7 @@ public class RemoveGlideinCommand extends Command
 			Option.create()
 				  .setOption("f")
 				  .setLongOption("force")
-				  .setUsage("-f [--force]")
+				  .setUsage("-f | --force")
 				  .setDescription("Force the glidein to be deleted")
 		);
 	}

@@ -55,7 +55,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("c")
 				  .setLongOption("catalog-file")
-				  .setUsage("-c [--catalog-file] <file>")
+				  .setUsage("-c | --catalog-file <file>")
 				  .setDescription("The catalog file containing sites")
 				  .hasArgument()
 		);
@@ -64,7 +64,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("f")
 				  .setLongOption("catalog-format")
-				  .setUsage("-f [--catalog-format] <format>")
+				  .setUsage("-f | --catalog-format <format>")
 				  .setDescription("The format of the site catalog (one of: 'ini', or 'xml'; \n" +
 				  				  "default: determined by extension)")
 				  .hasArgument()
@@ -74,7 +74,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("n")
 				  .setLongOption("site-name")
-				  .setUsage("-n [--site-name] <name>")
+				  .setUsage("-n | --site-name <name>")
 				  .setDescription("The name of the site to create")
 				  .hasArgument()
 		);
@@ -83,7 +83,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("C")
 				  .setLongOption("credential")
-				  .setUsage("-C [--credential] <file>")
+				  .setUsage("-C | --credential <file>")
 				  .setDescription("The user's credential as a proxy file. If not specified the \n" +
 				  				  "Globus default is used.")
 				  .hasArgument()
@@ -93,7 +93,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("v")
 				  .setLongOption("verbose")
-				  .setUsage("-v [--verbose]")
+				  .setUsage("-v | --verbose")
 				  .setDescription("Show details about the new site")
 		);
 		
@@ -101,7 +101,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("ip")
 				  .setLongOption("install-path")
-				  .setUsage("-ip [--install-path] <path>")
+				  .setUsage("-ip | --install-path <path>")
 				  .setDescription("This is the remote path where executables are installed. \n" +
 				  				  "Default: '$HOME/.corral/$CORRAL_SERVER/$CORRAL_SITE_ID'")
 				  .hasArgument()
@@ -112,7 +112,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("lp")
 				  .setLongOption("local-path")
-				  .setUsage("-lp [--local-path] <path>")
+				  .setUsage("-lp | --local-path <path>")
 				  .setDescription("This is the remote path where log files, etc. are placed \n" +
 				  				  "(i.e. local scratch). Default: '/tmp'")
 				  .hasArgument()
@@ -122,7 +122,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("ss")
 				  .setLongOption("staging-service")
-				  .setUsage("-ss [--staging-service] <svc>")
+				  .setUsage("-ss | --staging-service <svc>")
 				  .setDescription("This is the gatekeeper to use for setup (i.e. fork). The \n" +
 						  		  "format follows the condor format for grid resource. Only \n" +
 						  		  "the gt2 and gt4 grid types are supported right now. (e.x. \n" +
@@ -134,7 +134,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("ssp")
 				  .setLongOption("staging-service-project")
-				  .setUsage("-ssp [--staging-service-project] <proj>")
+				  .setUsage("-ssp | --staging-service-project <proj>")
 				  .setDescription("The project to use for the staging service")
 				  .hasArgument()
 		);
@@ -143,7 +143,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("ssq")
 				  .setLongOption("staging-service-queue")
-				  .setUsage("-ssq [--staging-service-queue] <queue>")
+				  .setUsage("-ssq | --staging-service-queue <queue>")
 				  .setDescription("The queue to use for the staging service")
 				  .hasArgument()
 		);
@@ -152,7 +152,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("gs")
 				  .setLongOption("glidein-service")
-				  .setUsage("-gs [--glidein-service] <svc>")
+				  .setUsage("-gs | --glidein-service <svc>")
 				  .setDescription("This is the gatekeeper to use for glideins (i.e. pbs). \n" +
 				  				  "The format is identical to the one for the staging service.")
 				  .hasArgument()
@@ -162,7 +162,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("gsp")
 				  .setLongOption("glidein-service-project")
-				  .setUsage("-gsp [--glidein-service-project] <proj>")
+				  .setUsage("-gsp | --glidein-service-project <proj>")
 				  .setDescription("The project to use for the glidein service")
 				  .hasArgument()
 		);
@@ -171,7 +171,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("gsq")
 				  .setLongOption("glidein-service-queue")
-				  .setUsage("-gsq [--glidein-service-queue] <queue>")
+				  .setUsage("-gsq | --glidein-service-queue <queue>")
 				  .setDescription("The queue to use for the glidein service")
 				  .hasArgument()
 		);
@@ -180,7 +180,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("cv")
 				  .setLongOption("condor-version")
-				  .setUsage("-cv [--condor-version] <ver>")
+				  .setUsage("-cv | --condor-version <ver>")
 				  .setDescription("The version of Condor to setup on the remote site. \n" +
 				  				  "(e.x '7.0.0')")
 				  .hasArgument()
@@ -190,7 +190,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("cp")
 				  .setLongOption("condor-package")
-				  .setUsage("-cp [--condor-package] <pkg>")
+				  .setUsage("-cp | --condor-package <pkg>")
 				  .setDescription("The name of the package to download. This overrides condor-version. \n" +
 				  				  "The typical format for the package name is: \n" +
 				  				  "'<condorversion>-<arch>-<os>-<osversion>-glibc<glibcversion>.tar.gz' \n" +
@@ -208,7 +208,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("e")
 				  .setLongOption("environment")
-				  .setUsage("-e [--environment] <env>")
+				  .setUsage("-e | --environment <env>")
 				  .setDescription("This is the environment for staging and glideins. Use ':' \n" +
 				  				  "to separate entries. (e.x. 'FOO=f:BAR=b')")
 				  .hasArgument()
@@ -218,7 +218,7 @@ public class CreateSiteCommand extends Command implements SiteListener
 			Option.create()
 				  .setOption("W")
 				  .setLongOption("wait")
-				  .setUsage("-W [--wait]")
+				  .setUsage("-W | --wait")
 				  .setDescription("Block waiting for the site to become READY, FAILED or DELETED.")
 		);
 	}

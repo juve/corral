@@ -91,7 +91,7 @@ public abstract class Command
 			Option.create()
 				  .setOption("h")
 				  .setLongOption("host")
-				  .setUsage("-h [--host] <host|ip>")
+				  .setUsage("-h | --host <host|ip>")
 				  .setDescription("Service host (default: '"+getDefaultHost()+"'. The default can be set by\n" +
 				  		          "specifying the GLIDEIN_HOST environment variable.)")
 				  .hasArgument()
@@ -100,7 +100,7 @@ public abstract class Command
 			Option.create()
 				  .setOption("p")
 				  .setLongOption("port")
-				  .setUsage("-p [--port] <port>")
+				  .setUsage("-p | --port <port>")
 				  .setDescription("Service port (default: "+(getDefaultPort()==null
 						  		 ?"'8443' for transport security, '8080' otherwise.\n"+
 						  		  "The default can be set by specifying the GLIDEIN_PORT environment variable.)"
@@ -113,14 +113,14 @@ public abstract class Command
 			Option.create()
 				  .setOption("d")
 				  .setLongOption("debug")
-				  .setUsage("-d [--debug]")
+				  .setUsage("-d | --debug")
 				  .setDescription("Enable verbose debugging messages")
 		);
 		options.add(
 			Option.create()
 				  .setOption("sec")
 				  .setLongOption("security")
-				  .setUsage("-sec [--security] <mode>")
+				  .setUsage("-sec | --security <mode>")
 				  .setDescription("Security mode. One of: 'msg', 'conv', 'trans', or 'none'. \n" +
 				  				  "(default: trans)")
 				  .hasArgument()
@@ -129,7 +129,7 @@ public abstract class Command
 			Option.create()
 				  .setOption("P")
 				  .setLongOption("protection")
-				  .setUsage("-P [--protection] <type>")
+				  .setUsage("-P | --protection <type>")
 				  .setDescription("Protection type. Either 'sig', or 'enc'. (default: 'sig')")
 				  .hasArgument()
 		);
@@ -137,7 +137,7 @@ public abstract class Command
 			Option.create()
 				  .setOption("authz")
 				  .setLongOption("authorization")
-				  .setUsage("-authz [--authorization] <mode>")
+				  .setUsage("-authz | --authorization <mode>")
 				  .setDescription("Authorization mode. One of: 'host', 'self', 'none', or a DN. \n" +
 				  				  "(default: 'host')")
 				  .hasArgument()
@@ -146,14 +146,14 @@ public abstract class Command
 			Option.create()
 				  .setOption("anon")
 				  .setLongOption("anonymous")
-				  .setUsage("-anon [--anonymous]")
+				  .setUsage("-anon | --anonymous")
 				  .setDescription("Enable anonymous authentication")
 		);
 		options.add(
 			Option.create()
 				  .setOption("af")
 				  .setLongOption("argument-file")
-				  .setUsage("-af [--argument-file] <file>")
+				  .setUsage("-af | --argument-file <file>")
 				  .setDescription("The name of a file containing command-line arguments. Format is the \n" +
 				  				  "same as regular command-line arguments except carriage returns are \n" +
 				  				  "allowed without being escaped and lines beginning with # are ignored.")

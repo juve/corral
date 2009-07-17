@@ -45,21 +45,21 @@ public class ListGlideinCommand extends Command
 			Option.create()
 				  .setOption("l")
 				  .setLongOption("long")
-				  .setUsage("-l [--long]")
+				  .setUsage("-l | --long")
 				  .setDescription("Show detailed glidein information")
 		);
 		options.add(
 			Option.create()
 				  .setOption("a")
 				  .setLongOption("all")
-				  .setUsage("-a [--all]")
+				  .setUsage("-a | --all")
 				  .setDescription("Show glideins for all users")
 		);
 		options.add(
 			Option.create()
 				  .setOption("u")
 				  .setLongOption("user")
-				  .setUsage("-u [--user] <user>")
+				  .setUsage("-u | --user <user>")
 				  .setDescription("Show glideins for the specified user (default: current user)")
 				  .hasArgument()
 		);

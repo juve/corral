@@ -43,14 +43,14 @@ public class RemoveSiteCommand extends Command
 			Option.create()
 				  .setOption("f")
 				  .setLongOption("force")
-				  .setUsage("-f [--force]")
+				  .setUsage("-f | --force")
 				  .setDescription("Force the site to be deleted regardless of state")
 		);
 		options.add(
 			Option.create()
 				  .setOption("C")
 				  .setLongOption("credential")
-				  .setUsage("-C [--credential] <file>")
+				  .setUsage("-C | --credential <file>")
 				  .setDescription("The user's credential as a proxy file. If not specified the Globus default is used.")
 				  .hasArgument()
 		);
