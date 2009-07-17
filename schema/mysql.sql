@@ -99,6 +99,7 @@ CREATE TABLE glidein (
 	localUsername		VARCHAR(64) NOT NULL,			-- Local username of owner
 	highport			INTEGER,						-- Highest port number used by Condor
 	lowport				INTEGER,						-- Lowest port number used by Condor
+	ccbAddress			VARCHAR(256),					-- CCB broker
 	CONSTRAINT pk_glidein PRIMARY KEY (id),
 	CONSTRAINT fk_glidein_01 FOREIGN KEY (site) REFERENCES site(id) ON DELETE SET NULL
 ) type=InnoDB;

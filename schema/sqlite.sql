@@ -95,7 +95,8 @@ CREATE TABLE glidein (
 	subject			TEXT NOT NULL,		-- Owner of resource
 	localUsername	TEXT NOT NULL,		-- Local username of owner
 	highport		INTEGER,			-- Highest port number used by Condor
-	lowport			INTEGER				-- Lowest port number used by Condor
+	lowport			INTEGER,			-- Lowest port number used by Condor
+	ccbAddress		TEXT				-- CCB broker
 );
 
 /**
