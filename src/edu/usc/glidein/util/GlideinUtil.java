@@ -65,6 +65,7 @@ public class GlideinUtil
 		}
 		out.printf("%s = %s\n", CONDOR_DEBUG, glidein.getCondorDebug());
 		out.printf("%s = %s\n", GCB_BROKER, glidein.getGcbBroker());
+		out.printf("%s = %s\n", CCB_ADDRESS, glidein.getCcbAddress());
 		out.printf("%s = %s\n", SUBMITS, glidein.getSubmits());
 		out.printf("%s = %s\n", RESUBMIT, glidein.isResubmit());
 		out.printf("%s = %s\n", RESUBMITS, glidein.getResubmits());
@@ -110,6 +111,7 @@ public class GlideinUtil
 		/* Optional parameters */
 		glidein.setCondorDebug(p.getProperty(CONDOR_DEBUG));
 		glidein.setGcbBroker(p.getProperty(GCB_BROKER));
+		glidein.setCcbAddress(p.getProperty(CCB_ADDRESS));
 		glidein.setRsl(p.getProperty(RSL));
 		
 		/* Optional port range */
