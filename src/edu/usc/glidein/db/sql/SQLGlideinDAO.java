@@ -70,7 +70,7 @@ public class SQLGlideinDAO implements GlideinDAO
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
-			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, created, lastUpdate, condorHost, resubmit, submits, resubmits, until, rsl, subject, localUsername, lowport, highport) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			stmt = connection.prepareStatement("INSERT INTO glidein (site, count, hostCount, wallTime, numCpus, condorConfig, gcbBroker, idleTime, condorDebug, state, shortMessage, longMessage, created, lastUpdate, condorHost, resubmit, submits, resubmits, until, rsl, subject, localUsername, lowport, highport, ccbAddress) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			int i = 1;
 			stmt.setInt(i++, glidein.getSiteId());
 			stmt.setInt(i++, glidein.getCount());
@@ -111,6 +111,7 @@ public class SQLGlideinDAO implements GlideinDAO
 			stmt.setString(i++, glidein.getLocalUsername());
 			stmt.setInt(i++, glidein.getLowport());
 			stmt.setInt(i++, glidein.getHighport());
+			stmt.setString(i++, glidein.getCcbAddress());
 			
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to create glidein: wrong number of db updates");
@@ -243,6 +244,36 @@ public class SQLGlideinDAO implements GlideinDAO
 			return ids;
 		} catch(SQLException sqle) {
 			throw new DatabaseException("Unable to get glidein ids: select failed",sqle);
+		} finally {
+			JDBCUtil.closeQuietly(rs);
+			JDBCUtil.closeQuietly(stmt);
+			JDBCUtil.closeQuietly(conn);
+		}
+	}
+	
+	public int[] listTerminated() throws DatabaseException {
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		LinkedList<Integer> results = new LinkedList<Integer>();
+		try {
+			conn = getConnection();
+			stmt = conn.prepareStatement("SELECT id FROM glidein WHERE state in (?,?)");
+			stmt.setString(1, GlideinState.FINISHED.getValue());
+			stmt.setString(2, GlideinState.FAILED.getValue());
+			rs = stmt.executeQuery();
+			while (rs.next()) {
+				results.add(rs.getInt("id"));
+			}
+			
+			int[] ids = new int[results.size()];
+			int i = 0;
+			for (Integer id : results) {
+				ids[i++] = id;
+			}
+			return ids;
+		} catch(SQLException sqle) {
+			throw new DatabaseException("Unable to get finished glidein ids: select failed",sqle);
 		} finally {
 			JDBCUtil.closeQuietly(rs);
 			JDBCUtil.closeQuietly(stmt);
@@ -409,6 +440,7 @@ public class SQLGlideinDAO implements GlideinDAO
 			glidein.setLocalUsername(rs.getString("localUsername"));
 			glidein.setLowport(rs.getInt("lowport"));
 			glidein.setHighport(rs.getInt("highport"));
+			glidein.setCcbAddress(rs.getString("ccbAddress"));
 			
 			return glidein;
 		} catch (SQLException sqle) {

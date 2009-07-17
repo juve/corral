@@ -31,6 +31,7 @@ public interface GlideinDAO
 			throws DatabaseException;
 	public Glidein[] list(boolean longFormat, String user, boolean allUsers) throws DatabaseException;
 	public int[] listIds() throws DatabaseException;
+	public int[] listTerminated() throws DatabaseException;
 	public void insertHistory(int glideinId, GlideinState state, Calendar time)
 			throws DatabaseException;
 	public GlideinHistoryEntry[] getHistory(int[] glideinIds) throws DatabaseException;
