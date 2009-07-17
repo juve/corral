@@ -123,6 +123,7 @@
 			<xsd:enumeration value="QUEUED"/>		<!-- Job queued remotely -->
 			<xsd:enumeration value="RUNNING"/>		<!-- Job running remotely -->
 			<xsd:enumeration value="REMOVING"/>		<!-- Job is being removed -->
+			<xsd:enumeration value="FINISHED"/>		<!-- Job finished -->
 			<xsd:enumeration value="FAILED"/>		<!-- Glidein failed -->
 			<xsd:enumeration value="DELETED"/>		<!-- Glidein has been deleted -->
 		</xsd:restriction>
@@ -158,6 +159,7 @@
 			<xsd:element name="gcbBroker" type="xsd:string" nillable="true"/>
 			<xsd:element name="highport" type="xsd:int" default="0"/>
 			<xsd:element name="lowport" type="xsd:int" default="0"/>
+			<xsd:element name="ccbAddress" type="xsd:string" nillable="true"/>
 			<xsd:element name="idleTime" type="xsd:int" default="0"/>
 			<xsd:element name="condorDebug" type="xsd:string" nillable="true"/>
 			<xsd:element name="state" type="glidein:GlideinState" default="NEW" nillable="true"/>
