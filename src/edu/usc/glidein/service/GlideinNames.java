@@ -46,6 +46,7 @@ public class GlideinNames
 	public static final String LOCAL_USERNAME = "local-username";
 	public static final String LOWPORT = "lowport";
 	public static final String HIGHPORT = "highport";
+	public static final String CCB_ADDRESS = "ccb-address";
 	
 	// Service names
 	public static final String GLIDEIN_FACTORY_SERVICE = "glidein/GlideinFactoryService";
@@ -79,6 +80,7 @@ public class GlideinNames
 	public static final QName RP_RSL = new QName(SERVICE_NS, RSL);
 	public static final QName RP_LOWPORT = new QName(SERVICE_NS, LOWPORT);
 	public static final QName RP_HIGHPORT = new QName(SERVICE_NS, HIGHPORT);
+	public static final QName RP_CCB_ADDRESS = new QName(SERVICE_NS, CCB_ADDRESS);
 	
 	// Topics
 	public static final QName TOPIC_STATE_CHANGE = new QName(SERVICE_NS, "state-change");

@@ -200,6 +200,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 					GlideinNames.RP_HIGHPORT,"highport",glidein));
 			resourceProperties.add(new ReflectionResourceProperty(
 					GlideinNames.RP_LOWPORT,"lowport",glidein));
+			resourceProperties.add(new ReflectionResourceProperty(
+					GlideinNames.RP_CCB_ADDRESS,"ccbAddress",glidein));
 		} catch(Exception e) {
 			throw new RuntimeException("Unable to set glidein resource properties",e);
 		}
@@ -291,6 +293,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				event.put("rsl", glidein.getRsl());
 				event.put("lowport", glidein.getLowport());
 				event.put("highport", glidein.getHighport());
+				event.put("ccb_address", glidein.getCcbAddress());
 				event.put("owner.subject", glidein.getSubject());
 				event.put("owner.username", glidein.getLocalUsername());
 				
@@ -573,6 +576,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		job.addArgument("-wallTime "+(glidein.getWallTime()-1));
 		if(glidein.getGcbBroker()!=null)
 			job.addArgument("-gcbBroker "+glidein.getGcbBroker());
+		if(glidein.getCcbAddress()!=null)
+			job.addArgument("-ccbAddress "+glidein.getCcbAddress());
 		if(glidein.getIdleTime()>0)
 			job.addArgument("-idleTime "+glidein.getIdleTime());
 		if(glidein.getCondorDebug()!=null)
@@ -865,25 +870,25 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		return validateCredentialLifetime(cred);
 	}
 	
-	private void failQuietly(String message, Exception exception, Calendar time)
+	private void failQuietly(String message, String longMessage, Exception exception, Calendar time)
 	{
 		try {
-			fail(message,exception,time);
+			fail(message,longMessage,exception,time);
 		} catch (ResourceException re) {
 			error("Unable to change state to "+GlideinState.FAILED,re);
 		}
 	}
 	
-	private void fail(String message, Exception exception, Calendar time) throws ResourceException
+	private void fail(String message, String longMessage, Exception exception, Calendar time) throws ResourceException
 	{
 		// Update status to FAILED
 		error("Failure: "+message,exception);
 		if (exception == null) {
-			updateState(GlideinState.FAILED, message, null, time);
+			updateState(GlideinState.FAILED, message, longMessage, time);
 		} else {
 			CharArrayWriter caw = new CharArrayWriter();
 			exception.printStackTrace(new PrintWriter(caw));
-			updateState(GlideinState.FAILED, message, caw.toString(), time);
+			updateState(GlideinState.FAILED, message, caw.toString()+"\n"+longMessage, time);
 		}
 	}
 	
@@ -904,9 +909,9 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			int lf = message.indexOf("\n");
 			int br = Math.min(cause, lf);
 			if (br > 0) {
-				failQuietly(message.substring(0, br), re, event.getTime());
+				failQuietly(message.substring(0, br), null, re, event.getTime());
 			} else {
-				failQuietly(message, re, event.getTime());
+				failQuietly(message, null, re, event.getTime());
 			}
 		}
 	}
@@ -981,7 +986,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				}
 				
 				// If the site failed, then the glidein will fail
-				failQuietly("Site failed",null,event.getTime());
+				failQuietly("Site failed",null,null,event.getTime());
 				
 			} break;
 			
@@ -1055,10 +1060,9 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 						
 					} else {
 						
-						// Otherwise, delete the glidein
-						updateState(GlideinState.DELETED,
-								"Glidein deleted",null,event.getTime());
-						delete();
+						// Otherwise, mark as finished
+						updateState(GlideinState.FINISHED,
+								"Glidein finished",null,event.getTime());
 						
 					}
 					
@@ -1071,7 +1075,6 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				
 			} break;
 			
-			case JOB_ABORTED:
 			case DELETE: {
 				
 				// If the job was aborted, or a delete was requested, then
@@ -1082,10 +1085,21 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				
 			} break;
 			
+			case JOB_ABORTED: {
+				
+				// If job is aborted, then glidein should be failed, but
+				// don't change the long message in case it already failed.
+				// Otherwise the original error message will be lost!
+				updateState(GlideinState.FAILED, "Glidein aborted",
+						glidein.getLongMessage(),event.getTime());
+				
+			} break;
+			
 			case JOB_FAILURE: {
 				
 				// If the job fails, then fail the glidein
-				failQuietly((String)event.getProperty("message"), 
+				failQuietly((String)event.getProperty("message"),
+						(String)event.getProperty("longMessage"),
 						(Exception)event.getProperty("exception"),
 						event.getTime());
 				
@@ -1150,7 +1164,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			try {
 				
 				// If recovery fails, try to update the state to failed
-				fail("State recovery failed",re,Calendar.getInstance());
+				fail("State recovery failed",null,re,Calendar.getInstance());
 				
 			} catch (ResourceException re2) {
 				
@@ -1203,7 +1217,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			} else {
 				
 				// Otherwise set the state to failed
-				fail("Unable to submit site",null,Calendar.getInstance());
+				fail("Unable to submit glidein",null,null,Calendar.getInstance());
 				
 			}
 			
@@ -1235,14 +1249,22 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				}
 			}
 			
-		} else if (GlideinState.FAILED.equals(state)) {
-		
-			// If the glidein failed, do nothing
+		} else if (GlideinState.FAILED.equals(state) ||
+				   GlideinState.FINISHED.equals(state) ||
+				   GlideinState.DELETED.equals(state)) {
 			
-		} else if (GlideinState.DELETED.equals(state)) {
+			// On restarts automatically delete the junk
 			
-			// Delete the glidein
-			delete();
+			// Queue up a delete event
+			try {
+				EventQueue queue = EventQueue.getInstance();
+				GlideinEvent delete = new GlideinEvent(
+						GlideinEventCode.DELETE, 
+						Calendar.getInstance(), getKey());
+				queue.add(delete);
+			} catch (NamingException e) {
+				warn("Unable to queue a delete event");
+			}
 			
 		} else {
 			
