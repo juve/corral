@@ -48,7 +48,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("s")
 				  .setLongOption("site")
-				  .setUsage("-s [--site] <id>")
+				  .setUsage("-s | --site <id>")
 				  .setDescription("Site to submit glidein to")
 				  .hasArgument()
 		);
@@ -56,7 +56,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("c")
 				  .setLongOption("count")
-				  .setUsage("-c [--count] <n>")
+				  .setUsage("-c | --count <n>")
 				  .setDescription("Total number of processes across all hosts (default: = host-count)")
 				  .hasArgument()
 		);
@@ -64,7 +64,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("hc")
 				  .setLongOption("host-count")
-				  .setUsage("-hc [--host-count] <n>")
+				  .setUsage("-hc | --host-count <n>")
 				  .setDescription("Number of hosts (default: 1)")
 				  .hasArgument()
 							 
@@ -73,7 +73,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("w")
 				  .setLongOption("wall-time")
-				  .setUsage("-w [--wall-time] <t>")
+				  .setUsage("-w | --wall-time <t>")
 				  .setDescription("Wall time for job in minutes (default: 60, min: 2, max: site-specific)")		 
 				  .hasArgument()
 		);
@@ -81,7 +81,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("i")
 				  .setLongOption("idle-time")
-				  .setUsage("-i [--idle-time] <t>")
+				  .setUsage("-i | --idle-time <t>")
 				  .setDescription("Glidein max idle time in minutes (default: wall-time)")
 				  .hasArgument()
 		);
@@ -89,7 +89,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("n")
 				  .setLongOption("num-cpus")
-				  .setUsage("-n [--num-cpus] <n>")
+				  .setUsage("-n | --num-cpus <n>")
 				  .setDescription("Number of cpus for condor to report")
 				  .hasArgument()
 		);
@@ -98,7 +98,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("ch")
 				  .setLongOption("condor-host")
-				  .setUsage("-ch [--condor-host] <name:port>")
+				  .setUsage("-ch | --condor-host <name:port>")
 				  .setDescription("Condor central manager to report to"+(defaultCondorHost==null?"":" (default: "+defaultCondorHost+")"))
 				  .hasArgument()
 							 
@@ -107,7 +107,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("cd")	
 				  .setLongOption("condor-debug")
-				  .setUsage("-cd [--condor-debug] <ops>")
+				  .setUsage("-cd | --condor-debug <ops>")
 				  .setDescription("Comma-separated list of Condor daemon debugging options (e.x. 'D_JOB,D_MACHINE'")
 				  .hasArgument()
 				
@@ -116,7 +116,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("b")
 				  .setLongOption("gcb-broker")
-				  .setUsage("-b [--gcb-broker] <ip>")
+				  .setUsage("-b | --gcb-broker <ip>")
 				  .setDescription("GCB Broker IP address")
 				  .hasArgument()
 		);
@@ -124,7 +124,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("cc")
 				  .setLongOption("condor-config")
-				  .setUsage("-cc [--condor-config] <file>")
+				  .setUsage("-cc | --condor-config <file>")
 				  .setDescription("Condor config file for glidein")
 				  .hasArgument()
 		);
@@ -132,7 +132,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("C")
 				  .setLongOption("credential")
-				  .setUsage("-C [--credential] <file>")
+				  .setUsage("-C | --credential <file>")
 				  .setDescription("The user's credential as a proxy file. If not specified the Globus default is used.")
 				  .hasArgument()
 		);
@@ -140,7 +140,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("r")
 				  .setLongOption("resubmit")
-				  .setUsage("-r [--resubmit] [number|date]")
+				  .setUsage("-r | --resubmit [<number>|<date>]")
 				  .setDescription("Resubmit the glidein when it expires. The glidein will be resubmitted\n" +
 				  		"indefinitely until the user removes it. The optional argument allows the user\n" +
 				  		"to specify either the maximum number of times to resubmit the glidein, or a date,\n" +
@@ -154,14 +154,14 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("v")
 				  .setLongOption("verbose")
-				  .setUsage("-v [--verbose]")
+				  .setUsage("-v | --verbose")
 				  .setDescription("Show details about the new glidein")
 		);
 		options.add(
 			Option.create()
 				  .setOption("rsl")
 				  .setLongOption("globus-rsl")
-				  .setUsage("-rsl [--globus-rsl]")
+				  .setUsage("-rsl | --globus-rsl <rsl>")
 				  .setDescription("The Globus RSL (GT2) or XML (GT4) to append to the glidein job.")
 				  .hasArgument()
 		);
@@ -169,14 +169,14 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("W")
 				  .setLongOption("wait")
-				  .setUsage("-W [--wait]")
+				  .setUsage("-W | --wait")
 				  .setDescription("Block waiting for the glidein to become RUNNING, FAILED, or DELETED.")
 		);
 		options.add(
 			Option.create()
 				  .setOption("hp")
 				  .setLongOption("highport")
-				  .setUsage("-hp [--highport]")
+				  .setUsage("-hp | --highport <port>")
 				  .setDescription("The high end of the port range to allow the glidein to use at the remote site.")
 				  .hasArgument()
 		);
@@ -184,9 +184,17 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			Option.create()
 				  .setOption("lp")
 				  .setLongOption("lowport")
-				  .setUsage("-lp [--lowport]")
+				  .setUsage("-lp | --lowport <port>")
 				  .setDescription("The low end of the port range to allow the glidein to use at the remote site.")
 				  .hasArgument()
+		);
+		options.add(
+			Option.create()
+				  .setOption("ccb")
+				  .setLongOption("ccb-address")
+				  .setUsage("-ccb | --ccb-address [<host:port>]")
+				  .setDescription("The address of the CCB broker to use. If no host is provided, then condor-host will be used.")
+				  .hasOptionalArgument()
 		);
 	}
 	
@@ -253,6 +261,9 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			setProperty(p, RSL, cmdln.getOptionValue("rsl"));
 			setProperty(p, LOWPORT, cmdln.getOptionValue("lp"));
 			setProperty(p, HIGHPORT, cmdln.getOptionValue("hp"));
+			if (cmdln.hasOption("ccb")) {
+				setProperty(p, CCB_ADDRESS, cmdln.getOptionValue("ccb", cmdln.getOptionValue("ch", getLocalHost())));
+			}
 			glidein = GlideinUtil.createGlidein(p);
 		} catch (Exception e) {
 			throw new CommandException(e);
