@@ -205,6 +205,25 @@
                 </parameter>
             </resourceParams>
         </resource>
+        
+        
+        <!-- Charon - ferryman of finished glideins                          -->
+        <!--                                                                 -->
+        <!-- Parameters:													 -->
+        <!-- 	interval - How frequently does Charon make trips? (mins)     -->
+        <resource name="glidein/Charon" 
+        		  type="edu.usc.glidein.service.state.Charon">
+            <resourceParams>
+                <parameter>
+                    <name>factory</name>
+                    <value>org.globus.wsrf.jndi.BeanFactory</value>
+                </parameter>
+                <parameter>
+                    <name>interval</name>
+                    <value>30</value>
+                </parameter>
+            </resourceParams>
+        </resource>
 	</global>
 
 	<!-- GlideinService -->

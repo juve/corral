@@ -30,6 +30,7 @@ import org.globus.wsrf.utils.AddressingUtils;
 
 import edu.usc.glidein.db.Database;
 import edu.usc.glidein.db.GlideinDAO;
+import edu.usc.glidein.service.state.Charon;
 import edu.usc.glidein.stubs.types.Glidein;
 import edu.usc.glidein.stubs.types.GlideinHistory;
 import edu.usc.glidein.stubs.types.Glideins;
@@ -40,6 +41,14 @@ import edu.usc.glidein.util.AuthenticationUtil;
 public class GlideinFactoryService
 {
 	private Logger logger = Logger.getLogger(GlideinFactoryService.class);
+	
+	public GlideinFactoryService() {
+		try {
+			Charon.startCharon();
+		} catch (NamingException e) {
+			logger.warn("Unable to start Charon",e);
+		}
+	}
 	
 	public EndpointReferenceType create(Glidein glidein)
 	throws RemoteException
