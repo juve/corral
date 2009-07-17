@@ -52,25 +52,25 @@ public class GlideinListener extends BaseListener
 						"STDOUT:\n"+stdout+"\n\n" +
 						"STDERR:\n"+stderr);
 				
-				failure("Glidein job failed",exception);
+				failure("Glidein job failed",null,exception);
 			} else {
 				success(job);
 			}
 		} catch(IOException ioe) {
-			failure("Unable to read glidein job output file(s)",ioe);
+			failure("Unable to read glidein job output file(s)",null,ioe);
 		}
 	}
 	
 	public void aborted(CondorEvent event)
 	{
-		// Treat aborted jobs like failed jobs
+		// Process an aborted job
 		enqueue(GlideinEventCode.JOB_ABORTED);
 	}
 	
 	public void failed(CondorEvent event)
 	{
 		// Process failure
-		failure(event.getMessage(),event.getException());
+		failure(event.getMessage(),event.getDetails(), event.getException());
 	}
 	
 	public void queued(CondorEvent event)
@@ -86,24 +86,19 @@ public class GlideinListener extends BaseListener
 	}
 	
 	private void success(CondorJob job)
-	{
-		// Delete staging job directory
-		File dir = job.getJobDirectory();
-		File[] files = dir.listFiles();
-		for(File file : files) file.delete();
-		dir.delete();
-		
+	{		
 		// Generate success event
 		enqueue(GlideinEventCode.JOB_SUCCESS);
 	}
 	
-	private void failure(String message, Exception exception)
+	private void failure(String message, String longMessage, Exception exception)
 	{
 		// Generate failure event
 		try {
 			CondorEvent ce = getLastEvent();
 			Event event = new GlideinEvent(GlideinEventCode.JOB_FAILURE,ce.getTime(),getKey());
 			event.setProperty("message", message);
+			event.setProperty("longMessage", longMessage);
 			event.setProperty("exception", exception);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
