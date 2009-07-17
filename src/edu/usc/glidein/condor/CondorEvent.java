@@ -28,6 +28,7 @@ public class CondorEvent
 	private CondorEventCode eventCode;
 	private CondorJob job;
 	private String message;
+	private String details;
 	private Calendar time;
 	private CondorException exception;
 	
@@ -89,5 +90,13 @@ public class CondorEvent
 	public void setGenerator(CondorEventGenerator generator)
 	{
 		this.generator = generator;
+	}
+	
+	public void setDetails(String details) {
+		this.details = details;
+	}
+	
+	public String getDetails() {
+		return this.details;
 	}
 }

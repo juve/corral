@@ -127,6 +127,14 @@ public class CondorEventGenerator extends Thread
 		// Message
 		event.setMessage(fields[4].trim());
 		
+		// Event details
+		StringBuffer details = new StringBuffer();
+		details.append(header);
+		for (String s : currentEvent) {
+			details.append(s);
+		}
+		event.setDetails(details.toString());
+		
 		return event;
 	}
 	
