@@ -1,4 +1,35 @@
 ===================================
+  Release Notes for version 1.2.1
+===================================
+
+UPGRADING
+---------
+This release requires a database upgrade to add support for ccbAddress. 
+See the upgrade directory in SVN for more information.
+
+CHANGES
+-------
+1) Added support for the CCB feature added to Condor 7.3.x. Users can now
+   specify a CCB broker using the -ccb command-line argument when creating
+   glideins.
+2) Added a new state for finished glideins. Now instead of being deleted when
+   they are finished, glideins will enter the FINISHED state. From this state
+   they can be manually removed, or they will be periodically removed by a
+   reaper thread. This change will make debugging easier because the stdout,
+   stderr, and submit scripts for the job won't be automatically deleted.
+3) Aborted glideins are no longer automatically deleted. This fixes a bug
+   where failed jobs are automatically aborted in certain Globus failure
+   conditions when the job may be held. All aborted glideins are put into
+   the FAILED state and are cleaned up periodically.
+4) Added a reaper thread to periodically delete FAILED and FINISHED glideins.
+5) Added the full condor log message to failure messages.
+
+KNOWN BUGS
+----------
+1) The --wait command-line option still doesn't work correctly, and probably
+   never will.
+
+===================================
   Release Notes for version 1.2.0
 ===================================
 
