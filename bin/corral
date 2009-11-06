@@ -1,9 +1,42 @@
 #!/bin/sh
+#
+#  Copyright 2007-2009 University Of Southern California
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing,
+#  software distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
 
-# Require GLOBUS_LOCATION
-if [ -z "$GLOBUS_LOCATION" ]; then
-	echo "ERROR: Please set the GLOBUS_LOCATION environment variable"
+# Require CORRAL_HOME
+if [ -z "$CORRAL_HOME" ]; then
+	echo "ERROR: Please set the CORRAL_HOME environment variable"
 	exit 1
 fi
 
-exec $GLOBUS_LOCATION/bin/glidein "$@"
+# Set classpath
+CLASSPATH=${CORRAL_HOME}/classes
+for jar in `ls $CORRAL_HOME/lib/*.jar`; do
+	CLASSPATH="${CLASSPATH}:${jar}"
+done
+export CLASSPATH
+
+# Locate java
+if [ "X$JAVA_HOME" = "X" ] ; then
+  _RUNJAVA=java
+else 
+  _RUNJAVA="$JAVA_HOME"/bin/java
+fi
+
+# Run it
+exec $_RUNJAVA \
+	-DCORRAL_HOME=$CORRAL_HOME \
+	-Djava.security.egd=file:///dev/urandom \
+	edu.usc.glidein.cli.CommandLineClient "$@"

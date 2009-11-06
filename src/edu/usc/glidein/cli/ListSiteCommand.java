@@ -15,32 +15,28 @@
  */
 package edu.usc.glidein.cli;
 
-import java.util.Calendar;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TimeZone;
 
 import edu.usc.glidein.api.GlideinException;
-import edu.usc.glidein.api.SiteFactoryService;
 import edu.usc.glidein.api.SiteService;
-import edu.usc.glidein.service.SiteNames;
-import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.util.SiteUtil;
+import edu.usc.corral.types.GetRequest;
+import edu.usc.corral.types.ListRequest;
+import edu.usc.corral.types.ListSitesResponse;
+import edu.usc.corral.types.Site;
 
-public class ListSiteCommand extends Command
-{
+public class ListSiteCommand extends Command {
 	private boolean longFormat = false;
 	private String user = null;
 	private boolean allUsers = false;
 	private List<Integer> ids;
 	
-	public ListSiteCommand()
-	{
+	public ListSiteCommand() {
 		ids = new LinkedList<Integer>();
 	}
 	
-	public void addOptions(List<Option> options)
-	{
+	public void addOptions(List<Option> options) {
 		options.add(
 			Option.create()
 				  .setOption("l")
@@ -65,8 +61,7 @@ public class ListSiteCommand extends Command
 		);
 	}
 	
-	public void setArguments(CommandLine cmdln) throws CommandException
-	{
+	public void setArguments(CommandLine cmdln) throws CommandException {
 		/* Long format/short format */
 		if (cmdln.hasOption("l")) { 
 			longFormat = true;
@@ -94,8 +89,7 @@ public class ListSiteCommand extends Command
 		}
 	}
 	
-	public void execute() throws CommandException
-	{
+	public void execute() throws CommandException {
 		if (ids.size() > 0) {
 			listIndividualSites();
 		} else {
@@ -103,52 +97,51 @@ public class ListSiteCommand extends Command
 		}
 	}
 	
-	public void listAllSites() throws CommandException
-	{
+	public void listAllSites() throws CommandException {
 		if (isDebug()) System.out.printf("Listing sites\n");
 		try {
 			// Get the sites
-			SiteFactoryService factory = new SiteFactoryService(
-					getServiceURL(SiteNames.SITE_FACTORY_SERVICE));
-			factory.setDescriptor(getClientSecurityDescriptor());
-			Site[] sites = factory.listSites(longFormat, user, allUsers);
+			SiteService factory = new SiteService(getHost(), getPort());
+			ListRequest req = new ListRequest();
+			req.setLongFormat(longFormat);
+			req.setAllUsers(allUsers);
+			req.setUser(user);
+			ListSitesResponse resp = factory.listSites(req);
 			
 			// Print out the site list
-			printSites(sites);
+			printSites(resp.getSites());
 		} catch (GlideinException ge) {
 			throw new CommandException(ge.getMessage(), ge);
 		}
 		if (isDebug()) System.out.printf("Done listing sites.\n");
 	}
 	
-	public void listIndividualSites() throws CommandException
-	{
+	public void listIndividualSites() throws CommandException {
 		LinkedList<Site> sites = new LinkedList<Site>();
+		SiteService svc = new SiteService(getHost(), getPort());
 		for (int id : ids) {
 			try {
-				SiteService instance = new SiteService(
-						getServiceURL(SiteNames.SITE_SERVICE),id);
-				instance.setDescriptor(getClientSecurityDescriptor());
-				Site site = instance.getSite();
+				GetRequest req = new GetRequest();
+				req.setId(id);
+				Site site = svc.getSite(req);
 				sites.add(site);
 			} catch (GlideinException ge) {
 				System.out.println(ge.getMessage());
 				if (isDebug()) ge.printStackTrace();
 			}
 		}
-		printSites(sites.toArray(new Site[0]));
+		printSites(sites);
 	}
 	
-	public void printSites(Site[] sites) throws CommandException
-	{
-		if (sites == null) {
+	public void printSites(List<Site> sites) throws CommandException {
+		if (sites == null || sites.size() == 0) {
 			if (isDebug()) System.out.println("No sites");
 			return;
 		}
 		
 		if (longFormat) {
 			for (Site site : sites) {
-				SiteUtil.print(site);
+				site.print();
 				System.out.println();
 			}
 		} else {
@@ -164,12 +157,10 @@ public class ListSiteCommand extends Command
 				System.out.printf("%-8d",site.getId());
 				System.out.printf("%-20s",site.getName());
 				System.out.printf("%-12s",site.getLocalUsername());
-				Calendar created = site.getCreated();
-				created.setTimeZone(TimeZone.getDefault());
+				Date created = site.getCreated();
 				System.out.printf("%1$tm-%1$td %1$TR    ",created);
 				
-				Calendar lastUpdate = site.getLastUpdate();
-				lastUpdate.setTimeZone(TimeZone.getDefault());
+				Date lastUpdate = site.getLastUpdate();
 				System.out.printf("%1$tm-%1$td %1$TR    ",lastUpdate);
 				
 				System.out.printf("%-10s",site.getState().toString());
@@ -179,23 +170,19 @@ public class ListSiteCommand extends Command
 		}
 	}
 	
-	public String getName()
-	{
+	public String getName() {
 		return "list-sites";
 	}
 	
-	public String[] getAliases()
-	{
+	public String[] getAliases() {
 		return new String[]{"ls"};
 	}
 	
-	public String getDescription()
-	{
+	public String getDescription() {
 		return "list-sites (ls): List available sites";
 	}
 	
-	public String getUsage()
-	{
+	public String getUsage() {
 		return "Usage: list-sites [SITE...]";
 	}
 }

@@ -15,25 +15,19 @@
  */
 package edu.usc.glidein.db;
 
-import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
-import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinHistoryEntry;
-import edu.usc.glidein.stubs.types.GlideinState;
+import edu.usc.corral.types.Glidein;
+import edu.usc.corral.types.GlideinState;
 
-public interface GlideinDAO
-{
+public interface GlideinDAO {
 	public int create(Glidein glidein) throws DatabaseException;
 	public Glidein load(int glideinId) throws DatabaseException;
 	public void delete(int glideinId) throws DatabaseException;
-	public void updateState(int glideinId, GlideinState state, 
-			String shortMessage, String longMessage, Calendar time) 
-			throws DatabaseException;
-	public Glidein[] list(boolean longFormat, String user, boolean allUsers) throws DatabaseException;
+	public void updateState(int glideinId, GlideinState state, String shortMessage, String longMessage, Date time)  throws DatabaseException;
+	public List<Glidein> list(boolean longFormat, String user, boolean allUsers) throws DatabaseException;
 	public int[] listIds() throws DatabaseException;
 	public int[] listTerminated() throws DatabaseException;
-	public void insertHistory(int glideinId, GlideinState state, Calendar time)
-			throws DatabaseException;
-	public GlideinHistoryEntry[] getHistory(int[] glideinIds) throws DatabaseException;
 	public void incrementSubmits(int glideinId) throws DatabaseException;
 }

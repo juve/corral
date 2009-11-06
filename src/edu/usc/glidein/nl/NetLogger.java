@@ -24,10 +24,8 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-
-import org.globus.wsrf.jndi.Initializable;
+import edu.usc.corral.config.Initializable;
+import edu.usc.corral.config.Registry;
 
 /**
  * Simple class to log messages in NetLogger format.
@@ -85,7 +83,7 @@ public class NetLogger implements Initializable {
 		this.logFile = new File(logFile);
 		if (!this.logFile.isAbsolute()) {
 			this.logFile = new File(
-					System.getProperty("GLOBUS_LOCATION"),logFile);
+					System.getenv("CORRAL_HOME"),logFile);
 		}
 	}
 	
@@ -124,12 +122,10 @@ public class NetLogger implements Initializable {
 	}
 	
 	public static NetLogger getLog() throws NetLoggerException {
-		String location = "java:comp/env/glidein/NetLogger";
 		try {
-			Context initialContext = new InitialContext();
-	    	return (NetLogger)initialContext.lookup(location);
+	    	return (NetLogger)new Registry().lookup("corral/NetLogger");
 		} catch (Exception e) {
-			throw new NetLoggerException("Unable to load netlogger: "+location,e);
+			throw new NetLoggerException("Unable to load netlogger configuration",e);
 		}
 	}
 }

@@ -20,42 +20,36 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.Calendar;
+import java.util.Date;
 import java.util.LinkedList;
-import java.util.TimeZone;
+import java.util.List;
 
+import edu.usc.corral.types.EnvironmentVariable;
+import edu.usc.corral.types.ExecutionService;
+import edu.usc.corral.types.Site;
+import edu.usc.corral.types.SiteState;
+import edu.usc.corral.types.ServiceType;
 import edu.usc.glidein.db.DatabaseException;
 import edu.usc.glidein.db.JDBCUtil;
 import edu.usc.glidein.db.SiteDAO;
-import edu.usc.glidein.stubs.types.EnvironmentVariable;
-import edu.usc.glidein.stubs.types.ExecutionService;
-import edu.usc.glidein.stubs.types.ServiceType;
-import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteHistoryEntry;
-import edu.usc.glidein.stubs.types.SiteState;
 
-public class SQLSiteDAO implements SiteDAO
-{
-	private enum ServiceFunction
-	{
+public class SQLSiteDAO implements SiteDAO {
+	private enum ServiceFunction {
 		STAGING,
 		GLIDEIN
 	};
 	
 	private SQLDatabase database = null;
 	
-	public SQLSiteDAO(SQLDatabase db)
-	{
+	public SQLSiteDAO(SQLDatabase db) {
 		this.database = db;
 	}
 	
-	public Connection getConnection() throws DatabaseException
-	{
+	public Connection getConnection() throws DatabaseException {
 		return database.getConnection();
 	}
 
-	public int create(Site site) throws DatabaseException 
-	{
+	public int create(Site site) throws DatabaseException {
 		Connection conn = null;
 		int id = 0;
 		try {
@@ -77,8 +71,7 @@ public class SQLSiteDAO implements SiteDAO
 		return id;
 	}
 	
-	private int createSite(Connection connection, Site site) throws DatabaseException
-	{
+	private int createSite(Connection connection, Site site) throws DatabaseException {
 		int id = 0;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
@@ -93,17 +86,17 @@ public class SQLSiteDAO implements SiteDAO
 			stmt.setString(i++, site.getState().toString());
 			stmt.setString(i++, site.getShortMessage());
 			stmt.setString(i++, site.getLongMessage());
-			Calendar created = site.getCreated();
+			Date created = site.getCreated();
 			if (created == null) {
 				stmt.setTimestamp(i++, null);
 			} else {
-				stmt.setTimestamp(i++, new Timestamp(created.getTimeInMillis()));
+				stmt.setTimestamp(i++, new Timestamp(created.getTime()));
 			}
-			Calendar lastUpdate = site.getLastUpdate();
+			Date lastUpdate = site.getLastUpdate();
 			if (lastUpdate == null) {
 				stmt.setTimestamp(i++, null);
 			} else {
-				stmt.setTimestamp(i++, new Timestamp(lastUpdate.getTimeInMillis()));
+				stmt.setTimestamp(i++, new Timestamp(lastUpdate.getTime()));
 			}
 			stmt.setString(i++, site.getSubject());
 			stmt.setString(i++, site.getLocalUsername());
@@ -129,9 +122,7 @@ public class SQLSiteDAO implements SiteDAO
 		return id;
 	}
 	
-	private void createExecutionService(Connection connection, int siteId, ExecutionService service, ServiceFunction function)
-	throws DatabaseException
-	{
+	private void createExecutionService(Connection connection, int siteId, ExecutionService service, ServiceFunction function) throws DatabaseException {
 		if (service == null) return;
 		PreparedStatement stmt = null;
 		try {
@@ -153,10 +144,8 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 
-	private void createEnvironment(Connection connection, int siteId, EnvironmentVariable[] env)
-	throws DatabaseException
-	{
-		if (env == null || env.length == 0) return;
+	private void createEnvironment(Connection connection, int siteId, List<EnvironmentVariable> env) throws DatabaseException {
+		if (env == null || env.size() == 0) return;
 		PreparedStatement stmt = null;
 		try {
 			stmt = connection.prepareStatement("INSERT INTO environment (site, variable, value) VALUES (?,?,?)");
@@ -179,15 +168,14 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	public Site load(int siteId) throws DatabaseException
-	{
+	public Site load(int siteId) throws DatabaseException {
 		Connection conn = null;
 		try {
 			conn = getConnection();
 			Site site = getSite(conn, siteId);
 			ExecutionService stagingService = getExecutionService(conn, siteId, ServiceFunction.STAGING);
 			ExecutionService glideinService = getExecutionService(conn, siteId, ServiceFunction.GLIDEIN);
-			EnvironmentVariable[] env = getEnvironment(conn, siteId);
+			List<EnvironmentVariable> env = getEnvironment(conn, siteId);
 			site.setStagingService(stagingService);
 			site.setGlideinService(glideinService);
 			site.setEnvironment(env);
@@ -197,8 +185,7 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	private Site getSite(Connection connection, int siteId) throws DatabaseException
-	{
+	private Site getSite(Connection connection, int siteId) throws DatabaseException {
 		Site site = null;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
@@ -220,9 +207,7 @@ public class SQLSiteDAO implements SiteDAO
 		return site;
 	}
 	
-	private ExecutionService getExecutionService(Connection connection, int siteId, ServiceFunction function) 
-	throws DatabaseException
-	{
+	private ExecutionService getExecutionService(Connection connection, int siteId, ServiceFunction function)  throws DatabaseException {
 		ExecutionService service = null;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
@@ -234,7 +219,7 @@ public class SQLSiteDAO implements SiteDAO
 			if (rs.next()) {
 				service = new ExecutionService();
 				service.setServiceContact(rs.getString("serviceContact"));
-				service.setServiceType(ServiceType.fromString(rs.getString("serviceType")));
+				service.setServiceType(ServiceType.valueOf(rs.getString("serviceType")));
 				service.setProject(rs.getString("project"));
 				service.setQueue(rs.getString("queue"));
 			}
@@ -247,9 +232,7 @@ public class SQLSiteDAO implements SiteDAO
 		return service;
 	}
 	
-	private EnvironmentVariable[] getEnvironment(Connection connection, int siteId)
-	throws DatabaseException
-	{
+	private List<EnvironmentVariable> getEnvironment(Connection connection, int siteId) throws DatabaseException {
 		LinkedList<EnvironmentVariable> env = new LinkedList<EnvironmentVariable>();
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
@@ -271,11 +254,10 @@ public class SQLSiteDAO implements SiteDAO
 			JDBCUtil.closeQuietly(rs);
 			JDBCUtil.closeQuietly(stmt);
 		}
-		return (EnvironmentVariable[])env.toArray(new EnvironmentVariable[0]);
+		return env;
 	}
 	
-	public void delete(int siteId) throws DatabaseException
-	{
+	public void delete(int siteId) throws DatabaseException {
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
@@ -299,9 +281,7 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	public void updateState(int siteId, SiteState state, String shortMessage, String longMessage, Calendar time)
-	throws DatabaseException
-	{
+	public void updateState(int siteId, SiteState state, String shortMessage, String longMessage, Date time) throws DatabaseException {
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		try {
@@ -311,7 +291,7 @@ public class SQLSiteDAO implements SiteDAO
 			stmt.setString(i++, state.toString());
 			stmt.setString(i++, shortMessage);
 			stmt.setString(i++, longMessage);
-			stmt.setTimestamp(i++, new Timestamp(time.getTimeInMillis()));
+			stmt.setTimestamp(i++, new Timestamp(time.getTime()));
 			stmt.setInt(i++, siteId);
 			if (stmt.executeUpdate()!=1) {
 				throw new DatabaseException("Unable to update site status: wrong number of db updates");
@@ -329,8 +309,7 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	public int[] listIds() throws DatabaseException 
-	{
+	public int[] listIds() throws DatabaseException {
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
@@ -358,12 +337,11 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	public Site[] list(boolean longFormat, String user, boolean allUsers) throws DatabaseException
-	{
+	public List<Site> list(boolean longFormat, String user, boolean allUsers) throws DatabaseException {
 		Connection conn = null;
 		try {
 			conn = getConnection();
-			Site[] sites = getSites(conn, user, allUsers);
+			List<Site> sites = getSites(conn, user, allUsers);
 			if (longFormat) {
 				for (Site site : sites) {
 					int id = site.getId();
@@ -380,8 +358,7 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	private Site[] getSites(Connection connection, String user, boolean allUsers) throws DatabaseException
-	{
+	private List<Site> getSites(Connection connection, String user, boolean allUsers) throws DatabaseException {
 		LinkedList<Site> sites = new LinkedList<Site>();
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
@@ -401,11 +378,10 @@ public class SQLSiteDAO implements SiteDAO
 			JDBCUtil.closeQuietly(rs);
 			JDBCUtil.closeQuietly(stmt);
 		}
-		return sites.toArray(new Site[0]);
+		return sites;
 	}
 	
-	private Site newSite(ResultSet rs) throws DatabaseException
-	{
+	private Site newSite(ResultSet rs) throws DatabaseException {
 		try {
 			Site site = new Site();
 			site.setId(rs.getInt("id"));
@@ -414,19 +390,11 @@ public class SQLSiteDAO implements SiteDAO
 			site.setLocalPath(rs.getString("localPath"));
 			site.setCondorPackage(rs.getString("condorPackage"));
 			site.setCondorVersion(rs.getString("condorVersion"));
-			
-			site.setState(SiteState.fromString(rs.getString("state")));
+			site.setState(SiteState.valueOf(rs.getString("state")));
 			site.setShortMessage(rs.getString("shortMessage"));
 			site.setLongMessage(rs.getString("longMessage"));
-			
-			Calendar created = Calendar.getInstance();
-			created.setTime(rs.getTimestamp("created"));
-			site.setCreated(created);
-			
-			Calendar lastUpdate = Calendar.getInstance();
-			lastUpdate.setTime(rs.getTimestamp("lastUpdate"));
-			site.setLastUpdate(lastUpdate);
-			
+			site.setCreated(rs.getTimestamp("created"));
+			site.setLastUpdate(rs.getTimestamp("lastUpdate"));
 			site.setSubject(rs.getString("subject"));
 			site.setLocalUsername(rs.getString("localUsername"));
 			
@@ -436,8 +404,7 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	public boolean hasGlideins(int siteId) throws DatabaseException
-	{
+	public boolean hasGlideins(int siteId) throws DatabaseException {
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
@@ -461,8 +428,7 @@ public class SQLSiteDAO implements SiteDAO
 		}
 	}
 	
-	public int[] getGlideinIds(int siteId) throws DatabaseException
-	{
+	public int[] getGlideinIds(int siteId) throws DatabaseException {
 		LinkedList<Integer> result = new LinkedList<Integer>();
 		Connection conn = null;
 		PreparedStatement stmt = null;
@@ -483,84 +449,6 @@ public class SQLSiteDAO implements SiteDAO
 			throw new DatabaseException("Unable to get glidein ids",sqle);
 		} finally {
 			JDBCUtil.closeQuietly(rs);
-			JDBCUtil.closeQuietly(stmt);
-			JDBCUtil.closeQuietly(conn);
-		}
-	}
-	
-	public SiteHistoryEntry[] getHistory(int[] siteIds) throws DatabaseException
-	{
-		LinkedList<SiteHistoryEntry> entries = new LinkedList<SiteHistoryEntry>();
-		Connection conn = null;
-		PreparedStatement stmt = null;
-		ResultSet rs = null;
-		try {
-			conn = getConnection();
-			
-			StringBuilder sql = new StringBuilder();
-			sql.append("SELECT * FROM site_history");
-			if(siteIds != null && siteIds.length > 0) {
-				sql.append(" WHERE site in (");
-				for (int i=1; i<=siteIds.length; i++) {
-					sql.append("?");
-					if (i<siteIds.length) sql.append(",");
-				}
-				sql.append(")");
-			}
-			sql.append(" ORDER BY time");
-			
-			stmt = conn.prepareStatement(sql.toString());
-			if(siteIds != null && siteIds.length > 0) {
-				for (int i=1; i<=siteIds.length; i++)
-					stmt.setInt(i,siteIds[i-1]);
-			}
-			
-			rs = stmt.executeQuery();
-			while (rs.next()) {
-				int siteId = rs.getInt("site");
-				SiteState state = SiteState.fromString(rs.getString("state"));
-				Calendar time = Calendar.getInstance(TimeZone.getDefault());
-				time.setTime(rs.getTimestamp("time",time));
-				
-				SiteHistoryEntry entry = new SiteHistoryEntry();
-				entry.setSiteId(siteId);
-				entry.setState(state);
-				entry.setTime(time);
-				
-				entries.add(entry);
-			}
-			
-			return entries.toArray(new SiteHistoryEntry[0]);
-		} catch (SQLException sqle) {
-			throw new DatabaseException("Unable to get site history",sqle);
-		} finally {
-			JDBCUtil.closeQuietly(rs);
-			JDBCUtil.closeQuietly(stmt);
-			JDBCUtil.closeQuietly(conn);
-		}
-	}
-	
-	public void insertHistory(int siteId, SiteState state, Calendar time)
-			throws DatabaseException
-	{
-		Connection conn = null;
-		PreparedStatement stmt = null;
-		try {
-			conn = getConnection();
-			stmt = conn.prepareStatement("INSERT INTO site_history (site,state,time) VALUES (?,?,?)");
-			stmt.setInt(1,siteId);
-			stmt.setString(2, state.toString());
-			stmt.setTimestamp(3, new Timestamp(time.getTimeInMillis()), time);
-			if (stmt.executeUpdate() != 1) {
-				throw new DatabaseException(
-						"Unable to insert site history: " +
-						"wrong number of updates");
-			}
-			conn.commit();
-		} catch (SQLException sqle) {
-			throw new DatabaseException(
-					"Unable to insert site history",sqle);
-		} finally {
 			JDBCUtil.closeQuietly(stmt);
 			JDBCUtil.closeQuietly(conn);
 		}

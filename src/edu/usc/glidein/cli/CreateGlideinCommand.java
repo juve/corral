@@ -15,35 +15,33 @@
  */
 package edu.usc.glidein.cli;
 
-import static edu.usc.glidein.service.GlideinNames.*;
-
-import java.util.Calendar;
+import java.io.File;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 
-import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.globus.gsi.GlobusCredential;
-import org.globus.gsi.GlobusCredentialException;
-import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
 
-import edu.usc.glidein.api.GlideinFactoryService;
 import edu.usc.glidein.api.GlideinListener;
 import edu.usc.glidein.api.GlideinService;
-import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinState;
-import edu.usc.glidein.stubs.types.GlideinStateChange;
-import edu.usc.glidein.util.GlideinUtil;
+import edu.usc.glidein.util.IOUtil;
+import edu.usc.corral.types.CreateGlideinRequest;
+import edu.usc.corral.types.CreateGlideinResponse;
+import edu.usc.corral.types.GetRequest;
+import edu.usc.corral.types.Glidein;
+import edu.usc.corral.types.GlideinState;
+import edu.usc.corral.types.GlideinStateChange;
+import edu.usc.corral.types.SubmitRequest;
 
-public class CreateGlideinCommand extends Command implements GlideinListener
-{
-	private Glidein glidein = null;
-	private GlobusCredential credential = null;
+public class CreateGlideinCommand extends Command implements GlideinListener {
+	private CreateGlideinRequest request = null;
 	private boolean verbose = false;
 	private boolean wait = false;
 	private CommandException exception = null;
 	
-	public void addOptions(List<Option> options)
-	{	
+	public void addOptions(List<Option> options) {
 		options.add(
 			Option.create()
 				  .setOption("s")
@@ -130,14 +128,6 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 		);
 		options.add(
 			Option.create()
-				  .setOption("C")
-				  .setLongOption("credential")
-				  .setUsage("-C | --credential <file>")
-				  .setDescription("The user's credential as a proxy file. If not specified the Globus default is used.")
-				  .hasArgument()
-		);
-		options.add(
-			Option.create()
 				  .setOption("r")
 				  .setLongOption("resubmit")
 				  .setUsage("-r | --resubmit [<number>|<date>]")
@@ -198,14 +188,9 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 		);
 	}
 	
-	private void setProperty(Properties p, String name, String value)
-	{
-		if (value == null) return;
-		p.setProperty(name, value);
-	}
-	
-	public void setArguments(CommandLine cmdln) throws CommandException
-	{
+	public void setArguments(CommandLine cmdln) throws CommandException {
+		final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+		
 		/* Check for extra arguments */
 		String[] args = cmdln.getArgs();
 		if (args.length > 0) {
@@ -226,61 +211,87 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 			wait = false;
 		}
 		
-		/* Get proxy credential */
-		if (cmdln.hasOption("C")) {
-			String proxy = cmdln.getOptionValue("C");
+		request = new CreateGlideinRequest();
+		
+		/* Required parameters */
+		request.setSiteId(Integer.parseInt(cmdln.getOptionValue("s")));
+		request.setCondorHost(cmdln.getOptionValue("ch",getLocalHost()));
+		request.setHostCount(Integer.parseInt(cmdln.getOptionValue("hc","1")));
+		request.setCount(Integer.parseInt(cmdln.getOptionValue("c",cmdln.getOptionValue("hc","1"))));
+		request.setNumCpus(Integer.parseInt(cmdln.getOptionValue("n","1")));
+		request.setWallTime(Integer.parseInt(cmdln.getOptionValue("w","60")));
+		request.setIdleTime(Integer.parseInt(cmdln.getOptionValue("i",cmdln.getOptionValue("w","60"))));
+		
+		/* Optional parameters */
+		request.setCondorDebug(cmdln.getOptionValue("cd"));
+		request.setGcbBroker(cmdln.getOptionValue("b"));
+		request.setRsl(cmdln.getOptionValue("rsl"));
+		
+		if (cmdln.hasOption("ccb")) {
+			request.setCcbAddress(cmdln.getOptionValue("ccb",cmdln.getOptionValue("ch",getLocalHost())));
+		}
+		
+		/* Optional port range */
+		String highport = cmdln.getOptionValue("hp");
+		if (highport != null) request.setHighport(Integer.parseInt(highport));
+		String lowport = cmdln.getOptionValue("lp");
+		if (lowport != null) request.setLowport(Integer.parseInt(lowport));
+		
+		/* Custom glidein_condor_config file */
+		String fileName = cmdln.getOptionValue("cc");
+		if (fileName != null) {
+			File file = new File(fileName);
 			try {
-				credential = new GlobusCredential(proxy);
-			} catch (GlobusCredentialException ce) {
-				throw new CommandException("Unable to read proxy " +
-						"credential: "+proxy+": "+ce.getMessage(),ce);
-			}
-		} else {
-			try {
-				credential = GlobusCredential.getDefaultCredential();
-			} catch (GlobusCredentialException ce) {
-				throw new CommandException("Unable to read default proxy " +
-						"credential: "+ce.getMessage(),ce);
+				String condorConfig = IOUtil.read(file);
+				request.setCondorConfig(condorConfig);
+			} catch (IOException ioe) {
+				throw new CommandException("Unable to read condor-config file: "+fileName,ioe);
 			}
 		}
 		
-		/* Create glidein */
-		try {
-			Properties p = new Properties();
-			setProperty(p, SITE, cmdln.getOptionValue("s"));
-			setProperty(p, CONDOR_HOST, cmdln.getOptionValue("ch", getLocalHost()));
-			setProperty(p, HOST_COUNT, cmdln.getOptionValue("hc", "1"));
-			setProperty(p, COUNT, cmdln.getOptionValue("c", cmdln.getOptionValue("hc", "1")));
-			setProperty(p, NUM_CPUS, cmdln.getOptionValue("n", "1"));
-			setProperty(p, WALL_TIME, cmdln.getOptionValue("w", "60"));
-			setProperty(p, IDLE_TIME, cmdln.getOptionValue("i", cmdln.getOptionValue("w", "60")));
-			setProperty(p, CONDOR_CONFIG, cmdln.getOptionValue("cc"));
-			setProperty(p, CONDOR_DEBUG, cmdln.getOptionValue("cd"));
-			setProperty(p, GCB_BROKER, cmdln.getOptionValue("b"));
-			setProperty(p, RESUBMIT, cmdln.getOptionValue("r"));
-			setProperty(p, RSL, cmdln.getOptionValue("rsl"));
-			setProperty(p, LOWPORT, cmdln.getOptionValue("lp"));
-			setProperty(p, HIGHPORT, cmdln.getOptionValue("hp"));
-			if (cmdln.hasOption("ccb")) {
-				setProperty(p, CCB_ADDRESS, cmdln.getOptionValue("ccb", cmdln.getOptionValue("ch", getLocalHost())));
+		/* Resubmit the glidein when it expires */
+		String value = cmdln.getOptionValue("r");
+		if (value != null) {
+			request.setResubmit(true);
+			if (value.matches("[0-9]+")) {
+				int resubmits = Integer.parseInt(value);
+				if (resubmits <= 0 || resubmits > 128) {
+					throw new CommandException("Resubmits must be between 0 and 128");
+				}
+				request.setResubmits(resubmits);
+			} else {
+				Date now = new Date();
+				try {
+					SimpleDateFormat parser = new SimpleDateFormat(DATE_FORMAT);
+					request.setUntil(parser.parse(value));
+				} catch (ParseException pe) {
+					throw new CommandException("Invalid resubmit option: "+value);
+				}
+				if (request.getUntil().before(now)) {
+					throw new CommandException("Resubmit date should be in the future");
+				}
 			}
-			glidein = GlideinUtil.createGlidein(p);
-		} catch (Exception e) {
-			throw new CommandException(e);
+		} else {
+			request.setResubmit(false);
+		}
+		
+		/* Validate walltime */
+		if (request.getWallTime()<2) {
+			throw new CommandException("Wall time must be >= 2 minutes");
 		}
 		
 		/* Validate the credential given resubmits */
-		if (glidein.isResubmit()) {
-			long timeLeft = credential.getTimeLeft() * 1000;
+		if (request.getResubmit()) {
+			long timeLeft = getCredential().getTimeLeft() * 1000;
 			long timeRequired = 0;
 			
-			if (glidein.getResubmits() > 0) {
-				int resubmits = glidein.getResubmits();
-				timeRequired = resubmits * glidein.getWallTime() * 60 * 1000;
+			if (request.getResubmits() > 0) {
+				int resubmits = request.getResubmits();
+				timeRequired = resubmits * request.getWallTime() * 60 * 1000;
 			} else {
-				Calendar until = glidein.getUntil();
-				Calendar now = Calendar.getInstance();
-				timeRequired = until.getTimeInMillis() - now.getTimeInMillis();
+				Date until = request.getUntil();
+				Date now = new Date();
+				timeRequired = until.getTime() - now.getTime();
 			}
 			
 			if (isDebug()) {
@@ -296,36 +307,30 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 		}
 	}
 	
-	public void execute() throws CommandException
-	{	
+	public void execute() throws CommandException {	
 		if (isDebug()) System.out.println("Creating glidein...");
-		
-		// Delegate credential
-		EndpointReferenceType credentialEPR = delegateCredential(credential);
 		
 		try {
 			// Create glidein
-			ClientSecurityDescriptor desc = getClientSecurityDescriptor();
-			GlideinFactoryService factory = new GlideinFactoryService(
-					getServiceURL(GLIDEIN_FACTORY_SERVICE));
-			factory.setDescriptor(desc);
-			EndpointReferenceType epr = factory.create(glidein);
+			GlideinService svc = new GlideinService(
+					getHost(), getPort());
 			
-			// Get instance
-			GlideinService instance = new GlideinService(epr);
-			instance.setDescriptor(desc);
+			CreateGlideinResponse resp = svc.create(request);
 			
 			// If verbose, print details
 			if (verbose) {
-				glidein = instance.getGlidein();
-				GlideinUtil.print(glidein);
+				GetRequest req = new GetRequest();
+				req.setId(resp.getId());
+				Glidein glidein = svc.getGlidein(req);
+				glidein.print();
 				System.out.println();
 			}
 			
 			if (isDebug()) System.out.println("Glidein created.");
 			
 			// Submit glidein
-			instance.submit(credentialEPR);
+			SubmitRequest req = new SubmitRequest(resp.getId(), GlobusCredential.getDefaultCredential());
+			svc.submit(req);
 			
 			if (isDebug()) System.out.println("Glidein submitted.");
 			
@@ -336,7 +341,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 				}
 				
 				// Subscribe
-				instance.addListener(this);
+				svc.addListener(this);
 				
 				// Wait for state change
 				while (wait) {
@@ -349,7 +354,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 				}
 				
 				// Unsubscribe
-				instance.removeListener(this);
+				svc.removeListener(this);
 				
 				if (isDebug()) {
 					System.out.println("Finished waiting.");
@@ -365,28 +370,23 @@ public class CreateGlideinCommand extends Command implements GlideinListener
 		}
 	}
 
-	public String getName()
-	{
+	public String getName() {
 		return "create-glidein";
 	}
 	
-	public String[] getAliases()
-	{
+	public String[] getAliases() {
 		return new String[]{"cg"};
 	}
 	
-	public String getDescription()
-	{
+	public String getDescription() {
 		return "create-glidein (cg): Add a new glidein";
 	}
 	
-	public String getUsage()
-	{
+	public String getUsage() {
 		return "Usage: create-glidein --site <site>";
 	}
 	
-	public void stateChanged(GlideinStateChange stateChange)
-	{
+	public void stateChanged(GlideinStateChange stateChange) {
 		GlideinState state = stateChange.getState();
 		if (isDebug()) {
 			System.out.println("Glidein state changed to "+state);

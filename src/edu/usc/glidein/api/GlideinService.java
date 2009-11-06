@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,262 +15,74 @@
  */
 package edu.usc.glidein.api;
 
-import java.net.URL;
-import java.rmi.RemoteException;
-import java.util.LinkedList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-import javax.xml.namespace.QName;
-import javax.xml.rpc.ServiceException;
-import javax.xml.rpc.Stub;
+import edu.usc.corral.types.CreateGlideinRequest;
+import edu.usc.corral.types.CreateGlideinResponse;
+import edu.usc.corral.types.GetRequest;
+import edu.usc.corral.types.Glidein;
+import edu.usc.corral.types.GlideinStateChange;
+import edu.usc.corral.types.ListGlideinsResponse;
+import edu.usc.corral.types.ListRequest;
+import edu.usc.corral.types.RemoveRequest;
+import edu.usc.corral.types.SubmitRequest;
+import edu.usc.corral.types.VoidResponse;
 
-import org.apache.axis.message.MessageElement;
-import org.globus.axis.message.addressing.EndpointReferenceType;
-import org.globus.wsrf.NotificationConsumerManager;
-import org.globus.wsrf.NotifyCallback;
-import org.globus.wsrf.WSNConstants;
-import org.globus.wsrf.encoding.DeserializationException;
-import org.globus.wsrf.encoding.ObjectDeserializer;
-import org.globus.wsrf.encoding.ObjectSerializer;
-import org.oasis.wsn.FilterType;
-import org.oasis.wsn.NotificationMessageHolderTypeMessage;
-import org.oasis.wsn.NotificationProducer;
-import org.oasis.wsn.Subscribe;
-import org.oasis.wsn.TopicExpressionType;
-import org.oasis.wsn.WSBaseNotificationServiceAddressingLocator;
-import org.w3c.dom.Element;
-
-import edu.usc.glidein.service.GlideinNames;
-import edu.usc.glidein.stubs.GlideinPortType;
-import edu.usc.glidein.stubs.service.GlideinServiceAddressingLocator;
-import edu.usc.glidein.stubs.types.EmptyObject;
-import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinStateChange;
-import edu.usc.glidein.stubs.types.GlideinStateChangeMessage;
-import edu.usc.glidein.util.AddressingUtil;
-
-public class GlideinService extends BaseService implements NotifyCallback
-{	
-	private NotificationConsumerManager consumer = null;
-	private EndpointReferenceType consumerEPR = null;
+public class GlideinService {	
+	
+	private Client client = null;
 	private Set<GlideinListener> listeners = new HashSet<GlideinListener>();
 	
-	public GlideinService(EndpointReferenceType epr)
-	{
-		super(epr);
+	public GlideinService(String host, int port) {
+		client = new Client(host, port);
 	}
 	
-	public GlideinService(URL serviceUrl, int id) throws GlideinException
-	{
-		super(GlideinService.createEPR(serviceUrl, id));
+	public CreateGlideinResponse create(CreateGlideinRequest req) throws GlideinException {
+		return client.doPost("/glidein/create", CreateGlideinResponse.class, req);
 	}
 	
-	public static EndpointReferenceType createEPR(URL serviceUrl, int id)
-	throws GlideinException
-	{
-		try {
-			return AddressingUtil.getGlideinEPR(serviceUrl, id);
-		} catch (Exception e) {
-			throw new GlideinException(e.getMessage(),e);
-		}
+	public ListGlideinsResponse listGlideins(ListRequest req) throws GlideinException {
+		return client.doPost("/glidein/list", ListGlideinsResponse.class, req);
 	}
 	
-	public Glidein getGlidein() throws GlideinException
-	{
-		try {
-			GlideinPortType instance = getPort();
-			Glidein glidein = instance.getGlidein(new EmptyObject());
-			return glidein;
-		} catch (RemoteException re) {
-			throw new GlideinException("Unable to get glidein: "+
-					re.getMessage(),re);
-		}
+	public Glidein getGlidein(GetRequest req) throws GlideinException {
+		return client.doPost("/glidein/get", Glidein.class, req);
 	}
 	
-	public void submit(EndpointReferenceType credentialEPR) throws GlideinException
-	{
-		try {
-			GlideinPortType instance = getPort();
-			instance.submit(credentialEPR);
-		} catch (RemoteException re) {
-			throw new GlideinException("Unable to submit glidein: "+
-					re.getMessage(),re);
-		}
+	public void submit(SubmitRequest req) throws GlideinException {
+		client.doPost("/glidein/submit", VoidResponse.class, req);
 	}
 	
-	public void remove(boolean force) throws GlideinException
-	{
-		try {
-			GlideinPortType glidein = getPort();
-			glidein.remove(force);
-		} catch (RemoteException re) {
-			throw new GlideinException("Unable to remove glidein: "+
-					re.getMessage(),re);
-		}
+	public void remove(RemoveRequest req) throws GlideinException {
+		client.doPost("/glidein/remove", VoidResponse.class, req);
 	}
 
-	public synchronized void addListener(GlideinListener listener)
-	throws GlideinException
-	{
+	public synchronized void addListener(GlideinListener listener) throws GlideinException {
 		if (listeners.size() == 0) {
 			subscribe();
 		}
 		listeners.add(listener);
 	}
 	
-	public synchronized void removeListener(GlideinListener listener)
-	throws GlideinException
-	{
+	public synchronized void removeListener(GlideinListener listener) throws GlideinException {
 		listeners.remove(listener);
 		if (listeners.size() == 0) {
 			unsubscribe();
 		}
 	}
 	
-	private void subscribe() throws GlideinException
-	{
-		try {
-			consumer = NotificationConsumerManager.getInstance();
-			consumer.startListening();
-			
-			List<QName> topicPath = new LinkedList<QName>();
-	        topicPath.add(GlideinNames.TOPIC_STATE_CHANGE);
-	        
-	        consumerEPR = consumer.createNotificationConsumer(topicPath, this, null);
-	        
-			TopicExpressionType topicExpression = new TopicExpressionType();
-			topicExpression.setDialect(WSNConstants.SIMPLE_TOPIC_DIALECT);
-			topicExpression.setValue(GlideinNames.TOPIC_STATE_CHANGE);
-			
-			Subscribe subscribe = new Subscribe();
-			subscribe.setConsumerReference(consumerEPR);
-			MessageElement element =
-                (MessageElement) ObjectSerializer.toSOAPElement(
-                    topicExpression, WSNConstants.TOPIC_EXPRESSION);
-            FilterType filter = new FilterType();
-            filter.set_any(new MessageElement[] { element });
-            subscribe.setFilter(filter);
-	
-			NotificationProducer producer = getProducerPort();
-			
-			producer.subscribe(subscribe);
-		} catch (Exception e) {
-			throw new GlideinException("Unable to subscribe to glidein",e);
-		}
+	private void subscribe() throws GlideinException {
+		// TODO Implement subscribe
 	}
 	
-	private void unsubscribe() throws GlideinException
-	{
-		try {
-			consumer.removeNotificationConsumer(consumerEPR);
-			consumer.stopListening();
-			consumer = null;
-			consumerEPR = null;
-		} catch (Exception e) {
-			throw new GlideinException("Unable to unsubscribe from glidein",e);
-		}
+	private void unsubscribe() throws GlideinException {
+		// TODO Implement unsubscribe
 	}
 	
-	private NotificationProducer getProducerPort() throws GlideinException
-	{
-		try {
-			WSBaseNotificationServiceAddressingLocator locator = 
-				new WSBaseNotificationServiceAddressingLocator();
-			
-			NotificationProducer producer = 
-				locator.getNotificationProducerPort(getEPR());
-			
-			// TODO Is this needed?
-			//if (getDescriptor() != null) {
-			//	((Stub)producer)._setProperty(
-			//			"clientDescriptor", getDescriptor());
-			//}
-			
-			return producer;
-		} catch (ServiceException e) {
-			throw new GlideinException("Unable to get notification producer",e);
-		}
-	}
-	
-	private GlideinPortType getPort() throws GlideinException
-	{
-		try {
-			GlideinServiceAddressingLocator locator = 
-				new GlideinServiceAddressingLocator();
-			GlideinPortType instance = 
-				locator.getGlideinPortTypePort(getEPR());
-			if (getDescriptor() != null) {
-				((Stub)instance)._setProperty(
-						"clientDescriptor", getDescriptor());
-			}
-			return instance;
-		} catch (ServiceException se) {
-			throw new GlideinException("Unable to get port: "+
-					se.getMessage(),se);
-		}
-	}
-	
-	public void deliver(List list, EndpointReferenceType producer, Object message) {
-		GlideinStateChange stateChange = null;
-		
-		// Who knows?
-		if (message instanceof GlideinStateChangeMessage) {
-			stateChange = ((GlideinStateChangeMessage) message).getGlideinStateChange();
-		} else if (message instanceof GlideinStateChange) {
-			stateChange = (GlideinStateChange)message;
-		} else if (message instanceof NotificationMessageHolderTypeMessage) {
-			 NotificationMessageHolderTypeMessage notifMsg =
-		            (NotificationMessageHolderTypeMessage) message;
-			MessageElement[] msgElem = notifMsg.get_any();
-	        try {
-	        	GlideinStateChangeMessage stateChangeMessage =
-	                (GlideinStateChangeMessage) ObjectDeserializer.toObject(
-	                		msgElem[0],
-	                        GlideinStateChangeMessage.class);
-	        	stateChange = stateChangeMessage.getGlideinStateChange();
-	        } catch (DeserializationException e) {
-	        	throw new RuntimeException(
-	        			"Unable to deserialize glidein state change message",e);
-	        }
-		} else {
-			try {
-				stateChange = (GlideinStateChange) ObjectDeserializer.toObject(
-						(Element) message, GlideinStateChange.class);
-			} catch (DeserializationException e) {
-				throw new RuntimeException(
-						"Unable to deserialize glidein state change message",e);
-			}
-		}
-			
+	public void deliver(GlideinStateChange stateChange) {
 		for (GlideinListener listener : listeners) {
 			listener.stateChanged(stateChange);
-		}
-	}
-	
-	public static void main(String[] args)
-	{
-		try {
-			GlideinService s = new GlideinService(
-					new URL("https://juve.usc.edu:8443/wsrf/services/glidein/GlideinService"),70);
-			s.addListener(new GlideinListener(){
-				public void stateChanged(GlideinStateChange stateChange)
-				{
-					System.out.println("State changed: "+stateChange.getState());
-				}
-			});
-			
-			System.out.println("Waiting for notifications");
-			while (true) {
-				try {
-					Thread.sleep(30000);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 }

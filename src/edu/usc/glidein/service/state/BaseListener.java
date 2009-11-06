@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,43 +16,22 @@
 package edu.usc.glidein.service.state;
 
 import org.apache.log4j.Logger;
-import org.globus.wsrf.ResourceKey;
 
 import edu.usc.glidein.condor.Condor;
 import edu.usc.glidein.condor.CondorEvent;
 import edu.usc.glidein.condor.CondorEventListener;
 import edu.usc.glidein.condor.CondorException;
 
-public abstract class BaseListener implements CondorEventListener
-{
+public abstract class BaseListener implements CondorEventListener {
 	private static final Logger logger = Logger.getLogger(BaseListener.class);
-	private ResourceKey key = null;
 	private boolean aborted = false;
 	private CondorEvent lastEvent = null;
 	
-	public BaseListener(ResourceKey key)
-	{
-		setKey(key);
-	}
-	
-	public ResourceKey getKey()
-	{
-		return key;
-	}
-	
-	public void setKey(ResourceKey key)
-	{
-		if (key==null) throw new NullPointerException();
-		this.key = key;
-	}
-	
-	public CondorEvent getLastEvent()
-	{
+	public CondorEvent getLastEvent() {
 		return lastEvent;
 	}
 	
-	public void setLastEvent(CondorEvent lastEvent)
-	{
+	public void setLastEvent(CondorEvent lastEvent) {
 		this.lastEvent = lastEvent;
 	}
 	
@@ -62,12 +41,10 @@ public abstract class BaseListener implements CondorEventListener
 	public abstract void failed(CondorEvent event);
 	public abstract void aborted(CondorEvent event);
 	
-	public void handleEvent(CondorEvent event) 
-	{	
+	public void handleEvent(CondorEvent event) {
 		setLastEvent(event);
 		
-		switch(event.getEventCode())
-		{
+		switch(event.getEventCode()) {
 			case GRID_SUBMIT:
 			case GLOBUS_SUBMIT: {
 				queued(event);

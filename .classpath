@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="src" path="build/stubs"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/sqlitejdbc-v051.jar" sourcepath="libsrc/sqlitejdbc-v051.zip"/>
-	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.6.jar" sourcepath="libsrc/mysql-connector-java-5.1.6.zip"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Globus Library [4.2.1]"/>
+	<classpathentry kind="lib" path="lib/cog-jglobus-1.6.0.jar" sourcepath="/Users/juve/Desktop/cog-jglobus-1.6.0-src.zip"/>
+	<classpathentry kind="lib" path="lib/jetty-6.1.16.jar" sourcepath="/Users/juve/Desktop/jetty-6.1.16-src.zip"/>
+	<classpathentry kind="lib" path="lib/jetty-util-6.1.16.jar" sourcepath="/Users/juve/Desktop/jetty-6.1.16-src.zip"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
+	<classpathentry kind="lib" path="lib/servlet-api-2.5-20081211.jar"/>
+	<classpathentry kind="lib" path="lib/commons-cli-2.0.jar"/>
+	<classpathentry kind="lib" path="lib/sqlite-jdbc-3.6.16.jar"/>
+	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.8-bin.jar"/>
+	<classpathentry kind="lib" path="lib/simple-xml-2.1.2.jar"/>
+	<classpathentry kind="lib" path="lib/stax-1.2.0.jar"/>
+	<classpathentry kind="lib" path="lib/stax-api-1.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-codec-1.3.jar"/>
+	<classpathentry kind="lib" path="lib/commons-httpclient-3.1.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

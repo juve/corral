@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,71 +15,128 @@
  */
 package edu.usc.glidein.service;
 
-import java.rmi.RemoteException;
+import java.util.Date;
+import java.util.List;
 
-import org.globus.axis.message.addressing.EndpointReferenceType;
-import org.apache.log4j.Logger;
-import org.globus.wsrf.ResourceContext;
+import edu.usc.corral.config.ConfigurationException;
+import edu.usc.corral.types.CreateSiteRequest;
+import edu.usc.corral.types.CreateSiteResponse;
+import edu.usc.corral.types.ExecutionService;
+import edu.usc.corral.types.GetRequest;
+import edu.usc.corral.types.ListRequest;
+import edu.usc.corral.types.ListSitesResponse;
+import edu.usc.corral.types.RemoveRequest;
+import edu.usc.corral.types.Site;
+import edu.usc.corral.types.SiteState;
+import edu.usc.corral.types.SubmitRequest;
+import edu.usc.corral.types.VoidResponse;
+import edu.usc.glidein.api.GlideinException;
+import edu.usc.glidein.db.Database;
+import edu.usc.glidein.db.DatabaseException;
+import edu.usc.glidein.db.SiteDAO;
 
-import edu.usc.glidein.stubs.RemoveRequest;
-import edu.usc.glidein.stubs.types.EmptyObject;
-import edu.usc.glidein.stubs.types.Site;
+public class SiteService extends Service {
 
-/* TODO Add --nostaging option for site creation
- * This will allow the site to enter the READY state without staging
- * executables and may be useful for sites that 1) don't have a shared
- * filesystem, or 2) have already been set up manually.
- */
-
-public class SiteService 
-{
-	private Logger logger = Logger.getLogger(SiteService.class);
-	
-	private SiteResource getResource() throws RemoteException
-	{
+	public CreateSiteResponse create(CreateSiteRequest req) throws GlideinException {
+		// Create new site
+		Site site = new Site(req);
+			
+		// Set owner
+		site.setSubject(getSubject());
+		site.setLocalUsername(getUsername());
+			
+		// Set state
+		site.setState(SiteState.NEW);
+		site.setShortMessage("Created");
+		Date time = new Date();
+		site.setLastUpdate(time);
+		site.setCreated(time);
+			
+		// Must have name
+		if (site.getName() == null)
+			throw new GlideinException("Site must have name");
+			
+		// Check staging service
+		ExecutionService stagingService = site.getStagingService();
+		if (stagingService == null)
+			throw new GlideinException("Must provide staging service");
+		if (stagingService.getServiceContact() == null || 
+				stagingService.getServiceType() == null)
+			throw new GlideinException("Invalid staging service: " +
+					"must specify service contact and service type");
+			
+		// Check glidein service
+		ExecutionService glideinService = site.getGlideinService();
+		if (glideinService == null)
+			throw new GlideinException("Must provide glidein service");
+		if (glideinService.getServiceContact() == null || 
+				glideinService.getServiceType() == null)
+			throw new GlideinException("Invalid glidein service: " +
+					"must specify service contact and service type");
+			
+		// Must specify condorPackage or condorVersion
+		if (site.getCondorPackage() == null && site.getCondorVersion() == null)
+			throw new GlideinException(
+					"Must specify condor package OR condor version");
+			
+		// Check install path
+		if (site.getInstallPath() == null)
+			throw new GlideinException("Must specify install path");
+			
+		// Check local path
+		if (site.getLocalPath() == null) 
+			throw new GlideinException("Must specify local path");
+			
 		try {
-			return (SiteResource) ResourceContext.getResourceContext().getResource();
-		} catch (Exception e) {
-			throw new RemoteException("Unable to find site resource", e);
+			SiteResourceHome home = SiteResourceHome.getInstance();
+			return new CreateSiteResponse(home.create(site));
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get SiteResourceHome", ne);
+		}
+	}
+	
+	public ListSitesResponse list(ListRequest req) throws GlideinException {
+		try {
+			if(req.getUser()==null && !req.isAllUsers()) {
+				req.setUser(getUsername());
+			}
+			Database db = Database.getDatabase();
+			SiteDAO dao = db.getSiteDAO();
+			List<Site> sites = dao.list(req.isLongFormat(),req.getUser(),req.isAllUsers());
+			return new ListSitesResponse(sites);
+		} catch (DatabaseException de) {
+			throw new GlideinException("Unable to list sites", de);
+		}
+	}
+	
+	public Site get(GetRequest req) throws GlideinException {
+		return getResource(req.getId()).getSite();
+	}
+	
+	public VoidResponse submit(SubmitRequest req) throws GlideinException {
+		SiteResource r = getResource(req.getId());
+		if (!r.authorized(getSubject())) {
+			throw new GlideinException("Not authorized");
+		}
+		r.submit(req.getGlobusCredential());
+		return new VoidResponse();
+	}
+	
+	public VoidResponse remove(RemoveRequest req) throws GlideinException {
+		SiteResource r = getResource(req.getId());
+		if (!r.authorized(getSubject())) {
+			throw new GlideinException("Not authorized");
+		}
+		r.remove(req.isForce(), req.getGlobusCredential());
+		return new VoidResponse();
+	}
+	
+	private SiteResource getResource(int id) throws GlideinException {
+		try {
+			SiteResourceHome home = SiteResourceHome.getInstance();
+			return home.find(id);
+		} catch (ConfigurationException e) {
+			throw new GlideinException("Unable to find site resource", e);
 		}	
-	}
-	
-	public Site getSite(EmptyObject empty) throws RemoteException
-	{
-		Site site = null;
-		try {
-			site = getResource().getSite();
-		} catch (Throwable t) {
-			logAndRethrow("Unable to get site", t);
-		}
-		return site;
-	}
-	
-	public EmptyObject submit(EndpointReferenceType credential) throws RemoteException
-	{
-		try {
-			getResource().submit(credential);
-		} catch (Throwable t) {
-			logAndRethrow("Unable to submit site", t);
-		}
-		return new EmptyObject();
-	}
-	
-	public EmptyObject remove(RemoveRequest request) throws RemoteException
-	{
-		try {
-			boolean force = request.isForce();
-			EndpointReferenceType credential = request.getCredential();
-			getResource().remove(force,credential);
-		} catch (Throwable t) {
-			logAndRethrow("Unable to remove site", t);
-		}
-		return new EmptyObject();
-	}
-	
-	private void logAndRethrow(String message, Throwable t) throws RemoteException
-	{
-		logger.error(message,t);
-		throw new RemoteException(message,t);
 	}
 }

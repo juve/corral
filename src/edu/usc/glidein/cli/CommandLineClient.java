@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,19 +15,33 @@
  */
 package edu.usc.glidein.cli;
 
+import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
-public class CommandLineClient 
-{
-	private static void fail()
-	{
+public class CommandLineClient {
+	
+	private static void fail() {
 		System.out.println("Type '"+Command.COMMAND_NAME+" help' for usage");
 		System.exit(1);
 	}
 	
-	public static void main(String[] args)
-	{
+	public static void main(String[] args) {
+		String homeEnv = System.getenv("CORRAL_HOME");
+		if (homeEnv == null) {
+			System.out.println("Please set CORRAL_HOME");
+			System.exit(1);
+		}
+		
+		File homeDir = new File(homeEnv);
+		if (!homeDir.isDirectory()) {
+			System.out.println("CORRAL_HOME is not a directory: "+homeDir.getPath());
+			System.exit(1);
+		}
+		
+		if (System.getProperty("log4j.configuration") == null)
+			System.setProperty("log4j.configuration","file://"+homeEnv+"/etc/client-log4j.properties");
+		
 		if (args.length==0) {
 			fail();
 		} else {

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,39 +15,34 @@
  */
 package edu.usc.glidein.service.state;
 
-import java.util.Calendar;
-
-import javax.naming.NamingException;
+import java.util.Date;
 
 import org.apache.log4j.Logger;
-import org.globus.wsrf.ResourceException;
-import org.globus.wsrf.ResourceKey;
 
+import edu.usc.corral.config.ConfigurationException;
+import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.service.SiteResource;
 import edu.usc.glidein.service.SiteResourceHome;
 
-public class SiteEvent extends Event
-{
+public class SiteEvent extends Event {
 	private Logger logger;
 	
-	public SiteEvent(EventCode code, Calendar time, ResourceKey key)
-	{
-		super(code,time,key);
+	public SiteEvent(EventCode code, Date time, int id) {
+		super(code,time,id);
 		this.logger = Logger.getLogger(SiteEvent.class);
 	}
 
-	public void run()
-	{
+	public void run() {
 		try {
 			SiteResourceHome home = SiteResourceHome.getInstance();
-			SiteResource resource = (SiteResource)home.find(getKey());
+			SiteResource resource = (SiteResource)home.find(getId());
 			resource.handleEvent(this);
-		} catch (NamingException ne) {
+		} catch (ConfigurationException ne) {
 			logger.error("Unable to get SiteResourceHome",ne);
-		} catch (ResourceException re) {
-			logger.error("Unable to find SiteResource: "+getKey(),re);
+		} catch (GlideinException re) {
+			logger.error("Unable to find SiteResource: "+getId(),re);
 		} catch (Throwable t) {
-			logger.error("Unable to process event "+getCode()+" for resource "+getKey(),t);
+			logger.error("Unable to process event "+getCode()+" for resource "+getId(),t);
 		}
 	}
 }

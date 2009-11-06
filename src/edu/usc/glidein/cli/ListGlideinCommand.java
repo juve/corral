@@ -15,32 +15,28 @@
  */
 package edu.usc.glidein.cli;
 
-import java.util.Calendar;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TimeZone;
 
 import edu.usc.glidein.api.GlideinException;
-import edu.usc.glidein.api.GlideinFactoryService;
 import edu.usc.glidein.api.GlideinService;
-import edu.usc.glidein.service.GlideinNames;
-import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.util.GlideinUtil;
+import edu.usc.corral.types.GetRequest;
+import edu.usc.corral.types.Glidein;
+import edu.usc.corral.types.ListRequest;
+import edu.usc.corral.types.ListGlideinsResponse;
 
-public class ListGlideinCommand extends Command
-{
+public class ListGlideinCommand extends Command {
 	private boolean longFormat = false;
 	private boolean allUsers = false;
 	private String user = null;
 	private List<Integer> ids;
 	
-	public ListGlideinCommand()
-	{
+	public ListGlideinCommand() {
 		ids = new LinkedList<Integer>();
 	}
 	
-	public void addOptions(List<Option> options)
-	{
+	public void addOptions(List<Option> options) {
 		options.add(
 			Option.create()
 				  .setOption("l")
@@ -65,8 +61,7 @@ public class ListGlideinCommand extends Command
 		);
 	}
 
-	public void setArguments(CommandLine cmdln) throws CommandException
-	{		
+	public void setArguments(CommandLine cmdln) throws CommandException {		
 		/* Long format/short format */
 		if (cmdln.hasOption("l")) { 
 			longFormat = true;
@@ -94,8 +89,7 @@ public class ListGlideinCommand extends Command
 		}
 	}
 
-	public void execute() throws CommandException
-	{
+	public void execute() throws CommandException {
 		/* Check for specific arguments */
 		if (ids.size() > 0) {
 			listIndividualGlideins();
@@ -104,37 +98,37 @@ public class ListGlideinCommand extends Command
 		}
 	}
 	
-	public void listAllGlideins() throws CommandException
-	{
+	public void listAllGlideins() throws CommandException {
 		if (isDebug()) System.out.printf("Listing glideins\n");
-		Glidein[] glideins;
+		
 		try {
 			// Get the sites
-			GlideinFactoryService factory = new GlideinFactoryService(
-					getServiceURL(GlideinNames.GLIDEIN_FACTORY_SERVICE));
-			factory.setDescriptor(getClientSecurityDescriptor());
-			glideins = factory.listGlideins(longFormat, user, allUsers);
+			GlideinService svc = new GlideinService(getHost(), getPort());
+			ListRequest req = new ListRequest();
+			req.setLongFormat(longFormat);
+			req.setUser(user);
+			req.setAllUsers(allUsers);
+			ListGlideinsResponse resp = svc.listGlideins(req);
+			
+			// Print out the site list
+			printGlideins(resp.getGlideins());
 		} catch (Exception e) {
 			throw new CommandException("Unable to list glideins: "+
 					"Error communicating with service: "+e.getMessage(), e);
 		}
 		
-		// Print out the site list
-		printGlideins(glideins);
-		
 		if (isDebug()) System.out.printf("Done listing glideins.\n");
 	}
 	
-	public void listIndividualGlideins() throws CommandException
-	{
+	public void listIndividualGlideins() throws CommandException {
 		if (isDebug()) System.out.println("Retrieving glideins");
+		GlideinService svc = new GlideinService(getHost(), getPort());
 		LinkedList<Glidein> glideins = new LinkedList<Glidein>();
 		for (int id : ids) {
 			try {
-				GlideinService instance = new GlideinService(
-						getServiceURL(GlideinNames.GLIDEIN_SERVICE),id);
-				instance.setDescriptor(getClientSecurityDescriptor());
-				Glidein glidein = instance.getGlidein();
+				GetRequest req = new GetRequest();
+				req.setId(id);
+				Glidein glidein = svc.getGlidein(req);
 				glideins.add(glidein);
 			} catch (GlideinException ge) {
 				System.out.println(ge.getMessage());
@@ -142,14 +136,13 @@ public class ListGlideinCommand extends Command
 			}
 		}
 		if(isDebug()) System.out.println("Done retrieving glideins");
-		printGlideins(glideins.toArray(new Glidein[0]));
+		printGlideins(glideins);
 	}
 	
-	public void printGlideins(Glidein[] glideins) throws CommandException
-	{
+	public void printGlideins(List<Glidein> glideins) throws CommandException {
 		if (isDebug()) System.out.println("Printing glideins");
 		
-		if (glideins == null || glideins.length == 0) {
+		if (glideins == null || glideins.size() == 0) {
 			if (isDebug()) System.out.println("No glideins");
 			return;
 		}
@@ -157,7 +150,7 @@ public class ListGlideinCommand extends Command
 		if (longFormat) {
 			if (isDebug()) System.out.println("Using long format");
 			for (Glidein g : glideins) {
-				GlideinUtil.print(g);
+				g.print();
 				System.out.println();
 			}
 		} else {
@@ -178,12 +171,10 @@ public class ListGlideinCommand extends Command
 				System.out.printf("%-8d",(g.getCount()*g.getNumCpus()));
 				System.out.printf("%-8d",g.getWallTime());
 				
-				Calendar created = g.getCreated();
-				created.setTimeZone(TimeZone.getDefault());
+				Date created = g.getCreated();
 				System.out.printf("%1$tm-%1$td %1$TR    ",created);
 				
-				Calendar lastUpdate = g.getLastUpdate();
-				lastUpdate.setTimeZone(TimeZone.getDefault());
+				Date lastUpdate = g.getLastUpdate();
 				System.out.printf("%1$tm-%1$td %1$TR    ",lastUpdate);
 				
 				System.out.printf("%-10s",g.getState().toString());
@@ -195,23 +186,19 @@ public class ListGlideinCommand extends Command
 		if (isDebug()) System.out.println("Done printing glideins.");
 	}
 	
-	public String getName()
-	{
+	public String getName() {
 		return "list-glideins";
 	}
 	
-	public String[] getAliases()
-	{
+	public String[] getAliases() {
 		return new String[]{"lg"};
 	}
 	
-	public String getDescription() 
-	{
+	public String getDescription()  {
 		return "list-glideins (lg): Display glideins";
 	}
 	
-	public String getUsage()
-	{
+	public String getUsage() {
 		return "Usage: list-glideins";
 	}
 }

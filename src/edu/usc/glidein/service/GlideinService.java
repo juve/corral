@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,76 +15,103 @@
  */
 package edu.usc.glidein.service;
 
-import java.rmi.RemoteException;
+import java.util.Date;
+import java.util.List;
 
-import org.globus.axis.message.addressing.EndpointReferenceType;
-import org.apache.log4j.Logger;
-import org.globus.wsrf.ResourceContext;
+import edu.usc.corral.config.ConfigurationException;
+import edu.usc.corral.types.CreateGlideinRequest;
+import edu.usc.corral.types.CreateGlideinResponse;
+import edu.usc.corral.types.GetRequest;
+import edu.usc.corral.types.Glidein;
+import edu.usc.corral.types.GlideinState;
+import edu.usc.corral.types.ListGlideinsResponse;
+import edu.usc.corral.types.ListRequest;
+import edu.usc.corral.types.RemoveRequest;
+import edu.usc.corral.types.SubmitRequest;
+import edu.usc.corral.types.VoidResponse;
+import edu.usc.glidein.api.GlideinException;
+import edu.usc.glidein.db.Database;
+import edu.usc.glidein.db.DatabaseException;
+import edu.usc.glidein.db.GlideinDAO;
 
-import edu.usc.glidein.stubs.types.EmptyObject;
-import edu.usc.glidein.stubs.types.Glidein;
-
-/* TODO Allow user to create glideins that download the Condor binaries
- * This will allow the user to create glideins for sites that do not have
- * a shared filesystem. The binaries will go in the localPath instead of
- * the installPath.
- */
-// TODO Implement event notification using WS-Notification
-// TODO Implement dynamic provisioners
-// TODO Think of a friendly name for the service: Glidein Automation Service (GAS)?
-// TODO Investigate switch to Java CoG Kit for job submission and monitoring
-// TODO Investigate the usefulness of automatic site selection
-// TODO Should there be only one actual service, or should I keep two? One is better for isolation
-
-public class GlideinService
-{
-	private Logger logger = Logger.getLogger(GlideinService.class);
+public class GlideinService extends Service {
 	
-	private GlideinResource getResource() throws RemoteException
-	{
+	public CreateGlideinResponse create(CreateGlideinRequest req) throws GlideinException {
+		// Create new glidein
+		Glidein glidein = new Glidein(req);
+		
+		// Set owner
+		glidein.setSubject(getSubject());
+		glidein.setLocalUsername(getUsername());
+		
+		// Initialize glidein
+		glidein.setState(GlideinState.NEW);
+		glidein.setShortMessage("Created");
+		Date time = new Date();
+		glidein.setLastUpdate(time);
+		glidein.setCreated(time);
+		glidein.setSubmits(0);
+		
+		// Validate glidein
+		
+		// Wall time must be >= 2 minutes because when we submit the glidein
+		// we are going to subtract 1 minute to allow 1 minute for the glidein
+		// to shut itself down before the local scheduler kills it
+		if (glidein.getWallTime() < 2) {
+			throw new GlideinException("Wall time must be >= 2 minutes");
+		}
+		
+		// Create glidein
 		try {
-			Object resource = ResourceContext.getResourceContext().getResource();
-			GlideinResource glideinResource = (GlideinResource) resource;
-			return glideinResource;
+			GlideinResourceHome home = GlideinResourceHome.getInstance();
+			return new CreateGlideinResponse(home.create(glidein));
+		} catch (ConfigurationException e) {
+			throw new GlideinException("Unable to get GlideinResourceHome", e);
+		}
+	}
+	
+	public ListGlideinsResponse list(ListRequest req) throws GlideinException {
+		try {
+			if(req.getUser()==null && !req.isAllUsers()) {
+				req.setUser(getUsername());
+			}
+			Database db = Database.getDatabase();
+			GlideinDAO dao = db.getGlideinDAO();
+			List<Glidein> glideins = dao.list(req.isLongFormat(), req.getUser(), req.isAllUsers());
+			return new ListGlideinsResponse(glideins);
+		} catch (DatabaseException de) {
+			throw new GlideinException("Unable to list glideins",de);
+		}
+	}
+	
+	public Glidein get(GetRequest req) throws GlideinException {
+		return getResource(req.getId()).getGlidein();
+	}
+	
+	public VoidResponse submit(SubmitRequest req) throws GlideinException {
+		GlideinResource r = getResource(req.getId());
+		if (!r.authorized(getSubject())) {
+			throw new GlideinException("Not authorized");
+		}
+		r.submit(req.getGlobusCredential());
+		return new VoidResponse();
+	}
+	
+	public VoidResponse remove(RemoveRequest req) throws GlideinException {
+		GlideinResource r = getResource(req.getId());
+		if (!r.authorized(getSubject())) {
+			throw new GlideinException("Not authorized");
+		}
+		r.remove(req.isForce());
+		return new VoidResponse();
+	}
+	
+	private GlideinResource getResource(int id) throws GlideinException {
+		try {
+			GlideinResourceHome home = GlideinResourceHome.getInstance();
+			return home.find(id);
 		} catch (Exception e) {
-			throw new RemoteException("Unable to find glidein resource", e);
+			throw new GlideinException("Unable to find glidein resource", e);
 		}
-	}
-	
-	public Glidein getGlidein(EmptyObject empty) throws RemoteException
-	{
-		Glidein glidein = null;
-		try {
-			glidein = getResource().getGlidein();
-		} catch (Throwable t) {
-			logAndRethrow("Unable to get glidein", t);
-		}
-		return glidein;
-	}
-	
-	public EmptyObject submit(EndpointReferenceType credential) throws RemoteException
-	{
-		try {
-			getResource().submit(credential);
-		} catch (Throwable t) {
-			logAndRethrow("Unable to submit glidein",t);
-		}
-		return new EmptyObject();
-	}
-	
-	public EmptyObject remove(boolean force) throws RemoteException
-	{
-		try {
-			getResource().remove(force);
-		} catch (Throwable t) {
-			logAndRethrow("Unable to remove glidein",t);
-		}
-		return new EmptyObject();
-	}
-	
-	private void logAndRethrow(String message, Throwable t) throws RemoteException
-	{
-		logger.error(message,t);
-		throw new RemoteException(message,t);
 	}
 }

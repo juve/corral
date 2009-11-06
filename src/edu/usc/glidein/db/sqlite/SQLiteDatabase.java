@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import org.apache.log4j.Logger;
-import org.globus.wsrf.jndi.Initializable;
 
+import edu.usc.corral.config.Initializable;
 import edu.usc.glidein.db.DatabaseException;
 import edu.usc.glidein.db.GlideinDAO;
 import edu.usc.glidein.db.JDBCUtil;
@@ -33,59 +33,48 @@ import edu.usc.glidein.db.SiteDAO;
 import edu.usc.glidein.db.sql.SQLDatabase;
 import edu.usc.glidein.util.IOUtil;
 
-public class SQLiteDatabase extends SQLDatabase implements Initializable
-{
+public class SQLiteDatabase extends SQLDatabase implements Initializable {
 	public static final Logger logger = Logger.getLogger(SQLiteDatabase.class);
 	public static final String DB_DRIVER = "org.sqlite.JDBC";
 	
 	private File databaseFile;
 	private File schemaFile;
 	private boolean autoInstall = false;
-	private boolean initialized = false;
 	
 	public SQLiteDatabase() { }
 	
-	public void initialize() throws Exception
-	{
-		synchronized (this) {
-			if (initialized)
-				return;
+	public void initialize() throws Exception {
+		try {
+			// Load database driver
+			Class.forName(DB_DRIVER);
 			
-			try {
-				// Load database driver
-				Class.forName(DB_DRIVER);
+			// If we are allowing auto installation of the database tables
+			if (isAutoInstall()) {
 				
-				// If we are allowing auto installation of the database tables
-				if (isAutoInstall()) {
+				// If tables aren't installed
+				if (!tablesInstalled()) {
+					logger.info("Installing database tables");
 					
-					// If tables aren't installed
+					// Create database dir
+					createDatabaseDirectory();
+					
+					// Run script
+					runDatabaseScript();
+					
+					// Check interface table again
 					if (!tablesInstalled()) {
-						logger.info("Installing database tables");
-						
-						// Create database dir
-						createDatabaseDirectory();
-						
-						// Run script
-						runDatabaseScript();
-						
-						// Check interface table again
-						if (!tablesInstalled()) {
-							throw new DatabaseException(
-									"Unable to install tables");
-						}
+						throw new DatabaseException(
+								"Unable to install tables");
 					}
 				}
-			} catch (Exception e) {
-				logger.error("Unable to initialize SQLiteDatabase",e);
-				throw e;
 			}
-			
-			initialized = true;
+		} catch (Exception e) {
+			logger.error("Unable to initialize SQLiteDatabase",e);
+			throw e;
 		}
 	}
 	
-	private void createDatabaseDirectory() throws DatabaseException
-	{
+	private void createDatabaseDirectory() throws DatabaseException {
 		if (!databaseFile.exists()) {
 			File dir = databaseFile.getParentFile();
 			try {
@@ -104,8 +93,7 @@ public class SQLiteDatabase extends SQLDatabase implements Initializable
 		}
 	}
 	
-	private void runDatabaseScript() throws DatabaseException
-	{
+	private void runDatabaseScript() throws DatabaseException {
 		Connection conn = null;
 		Statement stmt = null;
 		try {
@@ -127,8 +115,7 @@ public class SQLiteDatabase extends SQLDatabase implements Initializable
 		}
 	}
 	
-	private boolean tablesInstalled() throws DatabaseException
-	{
+	private boolean tablesInstalled() throws DatabaseException {
 		// First, make sure that the database file exists
 		if (!databaseFile.exists())
 			return false;
@@ -152,67 +139,56 @@ public class SQLiteDatabase extends SQLDatabase implements Initializable
 		}
 	}
 	
-	private String[] getStatements(File script) throws IOException
-	{
+	private String[] getStatements(File script) throws IOException {
 		String stmts = IOUtil.read(script);
 		return stmts.split("[;]");
 	}
 	
-	public String getDatabaseFile()
-	{
+	public String getDatabaseFile() {
 		return databaseFile.getAbsolutePath();
 	}
 	
-	public void setDatabaseFile(String databaseFile)
-	{
+	public void setDatabaseFile(String databaseFile) {
 		this.databaseFile = new File(databaseFile);
 		if (!this.databaseFile.isAbsolute()) {
 			this.databaseFile = new File(
-					System.getProperty("GLOBUS_LOCATION"),databaseFile);
+					System.getenv("CORRAL_HOME"),databaseFile);
 		}
 	}
 
-	public String getSchemaFile()
-	{
+	public String getSchemaFile() {
 		return schemaFile.getAbsolutePath();
 	}
 
-	public void setSchemaFile(String schemaFile)
-	{
+	public void setSchemaFile(String schemaFile) {
 		this.schemaFile = new File(schemaFile);
 		if (!this.schemaFile.isAbsolute()) {
 			this.schemaFile = new File(
-					System.getProperty("GLOBUS_LOCATION"),schemaFile);
+					System.getenv("CORRAL_HOME"),schemaFile);
 		}
 	}
 
-	public boolean isAutoInstall()
-	{
+	public boolean isAutoInstall() {
 		return autoInstall;
 	}
 
-	public void setAutoInstall(boolean autoInstall)
-	{
+	public void setAutoInstall(boolean autoInstall) {
 		this.autoInstall = autoInstall;
 	}
 
-	public SiteDAO getSiteDAO()
-	{
+	public SiteDAO getSiteDAO() {
 		return new SQLiteSiteDAO(this);
 	}
 	
-	public GlideinDAO getGlideinDAO()
-	{
+	public GlideinDAO getGlideinDAO() {
 		return new SQLiteGlideinDAO(this);
 	}
 	
-	public String getURL()
-	{
+	public String getURL() {
 		return "jdbc:sqlite:"+getDatabaseFile();
 	}
 	
-	public Connection getConnection() throws DatabaseException
-	{
+	public Connection getConnection() throws DatabaseException {
 		try {
 			Connection conn = DriverManager.getConnection(getURL());
 			conn.setAutoCommit(false);

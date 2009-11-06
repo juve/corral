@@ -18,45 +18,37 @@ package edu.usc.glidein.service.state;
 import java.io.File;
 import java.io.IOException;
 
-import javax.naming.NamingException;
-
-import org.globus.wsrf.ResourceKey;
-
+import edu.usc.corral.config.ConfigurationException;
 import edu.usc.glidein.condor.CondorEvent;
 import edu.usc.glidein.condor.CondorJob;
 import edu.usc.glidein.util.FilesystemUtil;
 import edu.usc.glidein.util.IOUtil;
 
-public class InstallSiteListener extends BaseListener
-{	
-	public InstallSiteListener(ResourceKey key)
-	{
-		super(key);
+public class InstallSiteListener extends BaseListener {
+	private int siteId;
+	
+	public InstallSiteListener(int siteId) {
+		this.siteId = siteId;
 	}
 	
-	public void aborted(CondorEvent event)
-	{
+	public void aborted(CondorEvent event) {
 		// Treat aborted jobs as failures
 		failed(event);
 	}
 	
-	public void failed(CondorEvent event)
-	{
+	public void failed(CondorEvent event) {
 		failure(event.getMessage(),event.getException());
 	}
 	
-	public void queued(CondorEvent event)
-	{
+	public void queued(CondorEvent event) {
 		/* Ignore */
 	}
 	
-	public void running(CondorEvent event)
-	{
+	public void running(CondorEvent event) {
 		/* Ignore */
 	}
 	
-	public void terminated(CondorEvent event)
-	{
+	public void terminated(CondorEvent event) {
 		// A job finished successfully if it didn't produce any
 		// errors in the status file. Its ugly, but GT2 is broken.
 		try {
@@ -83,25 +75,23 @@ public class InstallSiteListener extends BaseListener
 		}
 	}
 	
-	private void failure(String message, Exception exception)
-	{
+	private void failure(String message, Exception exception) {
 		// Generate failed event
 		try {
 			CondorEvent ce = getLastEvent();
 			Event event = new SiteEvent(SiteEventCode.INSTALL_FAILED,
-					ce.getTime(), getKey());
+					ce.getTime(), this.siteId);
 			event.setProperty("message", message);
 			event.setProperty("exception", exception);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
-		} catch (NamingException ne) {
+		} catch (ConfigurationException ne) {
 			throw new RuntimeException("Unable to get event queue: "+
 					ne.getMessage(),ne);
 		}
 	}
 	
-	private void success(CondorJob job)
-	{
+	private void success(CondorJob job) {
 		// Cleanup job dir
 		FilesystemUtil.rm(job.getJobDirectory());
 		
@@ -109,10 +99,10 @@ public class InstallSiteListener extends BaseListener
 		try {
 			CondorEvent ce = getLastEvent();
 			Event event = new SiteEvent(SiteEventCode.INSTALL_SUCCESS,
-					ce.getTime(),getKey());
+					ce.getTime(),this.siteId);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
-		} catch (NamingException ne) {
+		} catch (ConfigurationException ne) {
 			throw new RuntimeException("Unable to get event queue: "+
 					ne.getMessage(),ne);
 		}

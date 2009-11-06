@@ -18,23 +18,19 @@ package edu.usc.glidein.service.state;
 import java.io.File;
 import java.io.IOException;
 
-import javax.naming.NamingException;
-
-import org.globus.wsrf.ResourceKey;
-
+import edu.usc.corral.config.ConfigurationException;
 import edu.usc.glidein.condor.CondorEvent;
 import edu.usc.glidein.condor.CondorJob;
 import edu.usc.glidein.util.IOUtil;
 
-public class GlideinListener extends BaseListener
-{
-	public GlideinListener(ResourceKey key) 
-	{ 
-		super(key);
+public class GlideinListener extends BaseListener {
+	private int glideinId;
+	
+	public GlideinListener(int glideinId) {
+		this.glideinId = glideinId;
 	}
 	
-	public void terminated(CondorEvent event)
-	{
+	public void terminated(CondorEvent event) {
 		// A job finished successfully if it didn't produce any
 		// errors in the status file. Its ugly, but GT2 is broken.
 		try {
@@ -61,60 +57,53 @@ public class GlideinListener extends BaseListener
 		}
 	}
 	
-	public void aborted(CondorEvent event)
-	{
+	public void aborted(CondorEvent event) {
 		// Process an aborted job
 		enqueue(GlideinEventCode.JOB_ABORTED);
 	}
 	
-	public void failed(CondorEvent event)
-	{
+	public void failed(CondorEvent event) {
 		// Process failure
 		failure(event.getMessage(),event.getDetails(), event.getException());
 	}
 	
-	public void queued(CondorEvent event)
-	{
+	public void queued(CondorEvent event) {
 		// Generate queued event
 		enqueue(GlideinEventCode.QUEUED);
 	}
 	
-	public void running(CondorEvent event)
-	{
+	public void running(CondorEvent event) {
 		// Generate running event
 		enqueue(GlideinEventCode.RUNNING);
 	}
 	
-	private void success(CondorJob job)
-	{		
+	private void success(CondorJob job) {
 		// Generate success event
 		enqueue(GlideinEventCode.JOB_SUCCESS);
 	}
 	
-	private void failure(String message, String longMessage, Exception exception)
-	{
+	private void failure(String message, String longMessage, Exception exception) {
 		// Generate failure event
 		try {
 			CondorEvent ce = getLastEvent();
-			Event event = new GlideinEvent(GlideinEventCode.JOB_FAILURE,ce.getTime(),getKey());
+			Event event = new GlideinEvent(GlideinEventCode.JOB_FAILURE,ce.getTime(),glideinId);
 			event.setProperty("message", message);
 			event.setProperty("longMessage", longMessage);
 			event.setProperty("exception", exception);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
-		} catch (NamingException ne) {
+		} catch (ConfigurationException ne) {
 			throw new RuntimeException("Unable to get event queue: "+ne.getMessage(),ne);
 		}
 	}
 	
-	private void enqueue(GlideinEventCode code)
-	{
+	private void enqueue(GlideinEventCode code) {
 		try {
 			CondorEvent ce = getLastEvent();
-			Event event = new GlideinEvent(code,ce.getTime(),getKey());
+			Event event = new GlideinEvent(code,ce.getTime(),glideinId);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
-		} catch (NamingException ne) {
+		} catch (ConfigurationException ne) {
 			throw new RuntimeException("Unable to get event queue: "+ne.getMessage(),ne);
 		}
 	}

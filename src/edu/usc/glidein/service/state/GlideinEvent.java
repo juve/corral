@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,39 +15,34 @@
  */
 package edu.usc.glidein.service.state;
 
-import java.util.Calendar;
-
-import javax.naming.NamingException;
+import java.util.Date;
 
 import org.apache.log4j.Logger;
-import org.globus.wsrf.ResourceException;
-import org.globus.wsrf.ResourceKey;
 
+import edu.usc.corral.config.ConfigurationException;
+import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.service.GlideinResource;
 import edu.usc.glidein.service.GlideinResourceHome;
 
-public class GlideinEvent extends Event
-{
+public class GlideinEvent extends Event {
 	private Logger logger;
 	
-	public GlideinEvent(GlideinEventCode code, Calendar time, ResourceKey key)
-	{
-		super(code,time,key);
+	public GlideinEvent(GlideinEventCode code, Date time, int id) {
+		super(code,time,id);
 		this.logger = Logger.getLogger(GlideinEvent.class);
 	}
 
-	public void run()
-	{
+	public void run() {
 		try {
 			GlideinResourceHome home = GlideinResourceHome.getInstance();
-			GlideinResource resource = (GlideinResource) home.find(getKey());
+			GlideinResource resource = home.find(getId());
 			resource.handleEvent(this);
-		} catch (NamingException ne) {
+		} catch (ConfigurationException ne) {
 			logger.error("Unable to get GlideinResourceHome",ne);
-		} catch (ResourceException re) {
-			logger.error("Unable to find resource: "+getKey(),re);
+		} catch (GlideinException re) {
+			logger.error("Unable to find resource: "+getId(),re);
 		} catch (Throwable t) {
-			logger.error("Unable to process event "+getCode()+" for glidein "+getKey().getValue(),t);
+			logger.error("Unable to process event "+getCode()+" for glidein "+getId(),t);
 		}
 	}
 }

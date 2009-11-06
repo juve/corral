@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,11 +23,9 @@ import java.io.IOException;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 
-public class CredentialUtil
-{
+public class CredentialUtil {
 	public static void store(GlobusCredential credential, File file) 
-	throws IOException
-	{
+	throws IOException {
 		// Create the file if it doesn't exist
 		if (!file.exists() && !file.createNewFile()) {
 			throw new IOException("Unable to create credential file");
@@ -44,8 +42,7 @@ public class CredentialUtil
 	}
 	
 	public static GlobusCredential load(File file) 
-	throws IOException
-	{
+	throws IOException {
 		try {
 			FileInputStream fis = new FileInputStream(file);
 			GlobusCredential cred = new GlobusCredential(fis);

@@ -16,53 +16,23 @@
 package edu.usc.glidein.service;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.CharArrayWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
-import java.security.Principal;
-import java.util.Calendar;
-import java.util.HashSet;
+import java.util.Date;
 
-import javax.naming.NamingException;
-import javax.security.auth.Subject;
-
-import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
-import org.globus.delegation.DelegationException;
-import org.globus.delegation.DelegationUtil;
-import org.globus.delegation.service.DelegationResource;
 import org.globus.gsi.GlobusCredential;
-import org.globus.gsi.jaas.GlobusPrincipal;
-import org.globus.util.Util;
-import org.globus.wsrf.PersistenceCallback;
-import org.globus.wsrf.Resource;
-import org.globus.wsrf.ResourceException;
-import org.globus.wsrf.ResourceIdentifier;
-import org.globus.wsrf.ResourceKey;
-import org.globus.wsrf.ResourceProperties;
-import org.globus.wsrf.ResourcePropertySet;
-import org.globus.wsrf.Topic;
-import org.globus.wsrf.TopicList;
-import org.globus.wsrf.TopicListAccessor;
-import org.globus.wsrf.encoding.ObjectDeserializer;
-import org.globus.wsrf.encoding.ObjectSerializer;
-import org.globus.wsrf.impl.ReflectionResourceProperty;
-import org.globus.wsrf.impl.SimpleResourceKey;
-import org.globus.wsrf.impl.SimpleResourcePropertySet;
-import org.globus.wsrf.impl.SimpleTopic;
-import org.globus.wsrf.impl.SimpleTopicList;
-import org.globus.wsrf.security.SecurityException;
-import org.globus.wsrf.utils.SubscriptionPersistenceUtils;
-import org.xml.sax.InputSource;
 
+import edu.usc.corral.config.ConfigurationException;
+import edu.usc.corral.types.EnvironmentVariable;
+import edu.usc.corral.types.ExecutionService;
+import edu.usc.corral.types.ServiceType;
+import edu.usc.corral.types.Site;
+import edu.usc.corral.types.SiteState;
+import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.condor.Condor;
 import edu.usc.glidein.condor.CondorEventGenerator;
 import edu.usc.glidein.condor.CondorException;
@@ -83,327 +53,28 @@ import edu.usc.glidein.service.state.SiteEvent;
 import edu.usc.glidein.service.state.SiteEventCode;
 import edu.usc.glidein.service.state.InstallSiteListener;
 import edu.usc.glidein.service.state.UninstallSiteListener;
-import edu.usc.glidein.stubs.types.EnvironmentVariable;
-import edu.usc.glidein.stubs.types.ExecutionService;
-import edu.usc.glidein.stubs.types.ServiceType;
-import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteState;
-import edu.usc.glidein.stubs.types.SiteStateChange;
-import edu.usc.glidein.stubs.types.SiteStateChangeMessage;
-import edu.usc.glidein.util.AddressingUtil;
-import edu.usc.glidein.util.AuthenticationUtil;
+import edu.usc.glidein.util.CredentialUtil;
 import edu.usc.glidein.util.FilesystemUtil;
 import edu.usc.glidein.util.ServiceUtil;
 
-public class SiteResource implements Resource, ResourceIdentifier, PersistenceCallback, 
-	ResourceProperties, TopicListAccessor
-{
+public class SiteResource implements Resource {
 	private final Logger logger = Logger.getLogger(SiteResource.class);
-	private SimpleResourcePropertySet resourceProperties;
-	private Topic stateChangeTopic;
-	private TopicList topicList;
 	private Site site;
 	
-	public SiteResource()
-	{
-		resourceProperties = new SimpleResourcePropertySet(SiteNames.RESOURCE_PROPERTIES);
-		stateChangeTopic = new SimpleTopic(SiteNames.TOPIC_STATE_CHANGE);
-		topicList = new SimpleTopicList(this);
-		topicList.addTopic(stateChangeTopic);
-	}
-	
-	public synchronized void setSite(Site site)
-	{
+	public SiteResource(Site site) {
 		this.site = site;
-		setResourceProperties();
 	}
 	
-	public synchronized Site getSite()
-	{
+	public Site getSite() {
 		return site;
 	}
 	
-	public Object getID()
-	{
-		return getKey();
+	public boolean authorized(String subject) {
+		return site.getSubject().equals(subject);
 	}
 	
-	public ResourceKey getKey()
-	{
-		if (site==null) return null;
-		return new SimpleResourceKey(
-				SiteNames.RESOURCE_KEY,
-				new Integer(site.getId()));
-	}
-	
-	public ResourcePropertySet getResourcePropertySet()
-	{
-		return resourceProperties;
-	}
-	
-	private void setResourceProperties()
-	{
-		try {
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_ID,"id",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_NAME,"name",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_INSTALL_PATH,"installPath",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_LOCAL_PATH,"localPath",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_CONDOR_PACKAGE,"condorPackage",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_CONDOR_VERSION,"condorVersion",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_STATE,"state",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_SHORT_MESSAGE,"shortMessage",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_LONG_MESSAGE,"longMessage",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_CREATED,"created",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_LAST_UPDATE,"lastUpdate",site));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_STAGING_SERVICE_CONTACT,
-					"serviceContact",site.getStagingService()));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_STAGING_SERVICE_TYPE,
-					"serviceType",site.getStagingService()));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_STAGING_PROJECT,
-					"project",site.getStagingService()));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_STAGING_QUEUE,
-					"queue",site.getStagingService()));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_GLIDEIN_SERVICE_CONTACT,
-					"serviceContact",site.getGlideinService()));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_GLIDEIN_SERVICE_TYPE,
-					"serviceType",site.getGlideinService()));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_GLIDEIN_PROJECT,
-					"project",site.getGlideinService()));
-			resourceProperties.add(new ReflectionResourceProperty(
-					SiteNames.RP_GLIDEIN_QUEUE,
-					"queue",site.getGlideinService()));
-		} catch (Exception e) {
-			throw new RuntimeException("Unable to set site resource properties",e);
-		}
-	}
-	
-	public TopicList getTopicList()
-	{
-		return topicList;
-	}
-
-	public void create(Site site) throws ResourceException
-	{
-		info("Creating site '"+site.getName()+"'");
-		
-		// Set state
-		site.setState(SiteState.NEW);
-		site.setShortMessage("Created");
-		Calendar time = Calendar.getInstance();
-		site.setLastUpdate(time);
-		site.setCreated(time);
-		
-		// Must have staging service
-		ExecutionService stagingService = site.getStagingService();
-		if (stagingService == null)
-			throw new ResourceException("Must provide staging service");
-		
-		// Must have glidein service
-		ExecutionService glideinService = site.getGlideinService();
-		if (glideinService == null)
-			throw new ResourceException("Must provide glidein service");
-		
-		// Eliminate empty strings
-		if ("".equals(site.getName()))
-			site.setName(null);
-		
-		if ("".equals(site.getCondorVersion()))
-			site.setCondorVersion(null);
-		
-		if ("".equals(site.getCondorPackage()))
-			site.setCondorPackage(null);
-		
-		if ("".equals(glideinService.getServiceContact()))
-			glideinService.setServiceContact(null);
-		
-		if ("".equals(glideinService.getQueue()))
-			glideinService.setQueue(null);
-		
-		if ("".equals(glideinService.getProject()))
-			glideinService.setProject(null);
-		
-		if ("".equals(stagingService.getServiceContact()))
-			stagingService.setServiceContact(null);
-		
-		if ("".equals(stagingService.getQueue()))
-			stagingService.setQueue(null);
-		
-		if ("".equals(stagingService.getProject()))
-			stagingService.setProject(null);
-		
-		// Must have name
-		if (site.getName() == null)
-			throw new ResourceException("Site must have name");
-		
-		// Check glidein service
-		if (glideinService.getServiceContact() == null || 
-				glideinService.getServiceType() == null)
-			throw new ResourceException("Invalid glidein service: " +
-					"must specify service contact and service type");
-		
-		// Check staging service
-		if (stagingService.getServiceContact() == null || 
-				stagingService.getServiceType() == null)
-			throw new ResourceException("Invalid staging service: " +
-					"must specify service contact and service type");
-		
-		// Must specify condorPackage or condorVersion
-		if (site.getCondorPackage() == null && site.getCondorVersion() == null)
-			throw new ResourceException(
-					"Must specify condor package or condor version");
-		
-		// Check install path
-		if (site.getInstallPath() == null)
-			throw new ResourceException("Must specify install path");
-		
-		// Check local path
-		if (site.getLocalPath() == null) 
-			throw new ResourceException("Must specify local path");
-		
-		try {
-			// Authenticate the client
-			AuthenticationUtil.authenticate();
-			
-			// Set subject and username
-			site.setSubject(AuthenticationUtil.getSubject());
-			site.setLocalUsername(AuthenticationUtil.getLocalUsername());
-		} catch (SecurityException se) {
-			throw new ResourceException("Unable to authenticate client",se);
-		}
-		
-		// Save site in database
-		try {
-			Database db = Database.getDatabase();
-			SiteDAO dao = db.getSiteDAO();
-			dao.create(site);
-			dao.insertHistory(site.getId(), site.getState(), site.getLastUpdate());
-		} catch (DatabaseException de) {
-			throw new ResourceException("Unable to create site", de);
-		}
-		
-		// Log it in the netlogger log
-		try {
-			NetLoggerEvent event = new NetLoggerEvent("site.new");
-			event.setTimeStamp(site.getCreated().getTime());
-			event.put("site.id", site.getId());
-			event.put("name", site.getName());
-			event.put("install_path", site.getInstallPath());
-			event.put("local_path", site.getLocalPath());
-			event.put("staging.type", stagingService.getServiceType());
-			event.put("staging.contact", stagingService.getServiceContact());
-			event.put("staging.queue", stagingService.getQueue());
-			event.put("staging.project", stagingService.getProject());
-			event.put("glidein.type", glideinService.getServiceType());
-			event.put("glidein.contact", glideinService.getServiceContact());
-			event.put("glidein.queue", glideinService.getQueue());
-			event.put("glidein.project", glideinService.getProject());
-			event.put("condor.version", site.getCondorVersion());
-			event.put("condor.package", site.getCondorPackage());
-			event.put("owner.subject",site.getSubject());
-			event.put("owner.username", site.getLocalUsername());
-			
-			NetLogger netlogger = NetLogger.getLog();
-			netlogger.log(event);
-		} catch (NetLoggerException nle) {
-			warn("Unable to log site event to NetLogger log",nle);
-		}
-		
-		// Set site
-		setSite(site);
-	}
-
-	public void load(ResourceKey key) throws ResourceException
-	{
-		info("Loading site resource "+key.getValue());
-		int id = ((Integer)key.getValue()).intValue();
-		loadSite(id);
-		loadListeners();
-	}
-	
-	public void store() throws ResourceException
-	{
-		info("Storing site resource "+site.getId());
-		storeListeners();
-		storeSite();
-	}
-	
-	private void loadSite(int id) throws ResourceException
-	{
-		try {
-			Database db = Database.getDatabase();
-			SiteDAO dao = db.getSiteDAO();
-			setSite(dao.load(id));
-		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to load site",de);
-		}
-	}
-	
-	private void storeSite() throws ResourceException
-	{
-		/* Do nothing */
-	}
-	
-	private void storeListeners() throws ResourceException
-	{
-		// TODO: Store listeners in database
-		File listeners = getListenersFile();
-		try {
-			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(listeners));
-			SubscriptionPersistenceUtils.storeSubscriptionListeners(topicList, oos);
-			oos.close();
-		} catch (Exception e) {
-			throw new ResourceException("Unable to store site listeners",e);
-		}
-	}
-	
-	private void loadListeners() throws ResourceException
-	{
-		File listeners = getListenersFile();
-		if (listeners.exists() && listeners.isFile()) {
-			try {
-				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(listeners));
-				SubscriptionPersistenceUtils.loadSubscriptionListeners(topicList, ois);
-				ois.close();
-			} catch (Exception e) {
-				throw new ResourceException("Unable to load site listeners",e);
-			}
-		}
-	}
-
-	private File getListenersFile() throws ResourceException
-	{
-		File work = getWorkingDirectory();
-		if (!work.exists()) {
-			work.mkdirs();
-		}
-		File listeners = new File(work,"listeners");
-		return listeners;
-	}
-	
-	public void remove(boolean force, EndpointReferenceType credentialEPR)
-	throws ResourceException
-	{
+	public void remove(boolean force, GlobusCredential cred) throws GlideinException {
 		info("Creating remove event");
-		
-		authorize();
 		
 		// Choose new state. If force, then just delete the record from
 		// the database and remove the resource, otherwise go through the
@@ -413,26 +84,22 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			code = SiteEventCode.DELETE;
 		} else {
 			code = SiteEventCode.REMOVE;
+			// Save credential (its really only needed for REMOVE)
+			storeCredential(cred);
 		}
-		
-		// Store the credential endpoint
-		storeCredentialEPR(credentialEPR);
 		
 		// Schedule remove event
 		try {
-			Event event = new SiteEvent(code,Calendar.getInstance(),getKey());
+			Event event = new SiteEvent(code,new Date(),site.getId());
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get event queue",ne);
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get event queue",ne);
 		}
 	}
 	
-	public void submit(EndpointReferenceType credentialEPR) throws ResourceException 
-	{
+	public void submit(GlobusCredential cred) throws GlideinException {
 		info("Creating submit event");
-		
-		authorize();
 		
 		// Create working directory
 		File work = getWorkingDirectory();
@@ -440,22 +107,20 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			work.mkdirs();
 		}
 		
-		// Store the credential endpoint
-		storeCredentialEPR(credentialEPR);
+		// Save credential
+		storeCredential(cred);
 		
 		// Schedule submit event
 		try {
-			Event event = new SiteEvent(SiteEventCode.SUBMIT,Calendar.getInstance(),getKey());
+			Event event = new SiteEvent(SiteEventCode.SUBMIT,new Date(),site.getId());
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get event queue",ne);
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get event queue",ne);
 		}
 	}
 	
-	private void updateState(SiteState state, String shortMessage, String longMessage, Calendar time)
-	throws ResourceException
-	{
+	private void updateState(SiteState state, String shortMessage, String longMessage, Date time) throws GlideinException {
 		info("Changing state to "+state+": "+shortMessage);
 		
 		// Update object
@@ -469,34 +134,16 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			dao.updateState(site.getId(), state, shortMessage, longMessage, time);
-			dao.insertHistory(site.getId(), state, time);
 		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to change state to "+state,de);
+			throw new GlideinException("Unable to change state to "+state,de);
 		}
 		
-		// Notify topic listeners
-		info("Notifying listeners of state change");
-		try {
-			SiteStateChange stateChange = new SiteStateChange();
-			stateChange.setSiteId(site.getId());
-			stateChange.setState(state);
-			stateChange.setShortMessage(shortMessage);
-	        stateChange.setLongMessage(longMessage);
-	        stateChange.setTime(time);
-	        
-	        Object msg = ObjectSerializer.toSOAPElement(
-	        		new SiteStateChangeMessage(stateChange),
-	        		GlideinNames.TOPIC_STATE_CHANGE);
-	        
-	        stateChangeTopic.notify(msg);
-		} catch (Exception e) {
-			warn("Unable to notify topic listeners", e);
-		}
+		// TODO Notify listeners
 		
 		// Log it in the netlogger log
 		try {
 			NetLoggerEvent event = new NetLoggerEvent("site."+state.toString().toLowerCase());
-			event.setTimeStamp(time.getTime());
+			event.setTimeStamp(time);
 			event.put("site.id", site.getId());
 			event.put("message", shortMessage);
 			
@@ -507,33 +154,28 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private ServiceConfiguration getConfig() throws ResourceException
-	{
+	private ServiceConfiguration getConfig() throws GlideinException {
 		try {
 			return ServiceConfiguration.getInstance();
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get service configuration",ne);
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get service configuration",ne);
 		}
 	}
 	
-	private File getWorkingDirectory() throws ResourceException
-	{
+	private File getWorkingDirectory() throws GlideinException {
 		// Determine the directory path
 		return new File(getConfig().getWorkingDirectory(),"site-"+site.getId());
 	}
 	
-	private File getInstallDirectory() throws ResourceException
-	{
+	private File getInstallDirectory() throws GlideinException {
 		return new File(getWorkingDirectory(),"install");
 	}
 	
-	private File getUninstallDirectory() throws ResourceException
-	{
+	private File getUninstallDirectory() throws GlideinException {
 		return new File(getWorkingDirectory(),"uninstall");
 	}
 	
-	private void submitInstallJob() throws ResourceException
-	{
+	private void submitInstallJob() throws GlideinException {
 		info("Submitting install job");
 		
 		ServiceConfiguration config = getConfig();
@@ -581,17 +223,16 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		job.setLocalExecutable(true);
 		
 		// Set credential
-		GlobusCredential cred = getDelegatedCredential();
+		GlobusCredential cred = loadCredential();
 		if (validateCredentialLifetime(cred)) {
 			job.setCredential(cred);
 		} else {
-			throw new ResourceException("Not enough time left on credential");
+			throw new GlideinException("Not enough time left on credential");
 		}
 		
 		// Add environment
-		EnvironmentVariable env[] = site.getEnvironment();
-		if (env!=null) {
-			for (EnvironmentVariable var : env)
+		if (site.getEnvironment()!=null) {
+			for (EnvironmentVariable var : site.getEnvironment())
 				job.addEnvironment(var.getVariable(), var.getValue());
 		}
 		
@@ -614,14 +255,14 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		job.addOutputFile("status");
 		
 		// Add a listener
-		job.addListener(new InstallSiteListener(getKey()));
+		job.addListener(new InstallSiteListener(site.getId()));
 		
 		// Submit job
 		try {
 			Condor condor = Condor.getInstance();
 			condor.submitJob(job);
 		} catch (CondorException ce) {
-			throw new ResourceException("Unable to submit install job",ce);
+			throw new GlideinException("Unable to submit install job",ce);
 		}
 		
 		// Log the condor job id in netlogger
@@ -637,19 +278,17 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private boolean hasGlideins() throws ResourceException
-	{
+	private boolean hasGlideins() throws GlideinException {
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			return dao.hasGlideins(site.getId());
 		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to check for glideins",de);
+			throw new GlideinException("Unable to check for glideins",de);
 		}
 	}
 	
-	private void cancelGlideins() throws ResourceException
-	{
+	private void cancelGlideins() throws GlideinException {
 		info("Canceling glideins");
 		
 		// Get glidein ids
@@ -659,35 +298,31 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			SiteDAO dao = db.getSiteDAO();
 			ids = dao.getGlideinIds(site.getId());
 		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to get glidein ids",de);
+			throw new GlideinException("Unable to get glidein ids",de);
 		}
 		
 		// Create a remove event for each glidein
 		try {
 			EventQueue queue = EventQueue.getInstance();
 			for (int id : ids) {
-				ResourceKey key = AddressingUtil.getGlideinKey(id);
 				Event event = new GlideinEvent(
-						GlideinEventCode.REMOVE,site.getLastUpdate(),key);
+						GlideinEventCode.REMOVE,site.getLastUpdate(),id);
 				queue.add(event);
 			}
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get event queue",ne);
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get event queue",ne);
 		}
 	}
 	
-	private void notifyGlideinsOfReady() throws ResourceException
-	{
+	private void notifyGlideinsOfReady() throws GlideinException {
 		notifyGlideins(SiteState.READY);
 	}
 	
-	private void notifyGlideinsOfFailed() throws ResourceException
-	{
+	private void notifyGlideinsOfFailed() throws GlideinException {
 		notifyGlideins(SiteState.FAILED);
 	}
 	
-	private void notifyGlideins(SiteState state) throws ResourceException
-	{
+	private void notifyGlideins(SiteState state) throws GlideinException {
 		info("Notifying site glideins of "+state+" state");
 		
 		// Get glidein ids
@@ -697,14 +332,13 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			SiteDAO dao = db.getSiteDAO();
 			ids = dao.getGlideinIds(site.getId());
 		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to get glidein ids",de);
+			throw new GlideinException("Unable to get glidein ids",de);
 		}
 		
 		// Create a ready event for each glidein
 		try {
 			EventQueue queue = EventQueue.getInstance();
 			for (int id : ids) {
-				ResourceKey key = AddressingUtil.getGlideinKey(id);
 				GlideinEventCode code;
 				if (SiteState.READY.equals(state)) {
 					code = GlideinEventCode.SITE_READY;
@@ -713,17 +347,16 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				} else {
 					throw new IllegalStateException("Unhandled state: "+state);
 				}
-				Event event = new GlideinEvent(code,site.getLastUpdate(),key);
+				Event event = new GlideinEvent(code,site.getLastUpdate(),id);
 				queue.add(event);
 			}
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get queue: "+
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get queue: "+
 					ne.getMessage(),ne);
 		}
 	}
 	
-	private void cancelInstallJob() throws ResourceException
-	{
+	private void cancelInstallJob() throws GlideinException {
 		info("Canceling install job");
 		try {
 			CondorJob job = new CondorJob(getInstallDirectory(),site.getLocalUsername());
@@ -731,12 +364,11 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			job.setJobId(jobid);
 			Condor.getInstance().cancelJob(job);
 		} catch (CondorException ce) {
-			throw new ResourceException("Unable to cancel install job",ce);
+			throw new GlideinException("Unable to cancel install job",ce);
 		}
 	}
 	
-	private String readJobId(File jobDirectory) throws ResourceException
-	{
+	private String readJobId(File jobDirectory) throws GlideinException {
 		File jobidFile = new File(jobDirectory,"jobid");
 		try {
 			// Read job id from jobid file
@@ -747,92 +379,39 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			
 			return jobid;
 		} catch (IOException ioe) {
-			throw new ResourceException("Unable to read job id",ioe);
+			throw new GlideinException("Unable to read job id",ioe);
 		}
 	}
 	
-	private File getCredentialEPRFile() throws ResourceException
-	{
+	private void storeCredential(GlobusCredential cred) throws GlideinException {
+		try {
+			CredentialUtil.store(cred, getCredentialFile());
+		} catch (IOException ioe) {
+			throw new GlideinException("Unable to store credential", ioe);
+		}
+	}
+	
+	private GlobusCredential loadCredential() throws GlideinException {
+		try {
+			return CredentialUtil.load(getCredentialFile());
+		} catch (IOException ioe) {
+			throw new GlideinException("Unable to load credential", ioe);
+		}
+	}
+	
+	private File getCredentialFile() throws GlideinException {
 		File dir = getWorkingDirectory();
-		File credFile = new File(dir,"credential.epr");
+		File credFile = new File(dir,"credential");
 		return credFile;
 	}
 	
-	private void storeCredentialEPR(EndpointReferenceType epr)
-	throws ResourceException
-	{
-		info("Storing credential EPR");
-		// TODO: Store EPR in the database
-		synchronized (this) {
-			try {
-				String endpointString = ObjectSerializer.toString(
-						epr, EndpointReferenceType.getTypeDesc().getXmlType());
-				File file = getCredentialEPRFile();
-				BufferedWriter writer = new BufferedWriter(
-						new FileWriter(file));
-				writer.write(endpointString);
-				writer.close();
-				Util.setFilePermissions(file.getAbsolutePath(), 600);
-			} catch (Exception e) {
-				throw new ResourceException("Unable to store credential EPR",e);
-			}
-		}
-	}
-	
-	private boolean validateCredentialLifetime(GlobusCredential credential)
-	throws ResourceException
-	{
+	private boolean validateCredentialLifetime(GlobusCredential credential) throws GlideinException {
 		// Require at least 5 minutes
 		long need = 300;
 		return (need < credential.getTimeLeft());
 	}
 	
-	private EndpointReferenceType loadCredentialEPR() 
-	throws ResourceException
-	{
-		info("Loading credential EPR");
-		synchronized (this) {
-			try {
-				FileInputStream fis = new FileInputStream(getCredentialEPRFile());
-				EndpointReferenceType epr = (EndpointReferenceType)
-					ObjectDeserializer.deserialize(
-							new InputSource(fis), EndpointReferenceType.class);
-				fis.close();
-				return epr;
-			} catch (Exception e) {
-				throw new ResourceException("Unable to load credential EPR",e);
-			}
-		}
-	}
-	
-	private GlobusCredential getDelegatedCredential() throws ResourceException
-	{
-		info("Retrieving delegated credential");
-		try {
-			// Load the endpoint reference
-			EndpointReferenceType epr = loadCredentialEPR();
-			
-			// Create subject for authorization
-			Principal principal = new GlobusPrincipal(site.getSubject());
-			HashSet<Principal> principals = new HashSet<Principal>();
-			principals.add(principal);
-			Subject subject = new Subject(
-					false,principals,new HashSet(),new HashSet());
-			
-			// Get delegated credential
-			DelegationResource delegationResource = 
-				DelegationUtil.getDelegationResource(epr);
-			GlobusCredential credential = 
-				delegationResource.getCredential(subject);
-			org.globus.wsrf.security.SecurityManager.getManager().getCaller();
-			return credential;
-		} catch (DelegationException de) {
-			throw new ResourceException("Unable to get delegated credential",de);
-		}
-	}
-	
-	private void submitUninstallJob() throws ResourceException
-	{
+	private void submitUninstallJob() throws GlideinException {
 		info("Submitting uninstall job");
 		
 		ServiceConfiguration config = getConfig();
@@ -879,17 +458,17 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		job.setExecutable(uninstall);
 		job.setLocalExecutable(true);
 		
-		GlobusCredential cred = getDelegatedCredential();
+		// Load credential
+		GlobusCredential cred = loadCredential();
 		if (validateCredentialLifetime(cred)) {
 			job.setCredential(cred);
 		} else {
-			throw new ResourceException("Not enough time on credential");
+			throw new GlideinException("Not enough time on credential");
 		}
 		
 		// Add environment
-		EnvironmentVariable env[] = site.getEnvironment();
-		if (env!=null) {
-			for (EnvironmentVariable var : env)
+		if (site.getEnvironment()!=null) {
+			for (EnvironmentVariable var : site.getEnvironment())
 				job.addEnvironment(var.getVariable(), var.getValue());
 		}
 		
@@ -905,14 +484,14 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		job.addOutputFile("status");
 		
 		// Add a listener
-		job.addListener(new UninstallSiteListener(getKey()));
+		job.addListener(new UninstallSiteListener(site.getId()));
 		
 		// Submit job
 		try {
 			Condor condor = Condor.getInstance();
 			condor.submitJob(job);
 		} catch (CondorException ce) {
-			throw new ResourceException("Unable to submit uninstall job",ce);
+			throw new GlideinException("Unable to submit uninstall job",ce);
 		}
 		
 		// Log the condor job id in netlogger
@@ -929,26 +508,24 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		
 	}
 	
-	private void deleteFromDatabase() throws ResourceException
-	{
+	private void deleteFromDatabase() throws GlideinException {
 		info("Deleting site from database");
 		try {
 			Database db = Database.getDatabase();
 			SiteDAO dao = db.getSiteDAO();
 			dao.delete(site.getId());
 		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to delete site",de);
+			throw new GlideinException("Unable to delete site",de);
 		}
 	}
 	
-	private void delete() throws ResourceException
-	{
+	private void delete() throws GlideinException {
 		// Remove the Resource from the resource home
 		try {
 			SiteResourceHome resourceHome = SiteResourceHome.getInstance();
-			resourceHome.remove(getKey());
-		} catch (NamingException e) {
-			throw new ResourceException("Unable to locate SiteResourceHome",e);
+			resourceHome.remove(site.getId());
+		} catch (ConfigurationException e) {
+			throw new GlideinException("Unable to locate SiteResourceHome",e);
 		}
 		
 		// Delete the site from the database
@@ -958,8 +535,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		FilesystemUtil.rm(getWorkingDirectory());
 	}
 	
-	private void fail(String message, Exception exception, Calendar time) throws ResourceException
-	{
+	private void fail(String message, Exception exception, Date time) throws GlideinException {
 		// Update status to FAILED
 		error("Failure: "+message,exception);
 		if (exception == null) {
@@ -974,20 +550,18 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		notifyGlideinsOfFailed();
 	}
 	
-	private void failQuietly(String message, Exception exception, Calendar time)
-	{
+	private void failQuietly(String message, Exception exception, Date time) {
 		try {
 			fail(message,exception,time);
-		} catch (ResourceException re) {
+		} catch (GlideinException re) {
 			error("Unable to change state to "+SiteState.FAILED,re);
 		}
 	}
 	
-	public synchronized void handleEvent(SiteEvent event)
-	{
+	public synchronized void handleEvent(SiteEvent event) {
 		try {
 			_handleEvent(event);
-		} catch(ResourceException re) {
+		} catch(GlideinException re) {
 			// RemoteException tacks the cause on to the end of
 			// the message. We don't want that in the database.
 			// Instead, the database stores the entire stack trace
@@ -1007,8 +581,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private void _handleEvent(SiteEvent event) throws ResourceException
-	{
+	private void _handleEvent(SiteEvent event) throws GlideinException {
 		SiteState state = site.getState();
 		SiteEventCode code = (SiteEventCode)event.getCode();
 		
@@ -1031,7 +604,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 					
 					// Change status to staging
 					updateState(SiteState.STAGING, "Staging executables", null, event.getTime());
-						
+					
 					// Submit job
 					submitInstallJob();
 					
@@ -1052,7 +625,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 					// Notify any waiting glideins for this site
 					try {
 						notifyGlideinsOfReady();
-					} catch (ResourceException re) {
+					} catch (GlideinException re) {
 						// No need to fail here, just print a warning
 						warn("Unable to notify glideins",re);
 					}
@@ -1165,20 +738,19 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	public synchronized void recoverState() throws Exception
-	{
+	public synchronized void recoverState() throws Exception {
 		try {
 			
 			// Try to recover state
 			_recoverState();
 			
-		} catch (ResourceException re) {
+		} catch (GlideinException re) {
 			try {
 				
 				// If recovery fails, try to update the state to failed
-				fail("State recovery failed",re,Calendar.getInstance());
+				fail("State recovery failed",re,new Date());
 				
-			} catch (ResourceException re2) {
+			} catch (GlideinException re2) {
 				
 				// If that fails, then fail the entire recovery process
 				throw new Exception(
@@ -1188,8 +760,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private void _recoverState() throws ResourceException
-	{
+	private void _recoverState() throws GlideinException {
 		info("Recovering state");
 		
 		SiteState state = site.getState();
@@ -1210,12 +781,12 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				// If the install log exists, then recover the install job
 				job.setJobId(readJobId(jobDir));
 				InstallSiteListener listener = 
-					new InstallSiteListener(getKey());
+					new InstallSiteListener(site.getId());
 				job.addListener(listener);
 				CondorEventGenerator gen = new CondorEventGenerator(job);
 				gen.start();
 				
-			} else if (getCredentialEPRFile().exists()) {
+			} else if (getCredentialFile().exists()) {
 				
 				// If the credential file still exists, 
 				// try to submit the install job
@@ -1224,7 +795,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 			} else {
 				
 				// Otherwise fail the site
-				fail("Unable to recover site",null,Calendar.getInstance());
+				fail("Unable to recover site",null,new Date());
 				
 			}
 			
@@ -1253,12 +824,12 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				// If the log file exists, try to recover the job
 				job.setJobId(readJobId(jobDir));
 				UninstallSiteListener listener = 
-					new UninstallSiteListener(getKey());
+					new UninstallSiteListener(site.getId());
 				job.addListener(listener);
 				CondorEventGenerator gen = new CondorEventGenerator(job);
 				gen.start();
 				
-			} else if (getCredentialEPRFile().exists()) {
+			} else if (getCredentialFile().exists()) {
 				
 				// Else, if the credential file exists, try to
 				// submit the uninstall job
@@ -1271,7 +842,7 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 				// credential, and we can't go back to ready because
 				// we can't be sure that the site is OK.
 				updateState(SiteState.FAILED,"State recovery failed", 
-						null, Calendar.getInstance());
+						null, new Date());
 				
 			}
 			
@@ -1293,61 +864,35 @@ public class SiteResource implements Resource, ResourceIdentifier, PersistenceCa
 		}
 	}
 	
-	private void authorize() throws ResourceException
-	{
-		try {
-			// Authenticate the client
-			AuthenticationUtil.authenticate();
-			
-			// Set subject and username
-			String subject = AuthenticationUtil.getSubject();
-			if (subject == null || !subject.equals(site.getSubject())) {
-				throw new ResourceException(
-						"Subject "+subject+" is not authorized to modify site "+site.getId());
-			}
-		} catch (SecurityException se) {
-			throw new ResourceException("Unable to authenticate client",se);
-		}
-	}
-	
-	private String logPrefix()
-	{
+	private String logPrefix() {
 		if (site == null) {
 			return "";
 		} else {
 			return "Site "+site.getId()+": ";
 		}
 	}
-	public void debug(String message)
-	{
+	protected void debug(String message) {
 		debug(message,null);
 	}
-	public void debug(String message, Throwable t)
-	{
+	protected void debug(String message, Throwable t) {
 		logger.debug(logPrefix()+message, t);
 	}
-	public void info(String message)
-	{
+	protected void info(String message) {
 		info(message,null);
 	}
-	public void info(String message, Throwable t)
-	{
+	protected void info(String message, Throwable t) {
 		logger.info(logPrefix()+message,t);
 	}
-	public void warn(String message)
-	{
+	protected void warn(String message) {
 		warn(message,null);
 	}
-	public void warn(String message, Throwable t)
-	{
+	protected void warn(String message, Throwable t) {
 		logger.warn(logPrefix()+message,t);
 	}
-	public void error(String message)
-	{
+	protected void error(String message) {
 		error(message,null);
 	}
-	public void error(String message, Throwable t)
-	{
+	protected void error(String message, Throwable t) {
 		logger.error(logPrefix()+message,t);
 	}
 }

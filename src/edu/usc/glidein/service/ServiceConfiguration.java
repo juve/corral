@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,12 +17,10 @@ package edu.usc.glidein.service;
 
 import java.io.File;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
+import edu.usc.corral.config.ConfigurationException;
+import edu.usc.corral.config.Registry;
 
-public class ServiceConfiguration
-{
+public class ServiceConfiguration {
 	private File install;
 	private File uninstall;
 	private File run;
@@ -34,11 +32,8 @@ public class ServiceConfiguration
 	
 	public ServiceConfiguration() { }
 	
-	public static ServiceConfiguration getInstance() throws NamingException
-	{
-		String location = "java:comp/env/glidein/ServiceConfiguration";
-		Context initialContext = new InitialContext();
-	    return (ServiceConfiguration)initialContext.lookup(location);
+	public static ServiceConfiguration getInstance() throws ConfigurationException {
+	    return (ServiceConfiguration)new Registry().lookup("corral/ServiceConfiguration");
 	}
 
 	public String getInstall()

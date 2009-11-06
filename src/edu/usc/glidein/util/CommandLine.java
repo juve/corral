@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,8 +29,7 @@ import java.util.Map;
  *
  * @author Gideon Juve <juve@usc.edu>
  */
-public class CommandLine
-{
+public class CommandLine {
 	/**
 	 * The arguments for the command
 	 */
@@ -70,8 +69,7 @@ public class CommandLine
 	 * Create a new command line instance and initialize
 	 * everything to defaults.
 	 */
-	public CommandLine()
-	{
+	public CommandLine() {
 		arguments = new LinkedList<String>();
 		environment = new HashMap<String,String>();
 		workingDirectory = new File(".");
@@ -86,8 +84,7 @@ public class CommandLine
 	 * @param value The value for the variable
 	 */
 	public void addEnvironmentVariable(String name, String value)
-	throws NullPointerException, IllegalArgumentException
-	{
+	throws NullPointerException, IllegalArgumentException {
 		if(name==null) 
 			throw new NullPointerException("null variable");
 		if(name.length()==0)
@@ -105,8 +102,7 @@ public class CommandLine
 	 * @throws IllegalArgumentException If one of the variable names is invalid
 	 */
 	public void setEnvironment(Map<String,String> env)
-	throws NullPointerException, IllegalArgumentException
-	{
+	throws NullPointerException, IllegalArgumentException {
 		if(env == null)
 			throw new NullPointerException("null environment");
 		environment = new HashMap<String, String>();
@@ -119,8 +115,7 @@ public class CommandLine
 	 * Get the current environment
 	 * @return A map of environment variable name,value pairs
 	 */
-	public Map<String,String> getEnvironment()
-	{
+	public Map<String,String> getEnvironment() {
 		return environment;
 	}
 	
@@ -129,8 +124,7 @@ public class CommandLine
 	 * @param command The command or path to the command
 	 */
 	public void setCommand(String command)
-	throws NullPointerException
-	{
+	throws NullPointerException {
 		if(command==null) 
 			throw new NullPointerException("null command");
 		this.command = command;
@@ -140,8 +134,7 @@ public class CommandLine
 	 * Get the path to the executable
 	 * @return The path
 	 */
-	public String getCommand()
-	{
+	public String getCommand() {
 		return command;
 	}
 	
@@ -150,8 +143,7 @@ public class CommandLine
 	 * @param argument The new argument
 	 */
 	public void addArgument(String argument)
-	throws NullPointerException
-	{
+	throws NullPointerException {
 		if(argument == null) 
 			throw new NullPointerException("null argument");
 		this.arguments.add(argument);
@@ -162,8 +154,7 @@ public class CommandLine
 	 * @param arguments A new list of arguments
 	 */
 	public void setArguments(List<String> arguments)
-	throws NullPointerException
-	{
+	throws NullPointerException {
 		if(arguments == null) 
 			throw new NullPointerException("null arguments");
 		this.arguments = new LinkedList<String>();
@@ -176,8 +167,7 @@ public class CommandLine
 	 * Get the current argument list
 	 * @return The list of arguments
 	 */
-	public List<String> getArguments()
-	{
+	public List<String> getArguments() {
 		return arguments;
 	}
 	
@@ -186,8 +176,7 @@ public class CommandLine
 	 * @param workingDirectory The new working directory
 	 */
 	public void setWorkingDirectory(File workingDirectory)
-	throws NullPointerException, IllegalArgumentException
-	{
+	throws NullPointerException, IllegalArgumentException {
 		if(workingDirectory==null) 
 			throw new NullPointerException("null working directory");
 		if(!workingDirectory.exists())
@@ -207,8 +196,7 @@ public class CommandLine
 	 * Get the current working directory
 	 * @return The current working directory
 	 */
-	public File getWorkingDirectory()
-	{
+	public File getWorkingDirectory() {
 		return workingDirectory.getAbsoluteFile();
 	}
 	
@@ -217,8 +205,7 @@ public class CommandLine
 	 * until the command is executed.
 	 * @return The standard output as a string.
 	 */
-	public String getOutput()
-	{
+	public String getOutput() {
 		return output.toString(); 
 	}
 	
@@ -227,8 +214,7 @@ public class CommandLine
 	 * until the command is executed.
 	 * @return The standard error as a string.
 	 */
-	public String getError()
-	{
+	public String getError() {
 		return error.toString();
 	}
 	
@@ -237,16 +223,14 @@ public class CommandLine
 	 * executed.
 	 * @return The exit code
 	 */
-	public int getExitCode()
-	{ 
+	public int getExitCode() { 
 		return exitCode;
 	}
 	
 	/**
 	 * Execute this command. You can execute it multiple times if you like.
 	 */
-	public void execute() throws IOException
-	{
+	public void execute() throws IOException {
 		LinkedList<String> cmdList = new LinkedList<String>();
 		
 		// Add executable
@@ -262,8 +246,7 @@ public class CommandLine
 		// Prepare the environment
 		String[] env = new String[environment.size()];
 		int i = 0;
-		for(Object variable : environment.keySet())
-		{
+		for(Object variable : environment.keySet()) {
 			env[i++] = variable+"="+environment.get(variable);
 		}
 		
@@ -277,8 +260,7 @@ public class CommandLine
 				new InputStreamReader(p.getInputStream()));
 		output = new StringBuffer();
 		error = new StringBuffer();
-		while(true)
-		{
+		while(true) {
 			String out, err;
 			if((out = stdout.readLine()) != null)
 				output.append(out+"\n");

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,73 +15,146 @@
  */
 package edu.usc.glidein.service;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-
 import org.apache.log4j.Logger;
-import org.globus.wsrf.ResourceException;
-import org.globus.wsrf.ResourceKey;
-import org.globus.wsrf.impl.ResourceHomeImpl;
-import org.globus.wsrf.impl.SimpleResourceKey;
 
+import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.db.Database;
 import edu.usc.glidein.db.DatabaseException;
 import edu.usc.glidein.db.GlideinDAO;
-import edu.usc.glidein.stubs.types.Glidein;
+import edu.usc.glidein.nl.NetLogger;
+import edu.usc.glidein.nl.NetLoggerEvent;
+import edu.usc.glidein.nl.NetLoggerException;
+import edu.usc.corral.config.ConfigurationException;
+import edu.usc.corral.config.Initializable;
+import edu.usc.corral.config.Registry;
+import edu.usc.corral.types.Glidein;
+import edu.usc.corral.types.Site;
+import edu.usc.corral.types.SiteState;
 
-public class GlideinResourceHome extends ResourceHomeImpl
-{
+public class GlideinResourceHome extends ResourceHome implements Initializable {
 	private final Logger logger = Logger.getLogger(GlideinResourceHome.class);
-	private boolean initialized = false;
 	
-	public synchronized void initialize() throws Exception
-	{
-		if (initialized)
-			return;
-		
-		logger.info("Initializing glideins...");
-		
-		super.initialize();
-		
-		// Recover glidein state
+	public void initialize() throws Exception {
+		logger.info("Recovering glideins...");
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			int[] ids = dao.listIds();
 			for (int id : ids) {
-			
-				// Create a resource object
-				ResourceKey key = new SimpleResourceKey(
-						GlideinNames.RESOURCE_KEY, new Integer(id));
-				GlideinResource resource = (GlideinResource)find(key);
-				
-				// Recover the resource state
+				GlideinResource resource = find(id);
 				resource.recoverState();
 			}
 		} catch (DatabaseException de) {
 			throw new Exception(
 					"Unable to get glideins from database",de);
 		}
+	}
+	
+	public static GlideinResourceHome getInstance() throws ConfigurationException {
+		return (GlideinResourceHome)new Registry().lookup("corral/GlideinResourceHome");
+	}
+	
+	public int create(Glidein glidein) throws GlideinException {
 		
-		initialized = true;
+		logger.info("Creating glidein for site "+glidein.getSiteId());
+		
+		// Get site or fail
+		SiteResource siteResource = getSiteResource(glidein.getSiteId());
+		Site site = siteResource.getSite();
+		
+		// Synchronize on the site resource to prevent state changes while
+		// we are checking it and saving the glidein
+		synchronized (siteResource) {
+			
+			// Check to make sure the site is in an 
+			// appropriate state for creating a glidein
+			SiteState siteState = site.getState();
+			if (SiteState.FAILED.equals(siteState) || 
+				SiteState.EXITING.equals(siteState) ||
+				SiteState.REMOVING.equals(siteState)) {
+				
+				throw new GlideinException(
+						"Site cannot be in "+siteState+
+						" when creating a glidein");
+			}
+			
+			// Set the name
+			glidein.setSiteName(site.getName());
+			
+			// Save in the database
+			try {
+				Database db = Database.getDatabase();
+				GlideinDAO dao = db.getGlideinDAO();
+				dao.create(glidein);
+			} catch (DatabaseException dbe) {
+				throw new GlideinException("Unable to create glidein",dbe);
+			}
+		}
+		
+		// Log it in the netlogger log
+		try {
+			NetLoggerEvent event = new NetLoggerEvent("glidein.new");
+			event.setTimeStamp(glidein.getCreated());
+			event.put("glidein.id", glidein.getId());
+			event.put("site.id", site.getId());
+			event.put("condor.host", glidein.getCondorHost());
+			event.put("condor.debug", glidein.getCondorDebug());
+			event.put("count", glidein.getCount());
+			event.put("host_count", glidein.getHostCount());
+			event.put("wall_time", glidein.getWallTime());
+			event.put("num_cpus", glidein.getNumCpus());
+			event.put("gcb_broker", glidein.getGcbBroker());
+			event.put("idle_time", glidein.getIdleTime());
+			event.put("resubmit", glidein.getResubmit());
+			event.put("until", glidein.getUntil());
+			event.put("resubmits", glidein.getResubmits());
+			event.put("rsl", glidein.getRsl());
+			event.put("lowport", glidein.getLowport());
+			event.put("highport", glidein.getHighport());
+			event.put("ccb_address", glidein.getCcbAddress());
+			event.put("owner.subject", glidein.getSubject());
+			event.put("owner.username", glidein.getLocalUsername());
+			
+			NetLogger netlogger = NetLogger.getLog();
+			netlogger.log(event);
+		} catch (NetLoggerException nle) {
+			logger.warn("Unable to log glidein event to NetLogger log",nle);
+		}
+		
+		GlideinResource resource = new GlideinResource(glidein);
+		this.add(glidein.getId(), resource);
+		return glidein.getId();
 	}
 	
-	public static GlideinResourceHome getInstance() throws NamingException
-	{
-		String location = "java:comp/env/services/glidein/GlideinService/home";
-		Context initialContext = new InitialContext();
-    	return (GlideinResourceHome)initialContext.lookup(location);
+	private SiteResource getSiteResource(int id) throws GlideinException {
+		try {
+			SiteResourceHome siteHome = SiteResourceHome.getInstance();
+			return siteHome.find(id);
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get SiteResourceHome",ne);
+		}
+	}
+
+	public GlideinResource find(int id) throws GlideinException {
+		synchronized (this) {
+			if (contains(id)) {
+				return (GlideinResource)get(id);
+			} else {
+				Glidein g = load(id);
+				GlideinResource r = new GlideinResource(g);
+				add(id, r);
+				return r;
+			}
+		}
 	}
 	
-	public ResourceKey create(Glidein glidein)
-	throws ResourceException
-	{
-		GlideinResource resource = new GlideinResource();
-		resource.create(glidein);
-		ResourceKey key = new SimpleResourceKey(
-				getKeyTypeName(), new Integer(glidein.getId()));
-		this.add(key, resource);
-		return key;
+	public Glidein load(int id) throws GlideinException {
+		try {
+			Database db = Database.getDatabase();
+			GlideinDAO dao = db.getGlideinDAO();
+			return dao.load(id);
+		} catch(DatabaseException de) {
+			throw new GlideinException("Unable to load glidein",de);
+		}
 	}
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -20,9 +20,7 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-
+import edu.usc.corral.config.Registry;
 import edu.usc.glidein.util.CommandLine;
 
 /**
@@ -30,51 +28,41 @@ import edu.usc.glidein.util.CommandLine;
  *
  * @author Gideon Juve <juve@usc.edu>
  */
-public class Condor
-{
+public class Condor {
 	private File condorHome;
 	private File condorConfig;
 	
-	public Condor()
-	{
+	public Condor() {
 		condorHome = null;
 		condorConfig = null;
 	}
 	
-	public Condor(String condorHome, String condorConfig)
-	{
+	public Condor(String condorHome, String condorConfig) {
 		setCondorConfig(condorConfig);
 		setCondorHome(condorHome);
 	}
 	
-	public static Condor getInstance() throws CondorException
-	{
-		String location = "java:comp/env/glidein/Condor";
+	public static Condor getInstance() throws CondorException {
 		try {
-			Context initialContext = new InitialContext();
-	    	return (Condor)initialContext.lookup(location);
+	    	return (Condor)new Registry().lookup("corral/Condor");
 		} catch (Exception e) {
-			throw new CondorException("Unable to load condor: "+location,e);
+			throw new CondorException("Unable to load condor configuration",e);
 		}
 	}
 	
-	public void setCondorConfig(String condorConfig)
-	{
+	public void setCondorConfig(String condorConfig) {
 		this.condorConfig = new File(condorConfig);
 	}
 	
-	public String getCondorConfig()
-	{
+	public String getCondorConfig() {
 		return condorConfig.getAbsolutePath();
 	}
 	
-	public String getCondorHome()
-	{
+	public String getCondorHome() {
 		return condorHome.getAbsolutePath();
 	}
 	
-	public void setCondorHome(String condorHome)
-	{
+	public void setCondorHome(String condorHome) {
 		this.condorHome = new File(condorHome);
 	}
 	
@@ -84,8 +72,7 @@ public class Condor
 	 * @param job The job to submit
 	 * @throws CondorException If the submission fails
 	 */
-	public void submitJob(CondorJob job) throws CondorException
-	{
+	public void submitJob(CondorJob job) throws CondorException {
 		// Prepare the job
 		job.prepareForSubmit();
 		
@@ -148,8 +135,7 @@ public class Condor
 	 * @param job The job to cancel
 	 * @throws CondorException If there is an error cancelling the job
 	 */
-	public void cancelJob(CondorJob job) throws CondorException
-	{	
+	public void cancelJob(CondorJob job) throws CondorException {
 		//Run rm command
 		CommandLine cancel = new CommandLine();
 		try {
@@ -184,8 +170,7 @@ public class Condor
 		}
 	}
 	
-	public static void main(String[] args)
-	{
+	public static void main(String[] args) {
 		CondorJob job = new CondorJob(new File("/tmp/glidein_service/job-123"),System.getenv("user.name"));
 		job.setUniverse(CondorUniverse.GRID);
 		//job.setGridType(CondorGridType.GT2);

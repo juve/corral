@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,19 +15,15 @@
  */
 package edu.usc.glidein.db;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
+import edu.usc.corral.config.ConfigurationException;
+import edu.usc.corral.config.Registry;
 
-public abstract class Database
-{
-	public static Database getDatabase() throws DatabaseException
-	{
-		String location = "java:comp/env/glidein/Database";
+public abstract class Database {
+	public static Database getDatabase() throws DatabaseException {
 		try {
-			Context initialContext = new InitialContext();
-	    	return (Database)initialContext.lookup(location);
-		} catch (Exception e) {
-			throw new DatabaseException("Unable to load database: "+location,e);
+	    	return (Database)new Registry().lookup("corral/Database");
+		} catch (ConfigurationException e) {
+			throw new DatabaseException("Unable to load database",e);
 		}
 	}
 	

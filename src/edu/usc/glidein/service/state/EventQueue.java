@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,21 +22,17 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
+import edu.usc.corral.config.ConfigurationException;
+import edu.usc.corral.config.Initializable;
+import edu.usc.corral.config.Registry;
 
-import org.globus.wsrf.jndi.Initializable;
-
-public class EventQueue implements Initializable
-{
+public class EventQueue implements Initializable {
 	private int numThreads = 1;
 	private ExecutorService pool;
 
 	public EventQueue() { }
 	
-	public void initialize() throws Exception
-	{
+	public void initialize() throws Exception {
 		pool = new ThreadPoolExecutor(
 				numThreads, numThreads, 0L, 
 				TimeUnit.MILLISECONDS, 
@@ -44,29 +40,24 @@ public class EventQueue implements Initializable
 				new EventQueueThreadFactory());
 	}
 	
-	public int getNumThreads()
-	{
+	public int getNumThreads() {
 		return numThreads;
 	}
 
-	public void setNumThreads(int numThreads)
-	{
+	public void setNumThreads(int numThreads) {
 		this.numThreads = numThreads;
 	}
 	
-	public void add(Event event)
-	{
+	public void add(Event event) {
 		pool.execute(event);
 	}
 	
-	public static class EventQueueThreadFactory implements ThreadFactory 
-	{
+	public static class EventQueueThreadFactory implements ThreadFactory  {
 		private String namePrefix = "EventQueueThread-";
 		private ThreadGroup group;
 		private AtomicInteger threadNumber = new AtomicInteger(1);
 		
-		public EventQueueThreadFactory()
-	    {
+		public EventQueueThreadFactory() {
 	        SecurityManager securitymanager = System.getSecurityManager();
 	        if (securitymanager == null) {
 	        	group = Thread.currentThread().getThreadGroup();
@@ -75,8 +66,7 @@ public class EventQueue implements Initializable
 	        }
 	    }
 
-		public Thread newThread(Runnable runnable)
-		{
+		public Thread newThread(Runnable runnable) {
 			Thread thread = new Thread(group, runnable, 
 					namePrefix+threadNumber.getAndIncrement(), 0L);
 			if(thread.isDaemon())
@@ -87,10 +77,7 @@ public class EventQueue implements Initializable
 		}
 	}
 
-	public static EventQueue getInstance() throws NamingException
-	{
-		String location = "java:comp/env/glidein/EventQueue";
-		Context initialContext = new InitialContext();
-	    return (EventQueue)initialContext.lookup(location);
+	public static EventQueue getInstance() throws ConfigurationException {
+	    return (EventQueue)new Registry().lookup("corral/EventQueue");
 	}
 }

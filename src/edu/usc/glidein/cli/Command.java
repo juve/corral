@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,50 +16,33 @@
 package edu.usc.glidein.cli;
 
 import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.UnknownHostException;
-import java.security.cert.X509Certificate;
 import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.globus.axis.message.addressing.EndpointReferenceType;
-import org.globus.axis.util.Util;
-import org.globus.delegation.DelegationUtil;
 import org.globus.gsi.GlobusCredential;
+import org.globus.gsi.GlobusCredentialException;
 
-import org.globus.wsrf.security.authorization.client.Authorization;
-import org.globus.wsrf.impl.security.authorization.HostAuthorization;
-import org.globus.wsrf.impl.security.authorization.IdentityAuthorization;
-import org.globus.wsrf.impl.security.authorization.HostOrSelfAuthorization;
-import org.globus.wsrf.impl.security.descriptor.ClientSecurityDescriptor;
-import org.globus.wsrf.security.Constants;
-import org.globus.wsrf.utils.AddressingUtils;
-
-public abstract class Command
-{
-	static { Util.registerTransport(); }
+public abstract class Command {
 	
 	public static final String COMMAND_NAME = "corral";
 	
-	public static final Class[] SUBCOMMANDS = {
+	public static final Class<?>[] SUBCOMMANDS = {
 		HelpCommand.class,
 		CreateSiteCommand.class,
 		RemoveSiteCommand.class,
 		ListSiteCommand.class,
 		CreateGlideinCommand.class,
 		RemoveGlideinCommand.class,
-		ListGlideinCommand.class,
-		SiteHistoryCommand.class,
-		GlideinHistoryCommand.class
+		ListGlideinCommand.class
 	};
 	
-	public static HashMap<String,Class> LOOKUP;
+	public static HashMap<String,Class<?>> LOOKUP;
 	
 	static {
-		LOOKUP = new HashMap<String,Class>();
-		for (Class clazz : SUBCOMMANDS) {
+		LOOKUP = new HashMap<String,Class<?>>();
+		for (Class<?> clazz : SUBCOMMANDS) {
 			Command command = null;
 			try {
 				command = (Command)clazz.newInstance();
@@ -77,13 +60,9 @@ public abstract class Command
 	private String host;
 	private int port;
 	private boolean debug;
-	private String security;
-	private Integer protection;
-	private Authorization authorization;
-	private boolean anonymous;
+	private GlobusCredential credential;
 	
-	public Command() 
-	{
+	public Command() {
 		options = new LinkedList<Option>();
 		
 		// Add common options
@@ -93,7 +72,7 @@ public abstract class Command
 				  .setLongOption("host")
 				  .setUsage("-h | --host <host|ip>")
 				  .setDescription("Service host (default: '"+getDefaultHost()+"'. The default can be set by\n" +
-				  		          "specifying the GLIDEIN_HOST environment variable.)")
+				  		          "specifying the CORRAL_HOST environment variable.)")
 				  .hasArgument()
 		);
 		options.add(
@@ -101,12 +80,8 @@ public abstract class Command
 				  .setOption("p")
 				  .setLongOption("port")
 				  .setUsage("-p | --port <port>")
-				  .setDescription("Service port (default: "+(getDefaultPort()==null
-						  		 ?"'8443' for transport security, '8080' otherwise.\n"+
-						  		  "The default can be set by specifying the GLIDEIN_PORT environment variable.)"
-								 :"'"+getDefaultPort()+"'. The default can be set by\n" +
-								  "specifying the GLIDEIN_PORT environment variable.)"
-								  ))
+				  .setDescription("Service port (default: '"+getDefaultPort()+"'. The default can be set by\n" +
+								  "specifying the CORRAL_PORT environment variable.)")
 				  .hasArgument()	 
 		);
 		options.add(
@@ -115,39 +90,6 @@ public abstract class Command
 				  .setLongOption("debug")
 				  .setUsage("-d | --debug")
 				  .setDescription("Enable verbose debugging messages")
-		);
-		options.add(
-			Option.create()
-				  .setOption("sec")
-				  .setLongOption("security")
-				  .setUsage("-sec | --security <mode>")
-				  .setDescription("Security mode. One of: 'msg', 'conv', 'trans', or 'none'. \n" +
-				  				  "(default: trans)")
-				  .hasArgument()
-		);
-		options.add(
-			Option.create()
-				  .setOption("P")
-				  .setLongOption("protection")
-				  .setUsage("-P | --protection <type>")
-				  .setDescription("Protection type. Either 'sig', or 'enc'. (default: 'sig')")
-				  .hasArgument()
-		);
-		options.add(
-			Option.create()
-				  .setOption("authz")
-				  .setLongOption("authorization")
-				  .setUsage("-authz | --authorization <mode>")
-				  .setDescription("Authorization mode. One of: 'host', 'self', 'none', or a DN. \n" +
-				  				  "(default: 'host')")
-				  .hasArgument()
-		);
-		options.add(
-			Option.create()
-				  .setOption("anon")
-				  .setLongOption("anonymous")
-				  .setUsage("-anon | --anonymous")
-				  .setDescription("Enable anonymous authentication")
 		);
 		options.add(
 			Option.create()
@@ -165,68 +107,39 @@ public abstract class Command
 		addOptions(options);
 	}
 	
-	public boolean isDebug()
-	{
+	public boolean isDebug() {
 		return debug;
 	}
 	
-	public void setDebug(boolean debug)
-	{
+	public void setDebug(boolean debug) {
 		this.debug = debug;
 	}
 	
-	public String getHost()
-	{
+	public String getHost() {
 		return host;
 	}
 	
-	public void setHost(String host)
-	{
+	public void setHost(String host) {
 		this.host = host;
 	}
 	
-	public int getPort()
-	{
+	public int getPort() {
 		return port;
 	}
 	
-	public void setPort(int port)
-	{
+	public void setPort(int port) {
 		this.port = port;
 	}
 	
-	public void setSecurity(String security)
-	{
-		this.security = security;
+	public GlobusCredential getCredential() {
+		return credential;
 	}
 	
-	public String getSecurity()
-	{
-		return security;
+	public void setCredential(GlobusCredential credential) {
+		this.credential = credential;
 	}
 	
-	public void setProtection(Integer protection)
-	{
-		this.protection = protection;
-	}
-	
-	public Integer getProtection()
-	{
-		return protection;
-	}
-	
-	public Authorization getAuthorization()
-	{
-		return authorization;
-	}
-	
-	public void setAuthorization(Authorization authz)
-	{
-		this.authorization = authz;
-	}
-
-	public void invoke(String[] args) throws CommandException
-	{
+	public void invoke(String[] args) throws CommandException {
 		// Parse command line args
 		CommandLine cmdln = CommandLine.parse(options, args);
 		
@@ -239,74 +152,6 @@ public abstract class Command
 			debug = false;
 		}
 		
-		// Security
-		String securityType = null;
-		if (cmdln.hasOption("sec")) {
-			securityType = cmdln.getOptionValue("sec");
-		} else {
-			securityType = "transport";
-		}
-		if (securityType.matches("^(msg)|(message)$")) {
-			security = Constants.GSI_SEC_MSG;
-		} else if (securityType.matches("^conv(ersation)?$")) {
-			security = Constants.GSI_SEC_CONV;
-		} else if (securityType.matches("^trans(port)?$")) {
-			security = Constants.GSI_TRANSPORT;
-		} else if (securityType.matches("^none$")) {
-			security = null;
-		} else {
-			throw new CommandException("Invalid security type: "+securityType);
-		}
-		if (debug) {
-			System.out.println("Using "+securityType+" security");
-		}
-		
-		// Protection
-		String protectionType = null;
-		if (cmdln.hasOption("P")) {
-			protectionType = cmdln.getOptionValue("P");
-		} else {
-			protectionType = "signature";
-		}
-		if (protectionType.matches("^sig(nature)?$")) {
-			protection = Constants.SIGNATURE;
-		} else if (protectionType.matches("^enc(ryption)?$")) {
-			protection = Constants.ENCRYPTION;
-		} else {
-			throw new CommandException("Invalid protection type: "+protectionType);
-		}
-		if (debug) {
-			System.out.println("Using "+protectionType+" protection");
-		}
-		
-		// Authz
-		String authz = null;
-		if (cmdln.hasOption("authz")) {
-			authz = cmdln.getOptionValue("authz");
-		} else {
-			authz = "host"; // default is host
-		}
-		if (authz.equalsIgnoreCase("host")) {
-			authorization = new HostAuthorization();
-		} else if (authz.equalsIgnoreCase("self")) {
-			authorization = new HostOrSelfAuthorization();
-		} else if (authz.equalsIgnoreCase("none")) {
-			authorization = null;
-		} else {
-			authorization = new IdentityAuthorization(authz);
-		}
-		
-		if (debug) {
-			System.out.println("Using "+authz+" authorization");
-		}
-		
-		// Authentication
-		if (cmdln.hasOption("anon")) {
-			anonymous = true;
-		} else {
-			anonymous = false;
-		}
-		
 		// Host
 		if (cmdln.hasOption("h")) {
 			host = cmdln.getOptionValue("h");
@@ -315,20 +160,23 @@ public abstract class Command
 		}
 		
 		// Port
-		if (cmdln.hasOption("p") || getDefaultPort()!=null) {
-			String portString = cmdln.getOptionValue("p",getDefaultPort());
+		if (cmdln.hasOption("p")) {
+			String portString = cmdln.getOptionValue("p");
 			if (portString.matches("[0-9]+")) {
 				port = Integer.parseInt(portString);
 			} else {
 				throw new CommandException("Invalid port: "+portString);
 			}
 		} else {
-			// Default port depends on authentication mode
-			if (Constants.GSI_TRANSPORT.equals(security)) {
-				port = 8443;
-			} else {
-				port = 8080;
-			}
+			port = getDefaultPort();
+		}
+		
+		// Get proxy credential
+		try {
+			if (HelpCommand.class != this.getClass())
+				credential = GlobusCredential.getDefaultCredential();
+		} catch (GlobusCredentialException ce) {
+			throw new CommandException("Unable to get globus proxy: "+ce.getMessage(), ce);
 		}
 		
 		// Set command-specific arguments
@@ -338,27 +186,7 @@ public abstract class Command
 		execute();
 	}
 	
-	public URL getServiceURL(String service) throws CommandException
-	{
-		// Protocol depends on security setting
-		String protocol = null;
-		if (Constants.GSI_TRANSPORT.equals(security)) {
-			protocol = "https";
-		} else {
-			protocol = "http";
-		}
-		
-		// Construct url
-		String url = protocol+"://"+host+":"+port+"/wsrf/services/"+service;
-		try {
-			return new URL(url);
-		} catch(MalformedURLException e) {
-			throw new CommandException("Invalid URL: "+url+": "+e.getMessage(),e);
-		}
-	}
-
-	public String getOptionString()
-	{
+	public String getOptionString() {
 		// Determine the length of the longest usage
 		int max = 0;
 		for (Option option : options) {
@@ -390,87 +218,33 @@ public abstract class Command
 		return buff.toString();
 	}
 	
-	public ClientSecurityDescriptor getClientSecurityDescriptor()
-	{
-		// See org.globus.delegation.client.Delegate, 
-		// and org.globus.delegation.client.BaseClient
-		ClientSecurityDescriptor desc = new ClientSecurityDescriptor();
-		
-		// Set security
-		if (security==null) {
-			/* Do nothing for type 'none' */
-		} else if (Constants.GSI_SEC_MSG.equals(security)) {
-			desc.setGSISecureMsg(protection);
-		} else if (Constants.GSI_SEC_CONV.equals(security)) {
-			if (anonymous) {
-				desc.setSecConvAnonymous();
-			} else {
-				desc.setGSISecureConv(protection);
-			}
-		} else if (Constants.GSI_TRANSPORT.equals(security)) {
-			if (anonymous) {
-				desc.setSecTransportAnonymous();
-			} else {
-				desc.setGSISecureTransport(protection);
-			}
-		} else {
-			throw new IllegalStateException("Invalid security: "+security);
-		}
-		
-		// Set authorization
-        desc.setAuthz(authorization);
-        
-        return desc;
+	public String getDefaultHost() {
+		String ehost = System.getenv("CORRAL_HOST");
+		if (ehost == null) return getLocalHost();
+		else return ehost;
 	}
 	
-	public EndpointReferenceType delegateCredential(GlobusCredential credential)
-	throws CommandException
-	{
-		// (see org.globus.delegation.DelegationUtil, org.globus.delegation.client.Delegate)
-		ClientSecurityDescriptor desc = getClientSecurityDescriptor();
-		boolean fullDelegation = true;
-		URL delegationServiceUrl = getServiceURL("DelegationFactoryService");
-		
-		try {
-			EndpointReferenceType delegEpr =
-	            AddressingUtils.createEndpointReference(delegationServiceUrl.toString(), null);
-			
-			X509Certificate[] certsToDelegateOn =
-	            DelegationUtil.getCertificateChainRP(delegEpr,desc);
-	        
-			EndpointReferenceType credentialEPR = 
-				DelegationUtil.delegate(delegationServiceUrl.toString(), 
-	        		credential, certsToDelegateOn[0], fullDelegation, desc);
-	        
-			return credentialEPR;
-		} catch (Exception e) {
-			throw new CommandException("Unable to delegate credential: "+e.getMessage(), e);
-		}
-	}
-	
-	public String getDefaultHost()
-	{
-		// If $GLIDEIN_HOST is specified, use that. Otherwise
-		// use the local host name.
-		String host = System.getenv("GLIDEIN_HOST");
-		if (host == null) return getLocalHost();
-		else return host;
-	}
-	
-	public String getLocalHost()
-	{
+	public String getLocalHost() {
 		// Set the default condor host
 		try {
 			InetAddress addr = InetAddress.getLocalHost();
 			return addr.getHostName();
 		}  catch (UnknownHostException uhe) {
-			return null;
+			throw new RuntimeException("localhost is invalid", uhe);
 		}
 	}
 	
-	public String getDefaultPort()
-	{
-		return System.getenv("GLIDEIN_PORT");
+	public int getDefaultPort() {
+		String eport = System.getenv("CORRAL_PORT");
+		if (eport == null){
+			return 8443; 
+		} else {
+			try {
+				return Integer.parseInt(eport);
+			} catch (Exception e) {
+				throw new RuntimeException("CORRAL_PORT env var is invalid");
+			}
+		}
 	}
 	
 	abstract public String getUsage();
@@ -481,9 +255,8 @@ public abstract class Command
 	abstract public void setArguments(CommandLine cmdln) throws CommandException;
 	abstract public void execute() throws CommandException;
 
-	public static Command getCommand(String name)
-	{
-		Class clazz = LOOKUP.get(name);
+	public static Command getCommand(String name) {
+		Class<?> clazz = LOOKUP.get(name);
 		if (clazz == null) {
 			return null;
 		}

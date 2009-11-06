@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,64 +15,52 @@
  */
 package edu.usc.glidein.service.state;
 
-import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.globus.wsrf.ResourceKey;
-
-public abstract class Event implements Runnable
-{
+public abstract class Event implements Runnable {
 	private EventCode code;
 	private Map<String,Object> properties;
-	private ResourceKey key;
-	private Calendar time;
+	private int id;
+	private Date time;
 	
-	public Event(EventCode code, Calendar time, ResourceKey key)
-	{
+	public Event(EventCode code, Date time, int id) {
 		this.code = code;
-		this.key = key;
+		this.id = id;
 		this.time = time;
 		properties = new HashMap<String,Object>();
 	}
 
-	public EventCode getCode()
-	{
+	public EventCode getCode() {
 		return code;
 	}
 
-	public void setCode(EventCode code)
-	{
+	public void setCode(EventCode code) {
 		this.code = code;
 	}
 
-	public ResourceKey getKey()
-	{
-		return key;
+	public int getId() {
+		return id;
 	}
 
-	public void setKey(ResourceKey key)
-	{
-		this.key = key;
+	public void setId(int id) {
+		this.id = id;
 	}
 	
-	public void setTime(Calendar time)
-	{
+	public void setTime(Date time) {
 		this.time = time;
 	}
 	
-	public Calendar getTime()
-	{
+	public Date getTime() {
 		return time;
 	}
 	
-	public void setProperty(String key, Object value)
-	{
+	public void setProperty(String key, Object value) {
 		properties.put(key, value);
 	}
 	
-	public Object getProperty(String key)
-	{
+	public Object getProperty(String key) {
 		return properties.get(key);
 	}
 }

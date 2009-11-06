@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import org.apache.log4j.Logger;
-import org.globus.wsrf.jndi.Initializable;
 
+import edu.usc.corral.config.Initializable;
 import edu.usc.glidein.db.DatabaseException;
 import edu.usc.glidein.db.GlideinDAO;
 import edu.usc.glidein.db.JDBCUtil;
@@ -33,8 +33,7 @@ import edu.usc.glidein.db.SiteDAO;
 import edu.usc.glidein.db.sql.SQLDatabase;
 import edu.usc.glidein.util.IOUtil;
 
-public class MySQLDatabase extends SQLDatabase implements Initializable
-{
+public class MySQLDatabase extends SQLDatabase implements Initializable {
 	public static final Logger logger = Logger.getLogger(MySQLDatabase.class);
 	public static final String DB_DRIVER = "com.mysql.jdbc.Driver";
 	
@@ -43,48 +42,38 @@ public class MySQLDatabase extends SQLDatabase implements Initializable
 	private String password;
 	private File schemaFile;
 	private boolean autoInstall;
-	private boolean initialized = false;
 	
 	public MySQLDatabase() { }
 	
-	public void initialize() throws Exception
-	{
-		synchronized (this) {
-			if (initialized)
-				return;
-		
-			try {
-				// Load database driver
-				Class.forName(DB_DRIVER);
-				
-				// If we are allowing auto installation of the database tables
-				if (isAutoInstall()) {
+	public void initialize() throws Exception {
+		try {
+			// Load database driver
+			Class.forName(DB_DRIVER);
+			
+			// If we are allowing auto installation of the database tables
+			if (isAutoInstall()) {
 
-					// If tables aren't installed
+				// If tables aren't installed
+				if (!tablesInstalled()) {
+					logger.info("Installing database tables");
+
+					// Run script
+					runDatabaseScript();
+
+					// Check interface table again
 					if (!tablesInstalled()) {
-						logger.info("Installing database tables");
-
-						// Run script
-						runDatabaseScript();
-
-						// Check interface table again
-						if (!tablesInstalled()) {
-							throw new DatabaseException(
-									"Unable to install tables");
-						}
+						throw new DatabaseException(
+								"Unable to install tables");
 					}
 				}
-			} catch (Exception e) {
-				logger.error("Unable to initialize MySQLDatabase",e);
-				throw e;
 			}
-			
-			initialized = true;
+		} catch (Exception e) {
+			logger.error("Unable to initialize MySQLDatabase",e);
+			throw e;
 		}
 	}
 	
-	private void runDatabaseScript() throws DatabaseException
-	{
+	private void runDatabaseScript() throws DatabaseException {
 		Connection conn = null;
 		Statement stmt = null;
 		try {
@@ -107,8 +96,7 @@ public class MySQLDatabase extends SQLDatabase implements Initializable
 		}
 	}
 	
-	private boolean tablesInstalled() throws DatabaseException
-	{
+	private boolean tablesInstalled() throws DatabaseException {
 		Connection conn = null;
 		Statement stmt = null;
 		ResultSet rs = null;
@@ -127,77 +115,63 @@ public class MySQLDatabase extends SQLDatabase implements Initializable
 		}
 	}
 	
-	private String[] getStatements(File script) throws IOException
-	{
+	private String[] getStatements(File script) throws IOException {
 		String stmts = IOUtil.read(script);
 		return stmts.split("[;]");
 	}
 	
-	public String getUrl()
-	{
+	public String getUrl() {
 		return url;
 	}
 
-	public void setUrl(String url)
-	{
+	public void setUrl(String url) {
 		this.url = url;
 	}
 
-	public String getUser()
-	{
+	public String getUser() {
 		return user;
 	}
 
-	public void setUser(String user)
-	{
+	public void setUser(String user) {
 		this.user = user;
 	}
 
-	public String getPassword()
-	{
+	public String getPassword() {
 		return password;
 	}
 
-	public void setPassword(String password)
-	{
+	public void setPassword(String password) {
 		this.password = password;
 	}
 
-	public String getSchemaFile()
-	{
+	public String getSchemaFile() {
 		return schemaFile.getAbsolutePath();
 	}
 
-	public void setSchemaFile(String schemaFile)
-	{
+	public void setSchemaFile(String schemaFile) {
 		this.schemaFile = new File(schemaFile);
 		if (!this.schemaFile.isAbsolute()) {
 			this.schemaFile = new File(System.getProperty("GLOBUS_LOCATION"),schemaFile);
 		}
 	}
 
-	public boolean isAutoInstall()
-	{
+	public boolean isAutoInstall() {
 		return autoInstall;
 	}
 
-	public void setAutoInstall(boolean autoInstall)
-	{
+	public void setAutoInstall(boolean autoInstall) {
 		this.autoInstall = autoInstall;
 	}
 
-	public SiteDAO getSiteDAO()
-	{
+	public SiteDAO getSiteDAO() {
 		return new MySQLSiteDAO(this);
 	}
 	
-	public GlideinDAO getGlideinDAO()
-	{
+	public GlideinDAO getGlideinDAO() {
 		return new MySQLGlideinDAO(this);
 	}
 	
-	public Connection getConnection() throws DatabaseException
-	{
+	public Connection getConnection() throws DatabaseException {
 		try {
 			Connection conn = DriverManager.getConnection(url,user,password);
 			conn.setAutoCommit(false);

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,30 +22,24 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class IOUtil
-{
+public class IOUtil {
 	/**
 	 * Read the contents of a file
 	 * @param f The file to read
 	 * @return The entire contents of the file
 	 */
-	public static String read(File file) throws IOException
-	{
+	public static String read(File file) throws IOException {
 		StringBuffer buff = new StringBuffer();
 		BufferedReader reader = new BufferedReader(new FileReader(file));
-		try
-		{
+		try {
 			String line = null;
 			int i = 0;
-			while((line = reader.readLine()) != null)
-			{
+			while((line = reader.readLine()) != null) {
 				if(i>0) buff.append("\n");
 				buff.append(line);
 				i++;
 			}
-		}
-		finally
-		{
+		} finally {
 			reader.close();
 		}
 		return buff.toString();
@@ -57,15 +51,11 @@ public class IOUtil
 	 * @param file The file to write to
 	 * @throws IOException If there is a problem writing the file
 	 */
-	public static void write(String output, File file) throws IOException
-	{
+	public static void write(String output, File file) throws IOException {
 		BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-		try
-		{
+		try {
 			writer.write(output);
-		}
-		finally
-		{
+		} finally {
 			writer.close();
 		}
 	}

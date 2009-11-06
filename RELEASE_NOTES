@@ -1,4 +1,23 @@
 ===================================
+  Release Notes for version 2.0.0
+===================================
+
+UPGRADING
+---------
+This release requires a database upgrade to remove some unnecessary tables. 
+See the upgrade directory in SVN for more information.
+
+CHANGES
+-------
+1) No longer based on Globus GT4 framework. Too many changes to list.
+
+KNOWN BUGS
+----------
+1) The --wait command-line option still doesn't work correctly. I am going
+   to fix it when I re-implement notifications.
+
+
+===================================
   Release Notes for version 1.2.1
 ===================================
 

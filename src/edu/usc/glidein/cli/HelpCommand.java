@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,15 +17,12 @@ package edu.usc.glidein.cli;
 
 import java.util.List;
 
-public class HelpCommand extends Command
-{
+public class HelpCommand extends Command {
 	private String[] commands;
 	
-	protected void addOptions(List<Option> options)
-	{
+	protected void addOptions(List<Option> options) {
 		// Remove options not used by this command
-		for (int i=0; i<options.size(); )
-		{
+		for (int i=0; i<options.size(); ) {
 			Option option = options.get(i);
 			if ("d".equals(option.getOption())) {
 				// Keep debug option
@@ -37,19 +34,17 @@ public class HelpCommand extends Command
 		}
 	}
 	
-	public void setArguments(CommandLine cmdln)
-	{
+	public void setArguments(CommandLine cmdln) {
 		commands = cmdln.getArgs();	
 	}
 	
-	public void execute() throws CommandException
-	{
+	public void execute() throws CommandException {
 		if (commands.length==0) {
 			StringBuffer buff = new StringBuffer();
 			buff.append("Usage: "+COMMAND_NAME+" <subcommand> [options] [args]\n");
 			buff.append("Type '"+COMMAND_NAME+" help <subcommand>' for help on a specific subcommand.\n\n");
 			buff.append("Available subcommands:\n");
-			for (Class clazz : SUBCOMMANDS) {
+			for (Class<?> clazz : SUBCOMMANDS) {
 				Command subcommand = null;
 				try {
 					subcommand = (Command)clazz.newInstance();
@@ -84,23 +79,19 @@ public class HelpCommand extends Command
 		}
 	}
 	
-	public String getName() 
-	{
+	public String getName() {
 		return "help";
 	}
 	
-	public String[] getAliases()
-	{
+	public String[] getAliases() {
 		return new String[]{"h"};
 	}
 	
-	public String getDescription()
-	{
+	public String getDescription() {
 		return "help (h): Describe the usage of this program or its subcommands.";
 	}
 	
-	public String getUsage()
-	{
+	public String getUsage() {
 		return "Usage: help [SUBCOMMAND...]";
 	}
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,22 +18,20 @@ package edu.usc.glidein.cli;
 import java.util.LinkedList;
 import java.util.List;
 
-import edu.usc.glidein.api.GlideinException;
-import edu.usc.glidein.api.GlideinService;
-import edu.usc.glidein.service.GlideinNames;
+import org.globus.gsi.GlobusCredential;
 
-public class RemoveGlideinCommand extends Command
-{
+import edu.usc.corral.types.RemoveRequest;
+import edu.usc.glidein.api.GlideinService;
+
+public class RemoveGlideinCommand extends Command {
 	private boolean force;
 	private List<Integer> ids;
 	
-	public RemoveGlideinCommand()
-	{
+	public RemoveGlideinCommand() {
 		ids = new LinkedList<Integer>();
 	}
 	
-	public void addOptions(List<Option> options)
-	{
+	public void addOptions(List<Option> options) {
 		options.add(
 			Option.create()
 				  .setOption("f")
@@ -43,8 +41,7 @@ public class RemoveGlideinCommand extends Command
 		);
 	}
 	
-	public void setArguments(CommandLine cmdln) throws CommandException
-	{
+	public void setArguments(CommandLine cmdln) throws CommandException {
 		// Force
 		if (cmdln.hasOption("f")) {
 			force = true;
@@ -67,41 +64,34 @@ public class RemoveGlideinCommand extends Command
 		}
 	}
 	
-	public void execute() throws CommandException
-	{
+	public void execute() throws CommandException {
 		/* Delete all the glideins */
+		GlideinService svc = new GlideinService(getHost(), getPort());
 		for (int id : ids) {
 			try {
 				if (isDebug()) System.out.print("Removing glidein "+id+"... ");
-				GlideinService instance = new GlideinService(
-						getServiceURL(GlideinNames.GLIDEIN_SERVICE),id);
-				instance.setDescriptor(getClientSecurityDescriptor());
-				instance.remove(force);
+				svc.remove(new RemoveRequest(id, force, GlobusCredential.getDefaultCredential()));
 				if (isDebug()) System.out.println("done.");
-			} catch (GlideinException ge) {
-				System.out.println(ge.getMessage());
-				if (isDebug()) ge.printStackTrace();
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+				if (isDebug()) e.printStackTrace();
 			}
 		}
 	}
 	
-	public String getName()
-	{
+	public String getName() {
 		return "remove-glidein";
 	}
 	
-	public String[] getAliases()
-	{
+	public String[] getAliases() {
 		return new String[]{"rg"};
 	}
 	
-	public String getDescription()
-	{
+	public String getDescription() {
 		return "remove-glidein (rg): Remove an existing glidein";
 	}
 	
-	public String getUsage()
-	{
+	public String getUsage() {
 		return "Usage: remove-glidein ID...";
 	}
 }

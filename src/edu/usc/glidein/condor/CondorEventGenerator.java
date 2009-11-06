@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedList;
 
@@ -110,17 +109,10 @@ public class CondorEventGenerator extends Thread
 		
 		// Date / time
 		String eventTime = fields[2] + " " + fields[3];
-		try
-		{
+		try {
 			Date date = eventDateFormat.parse(eventTime);
-			Calendar time = Calendar.getInstance();
-			int year = time.get(Calendar.YEAR);
-			time.setTime(date);
-			time.set(Calendar.YEAR, year);
-			event.setTime(time);
-		}
-		catch(ParseException pe)
-		{
+			event.setTime(date);
+		} catch(ParseException pe) {
 			throw new CondorException("Error parsing event time: "+eventTime);
 		}
 		

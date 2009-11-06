@@ -1,5 +1,5 @@
 /*
- *  Copyright 2007-2008 University Of Southern California
+ *  Copyright 2007-2009 University Of Southern California
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
  */
 package edu.usc.glidein.api;
 
-import edu.usc.glidein.stubs.types.SiteStateChange;
+import edu.usc.corral.types.SiteStateChange;
 
-public interface SiteListener
-{
+public interface SiteListener {
 	public void stateChanged(SiteStateChange stateChange);
 }

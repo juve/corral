@@ -16,52 +16,25 @@
 package edu.usc.glidein.service;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.CharArrayWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
-import java.security.Principal;
-import java.util.Calendar;
-import java.util.HashSet;
+import java.util.Date;
 
-import javax.naming.NamingException;
-import javax.security.auth.Subject;
-
-import org.globus.axis.message.addressing.EndpointReferenceType;
 import org.apache.log4j.Logger;
-import org.globus.delegation.DelegationException;
-import org.globus.delegation.DelegationUtil;
-import org.globus.delegation.service.DelegationResource;
 import org.globus.gsi.GlobusCredential;
-import org.globus.gsi.jaas.GlobusPrincipal;
-import org.globus.util.Util;
-import org.globus.wsrf.PersistenceCallback;
-import org.globus.wsrf.Resource;
-import org.globus.wsrf.ResourceException;
-import org.globus.wsrf.ResourceIdentifier;
-import org.globus.wsrf.ResourceKey;
-import org.globus.wsrf.ResourceProperties;
-import org.globus.wsrf.ResourcePropertySet;
-import org.globus.wsrf.TopicList;
-import org.globus.wsrf.TopicListAccessor;
-import org.globus.wsrf.encoding.ObjectDeserializer;
-import org.globus.wsrf.encoding.ObjectSerializer;
-import org.globus.wsrf.impl.ReflectionResourceProperty;
-import org.globus.wsrf.impl.SimpleResourceKey;
-import org.globus.wsrf.impl.SimpleResourcePropertySet;
-import org.globus.wsrf.impl.SimpleTopic;
-import org.globus.wsrf.impl.SimpleTopicList;
-import org.globus.wsrf.security.SecurityException;
-import org.globus.wsrf.utils.SubscriptionPersistenceUtils;
-import org.xml.sax.InputSource;
 
+import edu.usc.corral.config.ConfigurationException;
+import edu.usc.corral.types.EnvironmentVariable;
+import edu.usc.corral.types.ExecutionService;
+import edu.usc.corral.types.Glidein;
+import edu.usc.corral.types.GlideinState;
+import edu.usc.corral.types.ServiceType;
+import edu.usc.corral.types.Site;
+import edu.usc.corral.types.SiteState;
+import edu.usc.glidein.api.GlideinException;
 import edu.usc.glidein.condor.Condor;
 import edu.usc.glidein.condor.CondorEventGenerator;
 import edu.usc.glidein.condor.CondorException;
@@ -81,306 +54,32 @@ import edu.usc.glidein.service.state.GlideinEventCode;
 import edu.usc.glidein.service.state.GlideinListener;
 import edu.usc.glidein.service.state.SiteEvent;
 import edu.usc.glidein.service.state.SiteEventCode;
-import edu.usc.glidein.stubs.types.EnvironmentVariable;
-import edu.usc.glidein.stubs.types.ExecutionService;
-import edu.usc.glidein.stubs.types.Glidein;
-import edu.usc.glidein.stubs.types.GlideinState;
-import edu.usc.glidein.stubs.types.GlideinStateChange;
-import edu.usc.glidein.stubs.types.GlideinStateChangeMessage;
-import edu.usc.glidein.stubs.types.ServiceType;
-import edu.usc.glidein.stubs.types.Site;
-import edu.usc.glidein.stubs.types.SiteState;
-import edu.usc.glidein.util.AddressingUtil;
-import edu.usc.glidein.util.AuthenticationUtil;
-import edu.usc.glidein.util.Base64;
+import edu.usc.glidein.util.CredentialUtil;
 import edu.usc.glidein.util.FilesystemUtil;
 import edu.usc.glidein.util.IOUtil;
 import edu.usc.glidein.util.ServiceUtil;
 
-public class GlideinResource implements Resource, ResourceIdentifier, 
-	PersistenceCallback, ResourceProperties, TopicListAccessor
-{
+public class GlideinResource implements Resource {
 	private Logger logger = Logger.getLogger(GlideinResource.class);
-	private SimpleResourcePropertySet resourceProperties;
-	private TopicList topicList;
-	private SimpleTopic stateChangeTopic;
 	private Glidein glidein = null;
 	
 	/**
 	 * Default constructor required
 	 */
-	public GlideinResource()
-	{
-		resourceProperties = new SimpleResourcePropertySet(SiteNames.RESOURCE_PROPERTIES);
-		topicList = new SimpleTopicList(this);
-		stateChangeTopic = new SimpleTopic(GlideinNames.TOPIC_STATE_CHANGE);
-		topicList.addTopic(stateChangeTopic);
-	}
-
-	public void setGlidein(Glidein glidein)
-	{
+	public GlideinResource(Glidein glidein) {
 		this.glidein = glidein;
-		setResourceProperties();
 	}
 	
-	public Glidein getGlidein()
-	{
+	public Glidein getGlidein() {
 		return glidein;
 	}
 	
-	public Object getID()
-	{
-		return getKey();
+	public boolean authorized(String subject) {
+		return glidein.getSubject().equals(subject);
 	}
 	
-	public ResourceKey getKey()
-	{
-		if (glidein == null) return null;
-		return new SimpleResourceKey(
-				GlideinNames.RESOURCE_KEY,
-				new Integer(glidein.getId()));
-	}
-	
-	public TopicList getTopicList()
-	{
-		return topicList;
-	}
-	
-	public ResourcePropertySet getResourcePropertySet()
-	{
-		return resourceProperties;
-	}
-	
-	private void setResourceProperties()
-	{
-		try {
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_ID,"id",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_SITE,"siteId",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_CONDOR_HOST,"condorHost",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_COUNT,"count",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_HOST_COUNT,"hostCount",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_WALL_TIME,"wallTime",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_NUM_CPUS,"numCpus",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_CONDOR_CONFIG,"condorConfig",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_GCB_BROKER,"gcbBroker",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_IDLE_TIME,"idleTime",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_CONDOR_DEBUG,"condorDebug",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_STATE,"state",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_SHORT_MESSAGE,"shortMessage",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_LONG_MESSAGE,"longMessage",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_CREATED,"created",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_LAST_UPDATE,"lastUpdate",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_RESUBMIT,"resubmit",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_RESUBMITS,"resubmits",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_UNTIL,"until",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_SUBMITS,"submits",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_RSL,"rsl",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_HIGHPORT,"highport",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_LOWPORT,"lowport",glidein));
-			resourceProperties.add(new ReflectionResourceProperty(
-					GlideinNames.RP_CCB_ADDRESS,"ccbAddress",glidein));
-		} catch(Exception e) {
-			throw new RuntimeException("Unable to set glidein resource properties",e);
-		}
-	}
-	
-	public void create(Glidein glidein) throws ResourceException
-	{
-		info("Creating glidein for site "+glidein.getSiteId());
-		
-		// Initialize glidein
-		glidein.setState(GlideinState.NEW);
-		glidein.setShortMessage("Created");
-		Calendar time = Calendar.getInstance();
-		glidein.setLastUpdate(time);
-		glidein.setCreated(time);
-		glidein.setSubmits(0);
-		
-		// Validate glidein
-		
-		// Wall time must be >= 2 minutes because when we submit the glidein
-		// we are going to subtract 1 minute to allow 1 minute for the glidein
-		// to shut itself down before the local scheduler kills it
-		if (glidein.getWallTime() < 2) {
-			throw new ResourceException("Wall time must be >= 2 minutes");
-		}
-		
-		try {
-			// Authenticate the client
-			AuthenticationUtil.authenticate();
-			
-			// Set subject and username
-			glidein.setSubject(AuthenticationUtil.getSubject());
-			glidein.setLocalUsername(AuthenticationUtil.getLocalUsername());
-		} catch (SecurityException se) {
-			throw new ResourceException("Unable to authenticate client",se);
-		}
-		
-		// Get site or fail
-		SiteResource siteResource = getSiteResource(glidein.getSiteId());
-		Site site = siteResource.getSite();
-		
-		// Synchronize on the site resource to prevent state changes while
-		// we are checking it and saving the glidein
-		synchronized (siteResource) {
-			
-			// Check to make sure the site is in an 
-			// appropriate state for creating a glidein
-			SiteState siteState = site.getState();
-			if (SiteState.FAILED.equals(siteState) || 
-				SiteState.EXITING.equals(siteState) ||
-				SiteState.REMOVING.equals(siteState)) {
-				
-				throw new ResourceException(
-						"Site cannot be in "+siteState+
-						" when creating a glidein");
-				
-			}
-			
-			// Set the name
-			glidein.setSiteName(site.getName());
-		
-			// Save in the database
-			try {
-				Database db = Database.getDatabase();
-				GlideinDAO dao = db.getGlideinDAO();
-				dao.create(glidein);
-				dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
-			} catch (DatabaseException dbe) {
-				throw new ResourceException("Unable to create glidein",dbe);
-			}
-			
-			// Log it in the netlogger log
-			try {
-				NetLoggerEvent event = new NetLoggerEvent("glidein.new");
-				event.setTimeStamp(glidein.getCreated().getTime());
-				event.put("glidein.id", glidein.getId());
-				event.put("site.id", site.getId());
-				event.put("condor.host", glidein.getCondorHost());
-				event.put("condor.debug", glidein.getCondorDebug());
-				event.put("count", glidein.getCount());
-				event.put("host_count", glidein.getHostCount());
-				event.put("wall_time", glidein.getWallTime());
-				event.put("num_cpus", glidein.getNumCpus());
-				event.put("gcb_broker", glidein.getGcbBroker());
-				event.put("idle_time", glidein.getIdleTime());
-				event.put("resubmit", glidein.isResubmit());
-				event.put("until", glidein.getUntil());
-				event.put("resubmits", glidein.getResubmits());
-				event.put("rsl", glidein.getRsl());
-				event.put("lowport", glidein.getLowport());
-				event.put("highport", glidein.getHighport());
-				event.put("ccb_address", glidein.getCcbAddress());
-				event.put("owner.subject", glidein.getSubject());
-				event.put("owner.username", glidein.getLocalUsername());
-				
-				NetLogger netlogger = NetLogger.getLog();
-				netlogger.log(event);
-			} catch (NetLoggerException nle) {
-				warn("Unable to log glidein event to NetLogger log",nle);
-			}
-			
-			// Set glidein
-			setGlidein(glidein);
-		}
-	}
-
-	public void load(ResourceKey key) throws ResourceException
-	{
-		info("Loading glidein resource "+key.getValue());
-		int id = ((Integer)key.getValue()).intValue();
-		loadGlidein(id);
-		loadListeners();
-	}
-	
-	public void store() throws ResourceException 
-	{
-		info("Storing glidein resource "+glidein.getId());
-		storeListeners();
-		storeGlidein();
-	}
-	
-	private void loadGlidein(int id) throws ResourceException
-	{
-		try {
-			Database db = Database.getDatabase();
-			GlideinDAO dao = db.getGlideinDAO();
-			setGlidein(dao.load(id));
-		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to load glidein",de);
-		}
-	}
-	
-	private void storeGlidein() throws ResourceException
-	{
-		/* Do nothing */
-	}
-	
-	private void storeListeners() throws ResourceException
-	{
-		// TODO: Store listeners in database
-		File listeners = getListenersFile();
-		try {
-			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(listeners));
-			SubscriptionPersistenceUtils.storeSubscriptionListeners(topicList, oos);
-			oos.close();
-		} catch (Exception e) {
-			throw new ResourceException("Unable to store glidein listeners",e);
-		}
-	}
-	
-	private void loadListeners() throws ResourceException
-	{
-		File listeners = getListenersFile();
-		if (listeners.exists() && listeners.isFile()) {
-			try {
-				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(listeners));
-				SubscriptionPersistenceUtils.loadSubscriptionListeners(topicList, ois);
-				ois.close();
-			} catch (Exception e) {
-				throw new ResourceException("Unable to load glidein listeners",e);
-			}
-		}
-	}
-	
-	private File getListenersFile() throws ResourceException
-	{
-		File work = getWorkingDirectory();
-		if (!work.exists()) {
-			work.mkdirs();
-		}
-		File listeners = new File(work,"listeners");
-		return listeners;
-	}
-	
-	public void remove(boolean force) throws ResourceException 
-	{
+	public void remove(boolean force) throws GlideinException  {
 		info("Removing glidein");
-		
-		authorize();
 		
 		// If we are forcing the issue, then just delete it
 		GlideinEventCode code = null;
@@ -392,19 +91,16 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		
 		// Queue the event
 		try {
-			Event event = new GlideinEvent(code,Calendar.getInstance(),getKey());
+			Event event = new GlideinEvent(code, new Date(), glidein.getId());
 			EventQueue queue = EventQueue.getInstance(); 
 			queue.add(event);
-		} catch(NamingException ne) {
-			throw new ResourceException("Unable to remove glidein",ne);
+		} catch(ConfigurationException ne) {
+			throw new GlideinException("Unable to remove glidein",ne);
 		}
 	}
 
-	public void submit(EndpointReferenceType credentialEPR) throws ResourceException
-	{
+	public void submit(GlobusCredential cred) throws GlideinException {
 		info("Submitting glidein");
-		
-		authorize();
 		
 		// Create the working directory
 		File work = getWorkingDirectory();
@@ -412,22 +108,20 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			work.mkdirs();
 		}
 		
-		// Store the credential endpoint
-		storeCredentialEPR(credentialEPR);
+		// Save the credential
+		storeCredential(cred);
 		
 		try {
 			// Create submit event
-			Event event = new GlideinEvent(GlideinEventCode.SUBMIT,Calendar.getInstance(),getKey());
-			EventQueue queue = EventQueue.getInstance(); 
+			Event event = new GlideinEvent(GlideinEventCode.SUBMIT,new Date(),glidein.getId());
+			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get event queue",ne);
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get event queue",ne);
 		}
 	}
 	
-	private void updateState(GlideinState state, String shortMessage, String longMessage, Calendar time) 
-	throws ResourceException
-	{
+	private void updateState(GlideinState state, String shortMessage, String longMessage, Date time) throws GlideinException {
 		info("Changing state to "+state+": "+shortMessage);
 		
 		// Update object
@@ -441,34 +135,16 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.updateState(glidein.getId(), state, shortMessage, longMessage, time);
-			dao.insertHistory(glidein.getId(), glidein.getState(), glidein.getLastUpdate());
 		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to update state to "+state,de);
+			throw new GlideinException("Unable to update state to "+state,de);
 		}
-	
-		// Notify topic listeners
-		info("Notifying listeners of state change");
-		try {
-			GlideinStateChange stateChange = new GlideinStateChange();
-			stateChange.setGlideinId(glidein.getId());
-			stateChange.setState(state);
-			stateChange.setShortMessage(shortMessage);
-	        stateChange.setLongMessage(longMessage);
-	        stateChange.setTime(time);
-	        
-	        Object msg = ObjectSerializer.toSOAPElement(
-	        		new GlideinStateChangeMessage(stateChange),
-	        		GlideinNames.TOPIC_STATE_CHANGE);
-	        
-	        stateChangeTopic.notify(msg);
-		} catch (Exception e) {
-			warn("Unable to notify topic listeners", e);
-		}
+		
+		// TODO Notify listeners
 		
 		// Log it in the netlogger log
 		try {
 			NetLoggerEvent event = new NetLoggerEvent("glidein."+state.toString().toLowerCase());
-			event.setTimeStamp(time.getTime());
+			event.setTimeStamp(time);
 			event.put("glidein.id", glidein.getId());
 			event.put("message", shortMessage);
 			
@@ -479,8 +155,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 	}
 	
-	private void submitGlideinJob() throws ResourceException
-	{
+	private void submitGlideinJob() throws GlideinException {
 		info("Submitting glidein job");
 		
 		SiteResource siteResource = getSiteResource(glidein.getSiteId());
@@ -490,8 +165,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		ServiceConfiguration config;
 		try {
 			config = ServiceConfiguration.getInstance();
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get service configuration",ne);
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get service configuration",ne);
 		}
 		
 		// Create job directory
@@ -555,9 +230,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		job.addInputFile(run);
 		
 		// Add environment
-		EnvironmentVariable env[] = site.getEnvironment();
-		if (env!=null) {
-			for (EnvironmentVariable var : env)
+		if (site.getEnvironment()!=null) {
+			for (EnvironmentVariable var : site.getEnvironment())
 				job.addEnvironment(var.getVariable(), var.getValue());
 		}
 		
@@ -580,8 +254,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			job.addArgument("-ccbAddress "+glidein.getCcbAddress());
 		if(glidein.getIdleTime()>0)
 			job.addArgument("-idleTime "+glidein.getIdleTime());
-		if(glidein.getCondorDebug()!=null)
-		{
+		if(glidein.getCondorDebug()!=null) {
 			String[] debug = glidein.getCondorDebug().split("[ ,;:]+");
 			for(String level : debug)
 				job.addArgument("-debug "+level);
@@ -597,19 +270,16 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		
 		// If there is a special config file, use it
 		String configFile = null;
-		if (glidein.getCondorConfig()==null)
-		{
+		if (glidein.getCondorConfig()==null) {
 			configFile = config.getGlideinCondorConfig();
-		}
-		else
-		{
+		} else {
 			try {
 				// Save config to a file in the submit directory
 				configFile = "glidein_condor_config";
-				String cfg = Base64.fromBase64(glidein.getCondorConfig());
-				IOUtil.write(cfg, new File(job.getJobDirectory(),configFile));
+				IOUtil.write(glidein.getCondorConfig(),
+						new File(job.getJobDirectory(),configFile));
 			} catch (IOException ioe) {
-				throw new ResourceException("Error writing glidein_condor_config",ioe);
+				throw new GlideinException("Error writing glidein_condor_config",ioe);
 			}
 		}
 		job.addInputFile(configFile);
@@ -618,22 +288,22 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		job.addOutputFile("status");
 		
 		// Set the credential
-		GlobusCredential cred = getDelegatedCredential();
+		GlobusCredential cred = loadCredential();
 		if (validateCredentialLifetime(cred)) {
 			job.setCredential(cred);
 		} else {
-			throw new ResourceException("Not enough time on credential");
+			throw new GlideinException("Not enough time on credential");
 		}
 		
 		// Add a listener
-		job.addListener(new GlideinListener(getKey()));
+		job.addListener(new GlideinListener(glidein.getId()));
 		
 		// Submit job
 		try {
 			Condor condor = Condor.getInstance();
 			condor.submitJob(job);
 		} catch (CondorException ce) {
-			throw new ResourceException("Unable to submit glidein job",ce);
+			throw new GlideinException("Unable to submit glidein job",ce);
 		}
 		
 		// Log the condor job id in netlogger
@@ -656,12 +326,11 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			dao.incrementSubmits(glidein.getId());
 			glidein.setSubmits(glidein.getSubmits()+1);
 		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to load glidein",de);
+			throw new GlideinException("Unable to load glidein",de);
 		}
 	}
 	
-	private String readJobId() throws ResourceException
-	{
+	private String readJobId() throws GlideinException {
 		File jobidFile = new File(getJobDirectory(),"jobid");
 		try {
 			// Read job id from jobid file
@@ -672,31 +341,26 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			
 			return jobid;
 		} catch (IOException ioe) {
-			throw new ResourceException("Unable to read job id",ioe);
+			throw new GlideinException("Unable to read job id",ioe);
 		}
 	}
 	
-	private boolean siteIsReady() throws ResourceException
-	{
+	private boolean siteIsReady() throws GlideinException {
 		SiteResource resource = getSiteResource(glidein.getSiteId());
 		SiteState state = resource.getSite().getState();
 		return SiteState.READY.equals(state);
 	}
 	
-	private SiteResource getSiteResource(int siteId) throws ResourceException
-	{
+	private SiteResource getSiteResource(int siteId) throws GlideinException {
 		try {
-			ResourceKey key = AddressingUtil.getSiteKey(siteId);
 			SiteResourceHome home = SiteResourceHome.getInstance();
-			SiteResource resource = (SiteResource)home.find(key);
-			return resource;
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get SiteResourceHome",ne);
+			return (SiteResource)home.find(siteId);
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get SiteResourceHome",ne);
 		}
 	}
 	
-	private void cancelGlideinJob() throws ResourceException
-	{
+	private void cancelGlideinJob() throws GlideinException {
 		info("Cancelling glidein job");
 		
 		try {
@@ -715,34 +379,32 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			// condor_rm job
 			Condor.getInstance().cancelJob(job);
 		} catch (IOException ioe) {
-			throw new ResourceException(
+			throw new GlideinException(
 					"Unable to read job id",ioe);
 		} catch (CondorException ce) {
-			throw new ResourceException(
+			throw new GlideinException(
 					"Unable to cancel glidein job",ce);
 		}
 	}
 	
-	private void deleteFromDatabase() throws ResourceException
-	{
+	private void deleteFromDatabase() throws GlideinException {
 		info("Deleting glidein from database");
 		try {
 			Database db = Database.getDatabase();
 			GlideinDAO dao = db.getGlideinDAO();
 			dao.delete(glidein.getId());
 		} catch(DatabaseException de) {
-			throw new ResourceException("Unable to delete glidein",de);
+			throw new GlideinException("Unable to delete glidein",de);
 		}
 	}
 	
-	private void delete() throws ResourceException
-	{
+	private void delete() throws GlideinException {
 		// Remove the glidein from the ResourceHome
 		try {
 			GlideinResourceHome home = GlideinResourceHome.getInstance();
-			home.remove(getKey());
-		}  catch (NamingException e) {
-			throw new ResourceException("Unable to locate GlideinResourceHome",e);
+			home.remove(glidein.getId());
+		}  catch (ConfigurationException e) {
+			throw new GlideinException("Unable to locate GlideinResourceHome",e);
 		}
 		
 		// Delete the glidein from the database
@@ -750,12 +412,11 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		
 		// Tell the Site About it
 		try {
-			ResourceKey siteKey = AddressingUtil.getSiteKey(glidein.getSiteId());
 			Event siteEvent = new SiteEvent(SiteEventCode.GLIDEIN_DELETED, 
-					glidein.getLastUpdate(), siteKey);
+					glidein.getLastUpdate(), glidein.getSiteId());
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(siteEvent);
-		} catch (NamingException ne) {
+		} catch (ConfigurationException ne) {
 			warn("Unable to notify site of deleted glidein",ne);
 		}
 		
@@ -763,124 +424,61 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		FilesystemUtil.rm(getWorkingDirectory());
 	}
 	
-	private ServiceConfiguration getConfig() throws ResourceException
-	{
+	private ServiceConfiguration getConfig() throws GlideinException {
 		try {
 			return ServiceConfiguration.getInstance();
-		} catch (NamingException ne) {
-			throw new ResourceException("Unable to get service configuration",ne);
+		} catch (ConfigurationException ne) {
+			throw new GlideinException("Unable to get service configuration",ne);
 		}
 	}
 	
-	private File getJobDirectory() throws ResourceException
-	{
+	private File getJobDirectory() throws GlideinException {
 		File jobDirectory = new File(getWorkingDirectory(),"job");
 		if (!jobDirectory.exists()) jobDirectory.mkdir();
 		return jobDirectory;
 	}
 	
-	private File getWorkingDirectory() throws ResourceException
-	{
+	private File getWorkingDirectory() throws GlideinException {
 		return new File(getConfig().getWorkingDirectory(),"glidein-"+glidein.getId());
 	}
 	
-	private File getCredentialEPRFile() throws ResourceException
-	{
+	private void storeCredential(GlobusCredential cred) throws GlideinException {
+		try {
+			CredentialUtil.store(cred, getCredentialFile());
+		} catch (IOException ioe) {
+			throw new GlideinException("Unable to store credential", ioe);
+		}
+	}
+	
+	private GlobusCredential loadCredential() throws GlideinException {
+		try {
+			return CredentialUtil.load(getCredentialFile());
+		} catch (IOException ioe) {
+			throw new GlideinException("Unable to load credential", ioe);
+		}
+	}
+	
+	private File getCredentialFile() throws GlideinException {
 		File work = getWorkingDirectory();
-		File credFile = new File(work,"credential.epr");
+		File credFile = new File(work,"credential");
 		return credFile;
 	}
 	
-	private void storeCredentialEPR(EndpointReferenceType epr)
-	throws ResourceException
-	{
-		info("Storing credential EPR");
-		// TODO: Store EPR in the database
-		synchronized (this) {
-			try {
-				String endpointString = ObjectSerializer.toString(
-						epr, EndpointReferenceType.getTypeDesc().getXmlType());
-				File file = getCredentialEPRFile();
-				BufferedWriter writer = new BufferedWriter(
-						new FileWriter(file));
-				writer.write(endpointString);
-				writer.close();
-				Util.setFilePermissions(file.getAbsolutePath(), 600);
-			} catch (Exception e) {
-				throw new ResourceException("Unable to store credential EPR",e);
-			}
-		}
-	}
-	
-	private EndpointReferenceType loadCredentialEPR() 
-	throws ResourceException
-	{
-		info("Loading credential EPR");
-		synchronized (this) {
-			try {
-				FileInputStream fis = new FileInputStream(getCredentialEPRFile());
-				EndpointReferenceType epr = (EndpointReferenceType)
-					ObjectDeserializer.deserialize(
-							new InputSource(fis), EndpointReferenceType.class);
-				fis.close();
-				return epr;
-			} catch (Exception e) {
-				throw new ResourceException("Unable to load credential EPR",e);
-			}
-		}
-	}
-	
-	private GlobusCredential getDelegatedCredential() throws ResourceException
-	{
-		info("Retrieving delegated credential");
-		try {
-			// Load the endpoint reference
-			EndpointReferenceType epr = loadCredentialEPR();
-			
-			// Create subject for authorization
-			Principal principal = new GlobusPrincipal(glidein.getSubject());
-			HashSet<Principal> principals = new HashSet<Principal>();
-			principals.add(principal);
-			Subject subject = new Subject(
-					false,principals,new HashSet(),new HashSet());
-			
-			// Get delegated credential
-			DelegationResource delegationResource = 
-				DelegationUtil.getDelegationResource(epr);
-			GlobusCredential credential = 
-				delegationResource.getCredential(subject);
-			org.globus.wsrf.security.SecurityManager.getManager().getCaller();
-			return credential;
-		} catch (DelegationException de) {
-			throw new ResourceException("Unable to get delegated credential",de);
-		}
-	}
-	
-	private boolean validateCredentialLifetime(GlobusCredential credential) 
-	throws ResourceException
-	{
+	private boolean validateCredentialLifetime(GlobusCredential credential)  throws GlideinException {
 		// Require enough time to cover at least the wall time of the job
 		// More time may be required, but less time will not
 		return (glidein.getWallTime()*60 < credential.getTimeLeft());
 	}
 	
-	private boolean credentialIsValid() throws ResourceException
-	{
-		GlobusCredential cred = getDelegatedCredential();
-		return validateCredentialLifetime(cred);
-	}
-	
-	private void failQuietly(String message, String longMessage, Exception exception, Calendar time)
-	{
+	private void failQuietly(String message, String longMessage, Exception exception, Date time) {
 		try {
 			fail(message,longMessage,exception,time);
-		} catch (ResourceException re) {
+		} catch (GlideinException re) {
 			error("Unable to change state to "+GlideinState.FAILED,re);
 		}
 	}
 	
-	private void fail(String message, String longMessage, Exception exception, Calendar time) throws ResourceException
-	{
+	private void fail(String message, String longMessage, Exception exception, Date time) throws GlideinException {
 		// Update status to FAILED
 		error("Failure: "+message,exception);
 		if (exception == null) {
@@ -892,11 +490,10 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 	}
 	
-	public synchronized void handleEvent(GlideinEvent event)
-	{
+	public synchronized void handleEvent(GlideinEvent event) {
 		try {
 			_handleEvent(event);
-		} catch (ResourceException re) {
+		} catch (GlideinException re) {
 			// RemoteException tacks the cause on to the end of
 			// the message. We don't want that in the database.
 			// Instead, the database stores the entire stack trace
@@ -916,8 +513,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 	}
 	
-	private void _handleEvent(GlideinEvent event) throws ResourceException
-	{
+	private void _handleEvent(GlideinEvent event) throws GlideinException {
 		GlideinState state = glidein.getState();
 		GlideinEventCode code = (GlideinEventCode) event.getCode();
 		
@@ -979,7 +575,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 						GlideinState.QUEUED.equals(state)) {
 					try {
 						cancelGlideinJob();
-					} catch (ResourceException re) {
+					} catch (GlideinException re) {
 						// Just log it so that we can fail properly
 						error("Unable to cancel glidein job",re);
 					}
@@ -1048,10 +644,8 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				if (reqd.equals(state)) {
 					
 					// In order to resubmit, the glidein should be resubmit,
-					// the site should be in ready status, and the credential
-					// should be valid
-					if (shouldResubmit() && siteIsReady() && 
-							credentialIsValid()) {
+					// and the site should be in ready status
+					if (shouldResubmit() && siteIsReady()) {
 						
 						info("Resubmitting glidein");
 						updateState(GlideinState.SUBMITTED,
@@ -1115,10 +709,9 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 	}
 	
-	private boolean shouldResubmit()
-	{
+	private boolean shouldResubmit() {
 		// If the glidein should be resubmitted
-		if (glidein.isResubmit()) {
+		if (glidein.getResubmit()) {
 			
 			// If resubmits is set
 			int resubmits = glidein.getResubmits();
@@ -1135,10 +728,10 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			}
 			
 			// If until is set
-			Calendar until = glidein.getUntil();
+			Date until = glidein.getUntil();
 			if (until != null) {
 				// If until is in the future, we should resubmit
-				Calendar now = Calendar.getInstance();
+				Date now = new Date();
 				if (until.after(now)) {
 					return true;
 				} else {
@@ -1155,18 +748,17 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 	}
 	
-	public synchronized void recoverState() throws Exception
-	{
+	public synchronized void recoverState() throws Exception {
 		try {
 			// Try to recover state
 			_recoverState();
-		} catch (ResourceException re) {
+		} catch (GlideinException re) {
 			try {
 				
 				// If recovery fails, try to update the state to failed
-				fail("State recovery failed",null,re,Calendar.getInstance());
+				fail("State recovery failed",null,re,new Date());
 				
-			} catch (ResourceException re2) {
+			} catch (GlideinException re2) {
 				
 				// If that fails, then fail the entire recovery process
 				throw new Exception(
@@ -1176,8 +768,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 		}
 	}
 	
-	private void _recoverState() throws ResourceException
-	{
+	private void _recoverState() throws GlideinException {
 		info("Recovering state");
 		
 		GlideinState state = glidein.getState();
@@ -1203,21 +794,21 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				// If the install log exists, then recover the install job
 				job.setJobId(readJobId());
 				GlideinListener listener = 
-					new GlideinListener(getKey());
+					new GlideinListener(glidein.getId());
 				job.addListener(listener);
 				CondorEventGenerator gen = new CondorEventGenerator(job);
 				gen.start();
 				
-			} else if (getCredentialEPRFile().exists()) {
+			} else if (getCredentialFile().exists()) {
 				
-				// If the credential EPR file still exists, 
+				// If the credential file still exists, 
 				// try to submit the install job
 				submitGlideinJob();
 				
 			} else {
 				
 				// Otherwise set the state to failed
-				fail("Unable to submit glidein",null,null,Calendar.getInstance());
+				fail("Unable to submit glidein",null,null,new Date());
 				
 			}
 			
@@ -1230,7 +821,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			CondorJob job = new CondorJob(jobDir, glidein.getLocalUsername());
 			job.setJobId(readJobId());
 			GlideinListener listener = 
-				new GlideinListener(getKey());
+				new GlideinListener(glidein.getId());
 			job.addListener(listener);
 			CondorEventGenerator gen = new CondorEventGenerator(job);
 			gen.start();
@@ -1244,7 +835,7 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			if (job.getLog().exists()) {
 				try {
 					cancelGlideinJob();
-				} catch (ResourceException re) {
+				} catch (GlideinException re) {
 					warn("Unable to cancel job on recovery",re);
 				}
 			}
@@ -1260,9 +851,9 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 				EventQueue queue = EventQueue.getInstance();
 				GlideinEvent delete = new GlideinEvent(
 						GlideinEventCode.DELETE, 
-						Calendar.getInstance(), getKey());
+						new Date(), glidein.getId());
 				queue.add(delete);
-			} catch (NamingException e) {
+			} catch (ConfigurationException e) {
 				warn("Unable to queue a delete event");
 			}
 			
@@ -1273,62 +864,36 @@ public class GlideinResource implements Resource, ResourceIdentifier,
 			
 		}
 	}
-	
-	private void authorize() throws ResourceException
-	{
-		try {
-			// Authenticate the client
-			AuthenticationUtil.authenticate();
-			
-			// Set subject and username
-			String subject = AuthenticationUtil.getSubject();
-			if (subject == null || !subject.equals(glidein.getSubject())) {
-				throw new ResourceException(
-						"Subject "+subject+" is not authorized to modify glidein "+glidein.getId());
-			}
-		} catch (SecurityException se) {
-			throw new ResourceException("Unable to authenticate client",se);
-		}
-	}
 
-	private String logPrefix()
-	{
+	private String logPrefix() {
 		if (glidein == null) {
 			return "";
 		} else {
 			return "Glidein "+glidein.getId()+": ";
 		}
 	}
-	public void debug(String message)
-	{
+	protected void debug(String message) {
 		debug(message,null);
 	}
-	public void debug(String message, Throwable t)
-	{
+	protected void debug(String message, Throwable t) {
 		logger.debug(logPrefix()+message, t);
 	}
-	public void info(String message)
-	{
+	protected void info(String message) {
 		info(message,null);
 	}
-	public void info(String message, Throwable t)
-	{
+	protected void info(String message, Throwable t) {
 		logger.info(logPrefix()+message,t);
 	}
-	public void warn(String message)
-	{
+	protected void warn(String message) {
 		warn(message,null);
 	}
-	public void warn(String message, Throwable t)
-	{
+	protected void warn(String message, Throwable t) {
 		logger.warn(logPrefix()+message,t);
 	}
-	public void error(String message)
-	{
+	protected void error(String message) {
 		error(message,null);
 	}
-	public void error(String message, Throwable t)
-	{
+	protected void error(String message, Throwable t) {
 		logger.error(logPrefix()+message,t);
 	}
 }
