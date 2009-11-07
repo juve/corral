@@ -8,13 +8,17 @@
 	<!--    backlog          - The socket accept queue size. Default: 5 -->
 	<!--    certificate      - The certificate to use as the server     --> 
 	<!--                       identity.                                -->
+	<!--                       Default: /etc/grid-security/hostcert.pem -->
 	<!--    key              - The key file to use as the server        --> 
 	<!--                       identity.                                -->
+	<!--                       Default: /etc/grid-security/hostkey.pem  -->
 	<!--    proxy            - The proxy cert to use as the server      -->
 	<!--                       identity.                                -->
 	<!--    cacertdir        - The trust root dir to use for credential --> 
 	<!--                       authentication.                          -->
+	<!--                       Default: /etc/grid-security/certificates -->
 	<!--    gridmapfile      - The gridmapfile to use for authorization.-->
+	<!--                       Default: /etc/grid-security/grid-mapfile -->
 	<!--    requestEncryption- Should encryption be performed? 'true' or-->
 	<!--                       'false' Must be 'true' to work with      --> 
 	<!--                       browsers. Default: true                  -->
@@ -51,7 +55,7 @@
 	<!-- 					  Relative paths are relative to			--> 
 	<!--					  CORRAL_LOCATION 							-->
 	<resource name="corral/Database"
-			  type="edu.usc.glidein.db.sqlite.SQLiteDatabase">
+			  type="edu.usc.corral.db.sqlite.SQLiteDatabase">
 		<parameter>
 			<name>databaseFile</name>
 			<value>var/corral.db</value>
@@ -78,7 +82,7 @@
 	<!-- 				  Relative paths are relative to CORRAL_LOCATION-->
 	<!-- 
 	<resource name="corral/Database" 
-			  type="edu.usc.glidein.db.mysql.MySQLDatabase">
+			  type="edu.usc.corral.db.mysql.MySQLDatabase">
 		<parameter>
 			<name>url</name>
 			<value>jdbc:mysql://localhost:3306/corral</value>
@@ -111,7 +115,7 @@
 	<!--					  working directory.						-->
 	<!-- 	codnorConfig	- Path to the condor configuration file		-->
 	<resource name="corral/Condor"
-			  type="edu.usc.glidein.condor.Condor">
+			  type="edu.usc.corral.condor.Condor">
 		<parameter>
 			<name>condorHome</name>
 			<value>/usr/local/condor/default</value>
@@ -148,7 +152,7 @@
 	<!-- 						  Relative paths are relative to		-->
 	<!-- 						  CORRAL_LOCATION.						-->
 	<resource name="corral/ServiceConfiguration"
-			  type="edu.usc.glidein.service.ServiceConfiguration">
+			  type="edu.usc.corral.service.ServiceConfiguration">
 		<parameter>
 			<name>install</name>
 			<value>share/glidein_install</value>
@@ -188,7 +192,7 @@
 	<!-- Parameters:													 -->
 	<!-- 	numThreads	- Number of worker threads to process events	 -->
 	<resource name="corral/EventQueue"
-			  type="edu.usc.glidein.service.state.EventQueue">
+			  type="edu.usc.corral.service.state.EventQueue">
 		<parameter>
 			<name>numThreads</name>
 			<value>1</value>
@@ -201,7 +205,7 @@
 	<!-- 	logFile - The file to write NetLogger events to. Relative    -->
 	<!--              paths are relative to CORRAL_LOCATION.             -->
 	<resource name="corral/NetLogger"
-			  type="edu.usc.glidein.nl.NetLogger">
+			  type="edu.usc.corral.nl.NetLogger">
 		<parameter>
 			<name>logFile</name>
 			<value>var/netlogger.log</value>
@@ -213,17 +217,19 @@
 	<!-- Parameters:													 -->
 	<!-- 	interval - How frequently does cleanup thread run? (mins)    -->
 	<resource name="corral/ResourceCleaner"
-			  type="edu.usc.glidein.service.state.ResourceCleaner">
+			  type="edu.usc.corral.service.state.ResourceCleaner">
 		<parameter>
 			<name>interval</name>
 			<value>30</value>
 		</parameter>
 	</resource>
-			  
+	
+	<!-- SiteResourceHome - Home for site resources                    -->
 	<resource name="corral/SiteResourceHome"
-			  type="edu.usc.glidein.service.SiteResourceHome"/>
+			  type="edu.usc.corral.service.SiteResourceHome"/>
 			  
+	<!-- GlideinResourceHome - Home for glidein resources              -->
 	<resource name="corral/GlideinResourceHome"
-			  type="edu.usc.glidein.service.GlideinResourceHome"/>
+			  type="edu.usc.corral.service.GlideinResourceHome"/>
 	
 </configuration>

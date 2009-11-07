@@ -31,6 +31,7 @@ import org.apache.log4j.Logger;
 import org.simpleframework.xml.Serializer;
 import org.simpleframework.xml.core.Persister;
 
+import edu.usc.corral.service.*;
 import edu.usc.corral.types.CreateSiteRequest;
 import edu.usc.corral.types.CreateGlideinRequest;
 import edu.usc.corral.types.ErrorResponse;
@@ -40,7 +41,6 @@ import edu.usc.corral.types.RemoveRequest;
 import edu.usc.corral.types.Request;
 import edu.usc.corral.types.Response;
 import edu.usc.corral.types.SubmitRequest;
-import edu.usc.glidein.service.*;
 
 public class CorralServlet extends HttpServlet {
 	private static final long serialVersionUID = -5185068391223120393L;

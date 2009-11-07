@@ -39,4 +39,4 @@ fi
 exec $_RUNJAVA \
 	-DCORRAL_HOME=$CORRAL_HOME \
 	-Djava.security.egd=file:///dev/urandom \
-	edu.usc.glidein.cli.CommandLineClient "$@"
+	edu.usc.corral.cli.CommandLineClient "$@"
