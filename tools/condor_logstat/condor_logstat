@@ -40,8 +40,8 @@ OPTIONS
       The number of seconds to wait between logging events. Defaults to %d.
    -m | --maxsize KB
       The maximum output file size in KB. Defaults to %d KB (1 MB, or ~2 weeks
-      using 5 min interval). When the log reaches this size, its name gets a 
-      .0 appended onto it and a new log is started.
+      using 5 min interval). When the log reaches this size, its name gets the 
+      date appended onto it and a new log is started.
    -p | --pool HOST
       The pool to query. The machine from which this service runs should have
       READ permissions for the pool. Defaults to the pool currently set in the
@@ -263,7 +263,8 @@ while True:
 	if os.path.isfile(OUTPUT):
 		st = os.stat(OUTPUT)
 		if (st.st_size/1024) >= MAXSIZE:
-			os.rename(OUTPUT,OUTPUT+".0")
+			stamp = now.strftime("%Y%m%d")
+			os.rename(OUTPUT,OUTPUT+"."+stamp)
 	
 	# Write output record
 	try:
