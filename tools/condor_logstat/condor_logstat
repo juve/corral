@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os, time, datetime, popen2, sys, getopt, signal, pwd, grp
+import os, time, datetime, calendar, popen2, sys, getopt, signal, pwd, grp
 
 
 # Set some defaults
@@ -23,6 +23,7 @@ INTERVAL=300
 MAXSIZE=1024
 POOL=None
 LOG=None
+RRD=None
 
 
 # Print usage message
@@ -48,6 +49,8 @@ OPTIONS
       local condor_config file.
    -l | --log FILE
       The log file for debugging output. Defaults to stdout.
+   -r | --rrd FILE
+      The rrdtool database to use.
    -h | --help
       Prints this usage message.
 """ % (os.path.basename(sys.argv[0]), OUTPUT, INTERVAL, MAXSIZE)
@@ -152,6 +155,48 @@ def trap(sig, frame):
 	sys.exit(0)
 
 
+# Create rrdtool database
+def create_rrd(rrd, interval):
+	heartbeat = interval * 4
+	DS = [
+		"DS:jobs_running:GAUGE:%d:0:1000000" % heartbeat,
+		"DS:jobs_idle:GAUGE:%d:0:1000000" % heartbeat,
+		"DS:slots_claimed:GAUGE:%d:0:1000000" % heartbeat,
+		"DS:slots_unclaimed:GAUGE:%d:0:1000000" % heartbeat
+	]
+	hour = 60*60
+	day = 24*hour
+	week = 7*day
+	RRA = [
+		"RRA:AVERAGE:0.5:1:%d" % (7*day/interval), # keep 1 week of raw timesteps
+
+		"RRA:AVERAGE:0.5:%d:%d" % ((hour/interval),(24*7*60)), # keep 60 days of hourly avg/min/max
+		"RRA:MIN:0.5:%d:%d" % ((hour/interval),(24*7*60)),
+		"RRA:MAX:0.5:%d:%d" % ((hour/interval),(24*7*60)),
+		
+		"RRA:AVERAGE:0.5:%d:%d" % ((day/interval),365), # keep 1 year of daily avg/min/max
+		"RRA:MIN:0.5:%d:%d" % ((day/interval),365),
+		"RRA:MAX:0.5:%d:%d" % ((day/interval),365)
+	]
+
+	rrdtool.create(rrd, '--step', '%d' % interval, *(DS+RRA))
+
+
+# Make sure existing rrdtool database will work with desired settings
+def check_rrd(rrd, interval):
+	info = rrdtool.info(rrd)
+	if info['step'] != interval:
+		raise Exception("RRD step size %d not equal to interval %d" % (info['step'],interval))
+
+
+def update_rrd(rrd, dt, jstats, sstats):
+	try:
+		ts = calendar.timegm(dt.timetuple())
+		rrdtool.update(rrd, "%d:%d:%d:%d:%d" % (ts, jstats['running'], jstats['idle'], sstats['claimed'], sstats['unclaimed']))
+	except Exception, e:
+		info("Unable to update rrd: %s" % e)
+
+
 # Install signal handlers
 signal.signal(signal.SIGTERM, trap)
 signal.signal(signal.SIGINT, trap)
@@ -176,8 +221,8 @@ os.umask(0022)
 
 # Parse arguments
 try:
-	opts, args = getopt.getopt(sys.argv[1:], "hl:o:i:m:p:", 
-					["help","log=","output=","interval=","maxsize=","pool="])
+	opts, args = getopt.getopt(sys.argv[1:], "hl:o:i:m:p:r:", 
+					["help","log=","output=","interval=","maxsize=","pool=","rrd="])
 except getopt.GetoptError, err:
 	# print help information and exit:
 	print str(err) # will print something like "option -a not recognized"
@@ -196,6 +241,8 @@ for o, a in opts:
 		MAXSIZE=int(a)
 	elif o in ("-p","--pool"):
 		POOL=a
+	elif o in ("-r","--rrd"):
+		RRD=a
 	else:
 		info("unhandled argument: %s" % o)
 		sys.exit(5)
@@ -214,6 +261,15 @@ if LOG is not None:
 		sys.exit(2)
 
 
+# Import rrdtool
+if RRD is not None:
+	try:
+		import rrdtool
+	except:
+		info("Unable to load rrdtool")
+		RRD = None
+
+
 # Find CONDOR_HOME
 try:
 	CONDOR_HOME = os.environ['CONDOR_HOME']
@@ -224,6 +280,14 @@ except KeyError, err:
 
 # Welcome message
 info("Pool status monitor starting...")
+
+
+# Create or check rrd
+if RRD is not None:
+	if os.path.exists(RRD):
+		check_rrd(RRD, INTERVAL)
+	else:
+		create_rrd(RRD, INTERVAL)
 
 
 # Loop forever collecting status
@@ -274,5 +338,9 @@ while True:
 	except IOError, err:
 		info(str(err))
 		sys.exit(4)
+	
+	# Update rrd
+	if RRD is not None:
+		update_rrd(RRD, now, jstats, sstats)
 
 

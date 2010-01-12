@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+import sys, os
+import rrdtool
+import cgi, cgitb
+
+RRD_PATH = '/var/condor/log'
+
+INTERVALS = {
+	'hour': ['now-1h', 'Hour'],
+	'day' : ['now-1d', 'Day'],
+	'week': ['now-1w', 'Week'],
+	'month':['now-1m', 'Month'],
+	'year': ['now-1y', 'Year']
+}
+
+cgitb.enable()
+
+form = cgi.FieldStorage()
+
+type = form["type"].value
+if type not in ['jobs','slots']:
+	raise Exception("Graph type must be either 'jobs' or 'slots'")
+
+host = form["host"].value
+rrd = os.path.join(RRD_PATH, host+'.rrd')
+if not os.path.exists(rrd):
+	raise Exception("RRD does not exist: %s" % rrd)
+
+interval = form["interval"].value
+if not INTERVALS[interval]:
+	raise Exception("Unrecognized interval: %s" %interval)
+
+print "Content-Type: image/png\n"
+
+if type == 'jobs':
+	rrdtool.graph(
+		"-", # Send to stdout
+		"-a", "PNG", 
+		"--start", INTERVALS[interval][0],
+		"--vertical-label", "Number of Jobs",
+		"--title", "Condor Jobs on %s Last %s" % (host, INTERVALS[interval][1]),
+		"DEF:running=%s:jobs_running:AVERAGE" % rrd,
+		"DEF:idle=%s:jobs_idle:AVERAGE" % rrd,
+		"LINE1:running#0000FF:Running",
+		"LINE1:idle#00FF00:Idle"
+	)
+else:
+	rrdtool.graph(
+		"-", # Send to stdout
+		"-a", "PNG", 
+		"--start", INTERVALS[interval][0],
+		"--vertical-label", "Number of Slots",
+		"--title", "Condor Slots on %s Last %s" % (host, INTERVALS[interval][1]),
+		"DEF:unclaimed=%s:slots_unclaimed:AVERAGE" % rrd,
+		"DEF:claimed=%s:slots_claimed:AVERAGE" % rrd,
+		"LINE1:claimed#0000FF:Claimed",
+		"LINE1:unclaimed#00FF00:Unclaimed"
+	)
