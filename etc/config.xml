@@ -1,0 +1,235 @@
+<configuration>
+
+	<!-- Server configuration                                           -->
+	<!--                                                                -->
+	<!-- Parameters:                                                    -->
+	<!--    host             - The host name to bind to. Default is all.-->
+	<!--    port             - The server port number. 8443 is default. -->
+	<!--    backlog          - The socket accept queue size. Default: 5 -->
+	<!--    certificate      - The certificate to use as the server     --> 
+	<!--                       identity.                                -->
+	<!--                       Default: /etc/grid-security/hostcert.pem -->
+	<!--    key              - The key file to use as the server        --> 
+	<!--                       identity.                                -->
+	<!--                       Default: /etc/grid-security/hostkey.pem  -->
+	<!--    proxy            - The proxy cert to use as the server      -->
+	<!--                       identity.                                -->
+	<!--    cacertdir        - The trust root dir to use for credential --> 
+	<!--                       authentication.                          -->
+	<!--                       Default: /etc/grid-security/certificates -->
+	<!--    gridmapfile      - The gridmapfile to use for authorization.-->
+	<!--                       Default: /etc/grid-security/grid-mapfile -->
+	<!--    requestEncryption- Should encryption be performed? 'true' or-->
+	<!--                       'false' Must be 'true' to work with      --> 
+	<!--                       browsers. Default: true                  -->
+	<!--    anonymousAllowed - Are anonymous clients allowed. 'true' or -->
+	<!--                       'false'. Default: false                  -->
+	<!--    gssMode          - One of 'ssl' or 'gsi'. Default: 'ssl'    -->
+	<!--    wrapMode         - One of 'ssl' or 'gsi'. Default: 'ssl'    -->
+	<!--    authorization    - One of 'host' 'self' 'none' or a subject -->
+	<!--                       name. Default: 'none'                    -->
+	<resource name="corral/ServerConfiguration"
+			  type="edu.usc.corral.config.ServerConfiguration">
+		<parameter>
+			<name>port</name>
+			<value>8443</value>
+		</parameter>
+		<parameter>
+			<name>certificate</name>
+			<value>/etc/grid-security/containercert.pem</value>
+		</parameter>
+		<parameter>
+			<name>key</name>
+			<value>/etc/grid-security/containerkey.pem</value>
+		</parameter>
+	</resource>
+
+	<!-- Use an SQLite database											-->
+	<!-- 																-->
+	<!-- Parameters:													-->
+	<!-- 	databaseFile	- Path to the SQLite database file. Relative-->
+	<!--                      paths are relative to CORRAL_LOCATION.    -->
+	<!-- 	autoInstall		- Should we allow the database to install 	-->
+	<!--					  itself automatically?						-->
+	<!-- 	schemaFile		- The path to the database creation script.	-->
+	<!-- 					  Relative paths are relative to			--> 
+	<!--					  CORRAL_LOCATION 							-->
+	<resource name="corral/Database"
+			  type="edu.usc.corral.db.sqlite.SQLiteDatabase">
+		<parameter>
+			<name>databaseFile</name>
+			<value>var/corral.db</value>
+		</parameter>
+		<parameter>
+			<name>autoInstall</name>
+			<value>true</value>
+		</parameter>
+		<parameter>
+			<name>schemaFile</name>
+			<value>schema/sqlite.sql</value>
+		</parameter>
+	</resource>
+        
+	<!-- Use a MySQL database											-->
+	<!-- 																-->
+	<!-- Parameters:													-->
+	<!-- 	url			- The MySQL Database URL						--> 
+	<!-- 	user		- The MySQL Databse user						-->
+	<!-- 	password	- The MySQL user's password						-->
+	<!-- 	autoInstall	- Should we allow the database to install itself--> 
+	<!-- 				  automatically?								-->
+	<!-- 	schemaFile	- The path to the database creation script.		-->
+	<!-- 				  Relative paths are relative to CORRAL_LOCATION-->
+	<!-- 
+	<resource name="corral/Database" 
+			  type="edu.usc.corral.db.mysql.MySQLDatabase">
+		<parameter>
+			<name>url</name>
+			<value>jdbc:mysql://localhost:3306/corral</value>
+		</parameter>
+		<parameter>
+			<name>user</name>
+			<value>scott</value>
+		</parameter>
+		<parameter>
+			<name>password</name>
+			<value>tiger</value>
+		</parameter>
+		<parameter>
+			<name>autoInstall</name>
+			<value>true</value>
+		</parameter>
+		<parameter>
+			<name>schemaFile</name>
+			<value>schema/mysql.sql</value>
+		</parameter>
+	</resource>
+	-->
+
+	<!-- Condor configuration											-->
+	<!-- 																-->
+	<!-- Parameters:													-->
+	<!-- 	factory			- BeanFactory used to create object			-->
+	<!-- 	condorHome		- Directory where condor is installed.		-->
+	<!-- 					  Relative paths are relative to the servers-->
+	<!--					  working directory.						-->
+	<!-- 	codnorConfig	- Path to the condor configuration file		-->
+	<resource name="corral/Condor"
+			  type="edu.usc.corral.condor.Condor">
+		<parameter>
+			<name>condorHome</name>
+			<value>/usr/local/condor/default</value>
+		</parameter>
+		<parameter>
+			<name>condorConfig</name>
+			<value>/etc/condor/condor_config</value>
+		</parameter>
+	</resource>
+
+	<!-- Service configuration                                          -->
+	<!-- 																-->
+	<!-- Parameters:													-->
+	<!-- 	factory				- BeanFactory used to instantiate object-->
+	<!-- 	install				- Path to the site install shell script.-->
+	<!-- 						  Relative paths are relative to		-->
+	<!-- 						  CORRAL_LOCATION						-->
+	<!-- 	uninstall			- Path to the site uninstall shell		-->
+	<!-- 						  script. Relative paths are relative 	-->
+	<!-- 						  to CORRAL_LOCATION.					-->
+	<!--    start               - Path to the glidein start shell scrip -->
+	<!--                          t. Relative paths are relative to     -->
+	<!--                          CORRAL_LOCATION                       -->
+	<!-- 	run					- Path to the glidein run shell script.	-->
+	<!-- 						  Relative paths are relative to 		-->
+	<!-- 						  CORRAL_LOCATION						-->
+	<!-- 	rls					- URL of the RLS service that should be	-->
+	<!-- 						  used to locate binary worker packages -->
+	<!--    mapper              - The host:port of the package mapper   -->
+	<!--                          service.                              -->
+	<!-- 	glideinCondorConfig	- Default glidein config file. Relative	-->
+	<!-- 						  paths are relative to CORRAL_LOCATION -->
+	<!-- 	workingDirectory	- Directory to store working files.		-->
+	<!-- 						  Relative paths are relative to		-->
+	<!-- 						  CORRAL_LOCATION.						-->
+	<resource name="corral/ServiceConfiguration"
+			  type="edu.usc.corral.service.ServiceConfiguration">
+		<parameter>
+			<name>install</name>
+			<value>share/glidein_install</value>
+		</parameter>
+		<parameter>
+			<name>uninstall</name>
+			<value>share/glidein_uninstall</value>
+		</parameter>
+		<parameter>
+			<name>start</name>
+			<value>share/glidein_start</value>
+		</parameter>
+		<parameter>
+			<name>run</name>
+			<value>share/glidein_run</value>
+		</parameter>
+		<parameter>
+			<name>rls</name>
+			<value>rls://juve.isi.edu</value>
+		</parameter>
+		<parameter>
+			<name>mapper</name>
+			<value>juve.isi.edu:10960</value>
+		</parameter>
+		<parameter>
+			<name>glideinCondorConfig</name>
+			<value>etc/glidein_condor_config</value>
+		</parameter>
+		<parameter>
+			<name>workingDirectory</name>
+			<value>var</value>
+		</parameter>
+	</resource>
+
+	<!-- Event queue													 -->
+	<!-- 																 -->
+	<!-- Parameters:													 -->
+	<!-- 	numThreads	- Number of worker threads to process events	 -->
+	<resource name="corral/EventQueue"
+			  type="edu.usc.corral.service.state.EventQueue">
+		<parameter>
+			<name>numThreads</name>
+			<value>1</value>
+		</parameter>
+	</resource>
+
+	<!-- NetLogger                                                       -->
+	<!--                                                                 -->
+	<!-- Parameters:													 -->
+	<!-- 	logFile - The file to write NetLogger events to. Relative    -->
+	<!--              paths are relative to CORRAL_LOCATION.             -->
+	<resource name="corral/NetLogger"
+			  type="edu.usc.corral.nl.NetLogger">
+		<parameter>
+			<name>logFile</name>
+			<value>var/netlogger.log</value>
+		</parameter>
+	</resource>
+
+	<!-- ResourceCleaner - removes failed, finished glideins             -->
+	<!--                                                                 -->
+	<!-- Parameters:													 -->
+	<!-- 	interval - How frequently does cleanup thread run? (mins)    -->
+	<resource name="corral/ResourceCleaner"
+			  type="edu.usc.corral.service.state.ResourceCleaner">
+		<parameter>
+			<name>interval</name>
+			<value>30</value>
+		</parameter>
+	</resource>
+	
+	<!-- SiteResourceHome - Home for site resources                    -->
+	<resource name="corral/SiteResourceHome"
+			  type="edu.usc.corral.service.SiteResourceHome"/>
+			  
+	<!-- GlideinResourceHome - Home for glidein resources              -->
+	<resource name="corral/GlideinResourceHome"
+			  type="edu.usc.corral.service.GlideinResourceHome"/>
+	
+</configuration>

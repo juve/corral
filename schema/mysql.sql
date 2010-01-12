@@ -103,23 +103,3 @@ CREATE TABLE glidein (
 	CONSTRAINT pk_glidein PRIMARY KEY (id),
 	CONSTRAINT fk_glidein_01 FOREIGN KEY (site) REFERENCES site(id) ON DELETE SET NULL
 ) type=InnoDB;
-
-/**
- * History of glidein state changes
- */
-CREATE TABLE glidein_history (
-	glidein				BIGINT NOT NULL,				-- Glidein ID
-	state				VARCHAR(16) NOT NULL,			-- New state
-	time				DATETIME NOT NULL				-- Date/time when glidein entered state
-	/* No foreign key constraint, history is not deleted */
-) type=InnoDB;
-
-/**
- * History of site state changes
- */
-CREATE TABLE site_history (
-	site				BIGINT NOT NULL,				-- Site id
-	state				VARCHAR(16) NOT NULL,			-- New state
-	time				DATETIME NOT NULL				-- Date/time when site entered state
-	/* No foreign key constraint, history is not deleted */
-) type=InnoDB;

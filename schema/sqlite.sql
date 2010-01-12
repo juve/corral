@@ -98,21 +98,3 @@ CREATE TABLE glidein (
 	lowport			INTEGER,			-- Lowest port number used by Condor
 	ccbAddress		TEXT				-- CCB broker
 );
-
-/**
- * History of glidein state changes
- */
-CREATE TABLE glidein_history (
-	glidein			INTEGER NOT NULL,	-- Glidein ID
-	state			TEXT NOT NULL,		-- New state
-	time			INTEGER NOT NULL	-- Date/time when state was entered (unix time in ms)
-);
-
-/**
- * History of site state changes
- */
-CREATE TABLE site_history (
-	site			INTEGER NOT NULL,	-- Site ID
-	state			TEXT NOT NULL,		-- New state
-	time			INTEGER NOT NULL	-- Date/time when state was entered (unix time in ms)
-);
