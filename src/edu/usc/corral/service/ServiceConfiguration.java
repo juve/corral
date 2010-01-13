@@ -46,7 +46,7 @@ public class ServiceConfiguration {
 		this.install = new File(install);
 		if (!this.install.isAbsolute()) {
 			this.install = new File(
-					System.getProperty("GLOBUS_LOCATION"),install);
+					System.getProperty("CORRAL_HOME"),install);
 		}
 	}
 
@@ -60,7 +60,7 @@ public class ServiceConfiguration {
 		this.uninstall = new File(uninstall);
 		if (!this.uninstall.isAbsolute()) {
 			this.uninstall = new File(
-					System.getProperty("GLOBUS_LOCATION"),uninstall);
+					System.getProperty("CORRAL_HOME"),uninstall);
 		}
 	}
 
@@ -74,7 +74,7 @@ public class ServiceConfiguration {
 		this.run = new File(run);
 		if (!this.run.isAbsolute()) {
 			this.run = new File(
-					System.getProperty("GLOBUS_LOCATION"),run);
+					System.getProperty("CORRAL_HOME"),run);
 		}
 	}
 
@@ -88,7 +88,7 @@ public class ServiceConfiguration {
 		this.start = new File(start);
 		if (!this.start.isAbsolute()) {
 			this.start = new File(
-					System.getProperty("GLOBUS_LOCATION"),start);
+					System.getProperty("CORRAL_HOME"),start);
 		}
 	}
 	
@@ -122,7 +122,7 @@ public class ServiceConfiguration {
 		this.glideinCondorConfig = new File(glideinCondorConfig);
 		if (!this.glideinCondorConfig.isAbsolute()) {
 			this.glideinCondorConfig = new File(
-					System.getProperty("GLOBUS_LOCATION"),glideinCondorConfig);
+					System.getProperty("CORRAL_HOME"),glideinCondorConfig);
 		}
 	}
 
@@ -136,7 +136,7 @@ public class ServiceConfiguration {
 		this.workingDirectory = new File(workingDirectory);
 		if (!this.workingDirectory.isAbsolute()) {
 			this.workingDirectory = new File(
-					System.getProperty("GLOBUS_LOCATION"),workingDirectory);
+					System.getProperty("CORRAL_HOME"),workingDirectory);
 		}
 	}
 }

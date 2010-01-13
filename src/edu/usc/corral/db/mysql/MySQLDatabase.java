@@ -161,7 +161,7 @@ public class MySQLDatabase extends SQLDatabase implements Initializable {
 	public void setSchemaFile(String schemaFile) {
 		this.schemaFile = new File(schemaFile);
 		if (!this.schemaFile.isAbsolute()) {
-			this.schemaFile = new File(System.getProperty("GLOBUS_LOCATION"),schemaFile);
+			this.schemaFile = new File(System.getProperty("CORRAL_HOME"),schemaFile);
 		}
 	}
 
