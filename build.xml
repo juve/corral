@@ -1,11 +1,9 @@
 <?xml version="1.0"?>
-<project default="build" basedir=".">
+<project default="compile" basedir=".">
     <description>Corral build file</description>
 
 	<property name="base.name" value="corral"/>
-	<property name="build.dir" location="build"/>
-	<property name="classes.dir" location="${build.dir}/classes"/>
-	<property name="jars.dir" location="${build.dir}/lib"/>
+	<property name="classes.dir" location="classes"/>
 	<property name="bin.dir" location="bin"/>
 	<property name="lib.dir" location="lib"/>
 	<property name="src.dir" location="src"/>
@@ -13,11 +11,12 @@
     
 	
     <target name="clean">
-    	<delete dir="${build.dir}"/>
+    	<delete dir="${classes.dir}"/>
+    	<delete file="${lib.dir}/${jar.name}"/>
     </target>
 	
     <target name="init">
-        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${classes.dir}"/>
     </target>
 	
 	<target name="compile" depends="init">
@@ -33,22 +32,13 @@
 	
 	<target name="jar" depends="compile">
 		<!-- Create jar files -->
-		<jar destfile="${jars.dir}/${jar.name}" basedir="${classes.dir}">
+		<jar destfile="${lib.dir}/${jar.name}" basedir="${classes.dir}">
 			<include name="edu/usc/**/*"/>
 		</jar>
-		
-		<!-- Copy jars -->
-		<copy toDir="${jars.dir}">
-			<fileset dir="${lib.dir}" casesensitive="yes">
-				<include name="**/*.jar"/>
-			</fileset>
-		</copy>
 	</target>
 		
 	<target name="dist" depends="jar">
 		<echo>TODO: Tar up everything</echo>
 	</target>
-	
-    <target name="build" depends="dist"/>
 	
 </project>
