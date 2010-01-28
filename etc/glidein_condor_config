@@ -84,6 +84,19 @@ USE_PROCESS_GROUPS = False
 # environment variable.
 #NUM_CPUS = 0
 
+# This will cause the startd to advertise one slot, which can be split up
+# automatically into smaller slots. Users specify request_cpus, request_memory,
+# and request_disk in their submit script to get an appropriately sized slot.
+# However, this feature is terribly crippled. It creates too many situations
+# in which starvation occurs. It will create, e.g., a 4-core dynamic slot,
+# but it will allow condor to use that slot for single core jobs, which is
+# 100% useless. It also allows serial jobs to starve multi-core jobs by 
+# fragmenting all the slots. We should not use this.
+#SLOT_TYPE_1 = cpus=100%, disk=100%, memory=100%, swap=100%
+#SLOT_TYPE_1_PARTITIONABLE = True
+#NUM_SLOTS_TYPE_1 = 1
+#NUM_SLOTS = 1
+
 # Pass Grid site environment variables to glidein jobs. This gives Condor jobs
 # the same environment you would get when running the job on the grid site
 # directly (with the exception of X509_USER_PROXY, see below). 
@@ -103,6 +116,8 @@ STARTER_JOB_ENVIRONMENT = $(CORRAL_X509_USER_PROXY)
 DAEMON_LIST = MASTER, STARTD
 
 SBIN = $(CORRAL_SBIN)
+# Required for parallel universe
+BIN = $(CORRAL_SBIN)
 
 ALL_DEBUG = $(CORRAL_DEBUG)
 
@@ -145,8 +160,17 @@ CorralSiteName = "$(CORRAL_SITE_NAME)"
 CorralSiteId = $(CORRAL_SITE_ID)
 CorralGlideinId = $(CORRAL_GLIDEIN_ID)
 CorralServer = "$(CORRAL_SERVER)"
-STARTD_EXPRS = IsGlidein, START, CorralRunTime, CorralStopTime, CorralTimeLeft, \
-               CorralSiteId, CorralGlideinId, CorralSiteName, CorralServer
+
+# Note: This next line assumes the user is running Condor as root.
+# If they are not running it as root we need to use:
+#    "DedicatedScheduler@user@$(CORRAL_CONDOR_HOST)"
+# where 'user' the the user ID on the Condor host. Of course we
+# don't have that information right now.
+DedicatedScheduler = "DedicatedScheduler@$(CORRAL_CONDOR_HOST)"
+
+STARTD_ATTRS = IsGlidein, START, CorralRunTime, CorralStopTime, CorralTimeLeft, \
+               CorralSiteId, CorralGlideinId, CorralSiteName, CorralServer, \
+               DedicatedScheduler
 
 ###############################################################################
 # Network settings
