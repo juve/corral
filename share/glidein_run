@@ -197,7 +197,7 @@ export CONDOR_CONFIG=${LOCAL_DIR}/glidein_condor_config
 export _condor_LOG=${LOCAL_DIR}/log
 export _condor_EXECUTE=${LOCAL_DIR}/execute
 # NUM_CPUS is special because they don't allow you to use an expression to
-# define it. So I can't say NUM_CPUS = $(GLIDEIN_NUM_CPUS) in the config
+# define it. So I can't say NUM_CPUS = $(CORRAL_NUM_CPUS) in the config
 # file.
 if [ ! -z "${NUM_CPUS}" ]; then
 	export _condor_NUM_CPUS=${NUM_CPUS}
@@ -244,6 +244,9 @@ echo "CORRAL_SITE_ID = ${CORRAL_SITE_ID}" >> ${CONDOR_CONFIG}
 echo "CORRAL_GLIDEIN_ID = ${CORRAL_GLIDEIN_ID}" >> ${CONDOR_CONFIG}
 echo "CORRAL_SITE_NAME = ${CORRAL_SITE_NAME}" >> ${CONDOR_CONFIG}
 echo "CORRAL_SERVER = ${CORRAL_SERVER}" >> ${CONDOR_CONFIG}
+if [ ! -z "${NUM_CPUS}" ]; then
+	echo "CORRAL_NUM_CPUS = ${NUM_CPUS}" >> ${CONDOR_CONFIG}
+fi
 if [ ! -z "${CCB_ADDRESS}" ]; then
     echo "CORRAL_CCB_ADDRESS = ${CCB_ADDRESS}" >> ${CONDOR_CONFIG}
 fi
