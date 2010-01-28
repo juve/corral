@@ -10,6 +10,7 @@ See the upgrade directory in SVN for more information.
 CHANGES
 -------
 1) No longer based on Globus GT4 framework. Too many changes to list.
+2) Added support for Condor parallel universe.
 
 KNOWN BUGS
 ----------
