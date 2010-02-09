@@ -252,20 +252,20 @@ public class GlideinResource implements Resource {
 			job.addArgument("-gcbBroker "+glidein.getGcbBroker());
 		if(glidein.getCcbAddress()!=null)
 			job.addArgument("-ccbAddress "+glidein.getCcbAddress());
-		if(glidein.getIdleTime()>0)
+		if(glidein.getIdleTime()!=null && glidein.getIdleTime()>0)
 			job.addArgument("-idleTime "+glidein.getIdleTime());
 		if(glidein.getCondorDebug()!=null) {
 			String[] debug = glidein.getCondorDebug().split("[ ,;:]+");
 			for(String level : debug)
 				job.addArgument("-debug "+level);
 		}
-		if(glidein.getNumCpus()>0)
+		if(glidein.getNumCpus()!=null && glidein.getNumCpus()>0)
 			job.addArgument("-numCpus "+glidein.getNumCpus());
 		
 		// Set port range if specified
-		if (glidein.getHighport()>0)
+		if (glidein.getHighport()!=null && glidein.getHighport()>0)
 			job.addArgument("-highport "+glidein.getHighport());
-		if (glidein.getLowport()>0)
+		if (glidein.getLowport()!=null && glidein.getLowport()>0)
 			job.addArgument("-lowport "+glidein.getLowport());
 		
 		// If there is a special config file, use it
