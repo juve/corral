@@ -57,6 +57,7 @@ public class Glidein extends CreateGlideinRequest implements Response {
 		this.resubmit = r.resubmit;
 		this.until = r.until;
 		this.resubmits = r.resubmits;
+		this.rsl = r.rsl;
 	}
 	
 	public Integer getId() {

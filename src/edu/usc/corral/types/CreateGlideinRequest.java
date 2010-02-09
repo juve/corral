@@ -38,8 +38,7 @@ public class CreateGlideinRequest implements Request {
 	protected @Element(required=false) Boolean resubmit;
 	protected @Element(required=false) Date until;
 	protected @Element(required=false) Integer resubmits;
-	
-	private @Element(required=false) String rsl;
+	protected @Element(required=false) String rsl;
 	
 	public Integer getSiteId() {
 		return siteId;
