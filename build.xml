@@ -4,6 +4,7 @@
 
 	<property name="base.name" value="corral"/>
 	<property name="classes.dir" location="classes"/>
+	<property name="jars.dir" location="lib"/>
 	<property name="bin.dir" location="bin"/>
 	<property name="lib.dir" location="lib"/>
 	<property name="src.dir" location="src"/>
@@ -12,11 +13,12 @@
 	
     <target name="clean">
     	<delete dir="${classes.dir}"/>
-    	<delete file="${lib.dir}/${jar.name}"/>
+		<delete file="${jars.dir}/${jar.name}"/>
     </target>
 	
     <target name="init">
         <mkdir dir="${classes.dir}"/>
+        <mkdir dir="${jars.dir}"/>
     </target>
 	
 	<target name="compile" depends="init">
