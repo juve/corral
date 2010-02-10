@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 #  Copyright 2007-2009 University Of Southern California
 #
@@ -15,10 +15,9 @@
 #  limitations under the License.
 #
 
-# Require CORRAL_HOME
+# Set CORRAL_HOME if not set
 if [ -z "$CORRAL_HOME" ]; then
-	echo "ERROR: Please set the CORRAL_HOME environment variable"
-	exit 1
+	export CORRAL_HOME=$(cd $(dirname $0) && cd .. && pwd)
 fi
 
 # Set classpath
