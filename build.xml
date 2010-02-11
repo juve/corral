@@ -4,7 +4,7 @@
 
 	<property name="base.name" value="corral"/>
 	<property name="build.dir" location="build"/>
-	<property name="classes.dir" location="${build.dir}/classes"/>
+    <property name="classes.dir" location="${build.dir}/classes"/>
 	<property name="jars.dir" location="${build.dir}/lib"/>
 	<property name="bin.dir" location="bin"/>
 	<property name="lib.dir" location="lib"/>
@@ -18,6 +18,8 @@
 	
     <target name="init">
         <mkdir dir="${build.dir}"/>
+        <mkdir dir="${build.dir}/classes"/>
+        <mkdir dir="${build.dir}/lib"/>
     </target>
 	
 	<target name="compile" depends="init">
