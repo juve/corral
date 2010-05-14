@@ -1,0 +1,230 @@
+#!/usr/bin/env python
+import os, time, datetime, calendar, popen2, sys, getopt, signal, pwd, grp
+
+# Set some defaults
+OUTPUT="/dev/stdout"
+INTERVAL=30
+MAXSIZE=1024
+LOG=None
+
+# Print usage message
+def usage():
+	print """Usage: %s [options] [schedd | collector | negotiator]
+
+This process periodically polls the memory and CPU usage of a Condor daemon
+and prints the results. The output is formatted in Netlogger format.
+
+OPTIONS
+
+   -o | --output FILE
+      The file to write NetLogger output to. Defaults to %s.
+   -i | --interval SECONDS
+      The number of seconds to wait between logging events. Defaults to %d.
+   -m | --maxsize KB
+      The maximum output file size in KB. Defaults to %d KB (1 MB, or ~2 weeks
+      using 5 min interval). When the log reaches this size, its name gets the 
+      date appended onto it and a new log is started.
+   -l | --log FILE
+      The log file for debugging output. Defaults to stdout.
+   -h | --help
+      Prints this usage message.
+""" % (os.path.basename(sys.argv[0]), OUTPUT, INTERVAL, MAXSIZE)
+
+
+# Print an informational message
+def info(message):
+	print datetime.datetime.now().isoformat(), message
+
+
+# Get the value of a configuration parameter from condor
+def condor_config_val(key, daemon=None):
+	if daemon is None:
+		ccv = popen2.Popen4("condor_config_val %s" % key)
+	else:
+		ccv = popen2.Popen4("condor_config_val -%s %s" % (daemon, key))
+	val = ccv.fromchild.readline() ; ccv.fromchild.readlines()
+	info(val)
+	if ccv.wait() == 0:
+		return val.strip()
+	else:
+		return None
+
+
+# Get the condor user id's UID and GID
+def get_condor_ids():
+	# Try condor's CONDOR_IDS config val first
+	uidgid = condor_config_val("CONDOR_IDS")
+	if uidgid:
+		ids = uidgid.split(".")
+		ids[0] = int(ids[0])
+		ids[1] = int(ids[1])
+		return ids
+	else:
+		info("CONDOR_IDS not set")
+		# Look for 'condor' user
+		try:
+			pw = pwd.getpwnam("condor")
+			return pw[2:4]
+		except KeyError:
+			info("Unable to get UID/GID for user 'condor'")
+			return None
+
+
+def get_daemon_pid(daemon):
+	return int(condor_config_val("PID",daemon))
+
+
+# Trap signals and exit gracefully
+def trap(sig, frame):
+	info("Shutting down...")
+	sys.exit(0)
+
+
+def get_stats(pid):
+	f = open("/proc/%d/stat" % pid)
+	l = f.readline()
+	f.close()
+	rec = l.split()
+	tick = os.sysconf('SC_CLK_TCK')
+	page_size = os.sysconf('SC_PAGESIZE')
+	utime = float(rec[13])/tick
+	stime = float(rec[14])/tick
+	vsize = float(rec[22])
+	rss = float(rec[23]) * page_size
+	return {
+		'utime': utime,
+		'stime': stime,
+		'vsize': vsize,
+		'rss': rss
+	}
+
+# Install signal handlers
+signal.signal(signal.SIGTERM, trap)
+signal.signal(signal.SIGINT, trap)
+signal.signal(signal.SIGHUP, trap)
+signal.signal(signal.SIGUSR1, trap)
+signal.signal(signal.SIGUSR2, trap)
+
+
+# If running as root, set effective uid & gid to condor user
+if os.getuid()==0:
+	ids = get_condor_ids()
+	if ids == None:
+		info("No condor user found")
+		info("Cannot run command as root")
+		sys.exit(1)
+	os.setgid(ids[1])
+	os.setuid(ids[0])
+
+# Set umask so that any files created will be readable by all
+os.umask(0022)
+
+
+# Parse arguments
+try:
+	opts, args = getopt.getopt(sys.argv[1:], "hl:o:i:m:", 
+					["help","log=","output=","interval=","maxsize="])
+except getopt.GetoptError, err:
+	# print help information and exit:
+	print str(err) # will print something like "option -a not recognized"
+	sys.exit(3)
+if len(args) == 1:
+	DAEMON = args[0]
+	if DAEMON not in ['collector','negotiator','schedd']:
+		info("invalid daemon: %s" % DAEMON)
+		sys.exit(1)
+else:
+	usage()
+	info("please specify DAEMON")
+	sys.exit(1)
+for o, a in opts:
+	if o in ("-h","--help"):
+		usage()
+		sys.exit(0)
+	elif o in ("-o","--output"):
+		OUTPUT=a
+	elif o in ("-l","--log"):
+		LOG=a
+	elif o in ("-i","--interval"):
+		INTERVAL=int(a)
+	elif o in ("-m","--maxsize"):
+		MAXSIZE=int(a)
+	else:
+		info("unhandled argument: %s" % o)
+		sys.exit(5)
+
+
+# Redirect output to log
+if LOG is not None:
+	try:
+		log = open(LOG,"a",1)
+		sys.stdout.close()
+		sys.stderr.close()
+		sys.stdout = log
+		sys.stderr = log
+	except IOError, err:
+		info(str(err))
+		sys.exit(2)
+
+
+# Find CONDOR_HOME
+try:
+	CONDOR_HOME = os.environ['CONDOR_HOME']
+except KeyError, err:
+	print "Please set CONDOR_HOME"
+	sys.exit(3)
+
+
+# Welcome message
+info("Daemon status monitor starting...")
+
+PID = get_daemon_pid(DAEMON)
+info("DAEMON: %s PID: %d" % (DAEMON, PID))
+
+last_stats = get_stats(PID)
+
+# Loop forever collecting status
+while True:
+
+	# Go to sleep for a while
+	time.sleep(INTERVAL)
+
+	stats = get_stats(PID)
+
+	last_time = last_stats['utime'] + last_stats['stime']
+	this_time = stats['utime'] + stats['stime']
+	util = ((this_time - last_time) / INTERVAL) * 100
+	utime = stats['utime'] - last_stats['utime']
+	stime = stats['stime'] - last_stats['stime']
+	rss = stats['rss']
+	vsize = stats['vsize']	
+	
+	last_stats = stats
+	
+	# Get timestamp
+	now = datetime.datetime.utcnow()
+	ts = now.strftime("%Y-%m-%dT%H:%M:%S")
+	ts += ".%06dZ" % now.microsecond # For older pythons without %f
+
+	# Create record
+	rec = "ts=%s event=daemon.status daemon=%s utime=%0.2f stime=%0.2f util=%0.2f vsize=%0.2f rss=%0.2f"\
+		 % (ts, DAEMON, utime, stime, util, vsize, rss)
+
+	# Rotate log if necessary
+	if os.path.isfile(OUTPUT):
+		st = os.stat(OUTPUT)
+		if (st.st_size/1024) >= MAXSIZE:
+			stamp = now.strftime("%Y%m%d")
+			os.rename(OUTPUT,OUTPUT+"."+stamp)
+	
+	# Write output record
+	try:
+		output = open(OUTPUT,"a",1)
+		output.write(rec+"\n")
+		output.close()
+	except IOError, err:
+		info(str(err))
+		sys.exit(4)
+	
+
+
