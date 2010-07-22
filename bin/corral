@@ -15,6 +15,12 @@
 #  limitations under the License.
 #
 
+# Make sure the user doesn't run this as root
+if [ `id -u` -eq 0 ]; then
+	echo "The Corral client cannot be run as root"
+	exit 1
+fi
+
 # Set CORRAL_HOME if not set
 if [ -z "$CORRAL_HOME" ]; then
 	export CORRAL_HOME=$(cd $(dirname $0) && cd .. && pwd)
