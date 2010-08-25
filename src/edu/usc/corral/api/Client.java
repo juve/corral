@@ -67,7 +67,7 @@ public class Client {
 	private boolean closed = false;
 	
 	public Client(String host, int port) {
-		Protocol httpg = new Protocol("httpg", new SocketFactory(), 8443);
+		Protocol httpg = new Protocol("httpg", new SocketFactory(), 9443);
 		
 		HostConfiguration hc = new HostConfiguration();
 		hc.setHost(host, port, httpg);
@@ -296,7 +296,7 @@ public class Client {
 	
 	public static void main(String[] args) throws Exception {
 		long start = System.currentTimeMillis();
-		Client client = new Client("127.0.0.1", 8443);
+		Client client = new Client("127.0.0.1", 9443);
 		client.getConfiguration().setAuthorization("none");
 		ListRequest req = new ListRequest();
 		ListGlideinsResponse resp = client.doPost("/glidein/list", ListGlideinsResponse.class, req);

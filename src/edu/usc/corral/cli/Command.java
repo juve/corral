@@ -237,7 +237,7 @@ public abstract class Command {
 	public int getDefaultPort() {
 		String eport = System.getenv("CORRAL_PORT");
 		if (eport == null){
-			return 8443; 
+			return 9443; 
 		} else {
 			try {
 				return Integer.parseInt(eport);

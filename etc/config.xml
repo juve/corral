@@ -4,7 +4,7 @@
 	<!--                                                                -->
 	<!-- Parameters:                                                    -->
 	<!--    host             - The host name to bind to. Default is all.-->
-	<!--    port             - The server port number. 8443 is default. -->
+	<!--    port             - The server port number. 9443 is default. -->
 	<!--    backlog          - The socket accept queue size. Default: 5 -->
 	<!--    certificate      - The certificate to use as the server     --> 
 	<!--                       identity.                                -->
@@ -32,7 +32,7 @@
 			  type="edu.usc.corral.config.ServerConfiguration">
 		<parameter>
 			<name>port</name>
-			<value>8443</value>
+			<value>9443</value>
 		</parameter>
 		<parameter>
 			<name>certificate</name>

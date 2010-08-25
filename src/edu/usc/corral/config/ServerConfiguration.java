@@ -21,7 +21,7 @@ import org.globus.security.gridmap.GridMap;
 
 public class ServerConfiguration extends GlobusConfiguration implements Initializable {
 	private String host = null;
-	private int port = 8443;
+	private int port = 9443;
 	private int backlog = 5;
 	private GridMap gridMap;
 	private String gridMapfile = "/etc/grid-security/grid-mapfile";
