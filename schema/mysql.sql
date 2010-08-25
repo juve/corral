@@ -62,7 +62,7 @@ CREATE TABLE execution_service (
 	site			BIGINT NOT NULL,					-- Site ID
 	function		ENUM('STAGING','GLIDEIN') NOT NULL,	-- Use for staging or glideins
 	serviceContact	VARCHAR(1024) NOT NULL,				-- The URL of the grid service
-	serviceType		ENUM('GT2','GT4') NOT NULL,			-- The version of grid service
+	serviceType		ENUM('GT2','GT4','GT5') NOT NULL,	-- The version of grid service
 	project			VARCHAR(255),						-- The desired project name/id
 	queue			VARCHAR(255),						-- The target queue name/id
 	CONSTRAINT pk_execution_service PRIMARY KEY (site,function),

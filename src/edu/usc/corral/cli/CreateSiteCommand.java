@@ -116,7 +116,7 @@ public class CreateSiteCommand extends Command implements SiteListener {
 				  .setUsage("-ss | --staging-service <svc>")
 				  .setDescription("This is the gatekeeper to use for setup (i.e. fork). The \n" +
 						  		  "format follows the condor format for grid resource. Only \n" +
-						  		  "the gt2 and gt4 grid types are supported right now. (e.x. \n" +
+						  		  "the gt2, gt4, and gt5 grid types are supported right now. (e.x. \n" +
 				  				  "'gt2 dynamic.usc.edu/jobmanager-fork')")
 				  .hasArgument()
 		);

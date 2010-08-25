@@ -180,6 +180,8 @@ public class GlideinResource implements Resource {
 		ExecutionService glideinService = site.getGlideinService();
 		if(ServiceType.GT2.equals(glideinService.getServiceType())) {
 			job.setGridType(CondorGridType.GT2);
+		} else if(ServiceType.GT5.equals(glideinService.getServiceType())) {
+			job.setGridType(CondorGridType.GT5);
 		} else {
 			job.setGridType(CondorGridType.GT4);
 		}
@@ -188,8 +190,9 @@ public class GlideinResource implements Resource {
 		// Set rsl/xml
 		StringBuilder rsl = new StringBuilder();
 		if (glidein.getRsl() != null) rsl.append(glidein.getRsl());
-		if (ServiceType.GT2.equals(glideinService.getServiceType())) {
-			// GT2 uses globus_rsl
+		if (ServiceType.GT2.equals(glideinService.getServiceType()) ||
+			ServiceType.GT5.equals(glideinService.getServiceType())) {
+			// GT2 and GT5 use globus_rsl
 			if (rsl.indexOf("(project=")==-1 && glideinService.getProject() != null)
 				rsl.append("(project="+glideinService.getProject()+")");
 			if (rsl.indexOf("(queue=")==-1 && glideinService.getQueue() != null)

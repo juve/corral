@@ -26,6 +26,7 @@ public enum CondorGridType implements Serializable
 {
 	GT2 ("gt2"),
 	GT4 ("gt4"),
+	GT5 ("gt5"),
 	CONDOR ("condor"),
 	NORDUGRID ("nordugrid"),
 	UNICORE ("unicore"),

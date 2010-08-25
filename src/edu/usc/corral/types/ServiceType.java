@@ -17,5 +17,6 @@ package edu.usc.corral.types;
 
 public enum ServiceType {
 	GT2,
-	GT4
+	GT4,
+	GT5
 }

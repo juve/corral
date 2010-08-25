@@ -152,7 +152,7 @@ public class CreateGlideinCommand extends Command implements GlideinListener {
 				  .setOption("rsl")
 				  .setLongOption("globus-rsl")
 				  .setUsage("-rsl | --globus-rsl <rsl>")
-				  .setDescription("The Globus RSL (GT2) or XML (GT4) to append to the glidein job.")
+				  .setDescription("The Globus RSL (GT2,GT5) or XML (GT4) to append to the glidein job.")
 				  .hasArgument()
 		);
 		options.add(

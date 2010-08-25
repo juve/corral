@@ -191,14 +191,17 @@ public class SiteResource implements Resource {
 		ExecutionService stagingService = site.getStagingService();
 		if(ServiceType.GT2.equals(stagingService.getServiceType())) {
 			job.setGridType(CondorGridType.GT2);
+		} else if(ServiceType.GT5.equals(stagingService.getServiceType())) {
+			job.setGridType(CondorGridType.GT5);
 		} else {
 			job.setGridType(CondorGridType.GT4);
 		}
 		job.setGridContact(stagingService.getServiceContact());
 		
 		// Set rsl/xml
-		if (ServiceType.GT2.equals(stagingService.getServiceType())) {
-			// GT2 uses globus_rsl
+		if (ServiceType.GT2.equals(stagingService.getServiceType()) ||
+			ServiceType.GT5.equals(stagingService.getServiceType())) {
+			// GT2 and GT5 use globus_rsl
 			StringBuilder rsl = new StringBuilder();
 			if(stagingService.getProject() != null)
 				rsl.append("(project="+stagingService.getProject()+")");
@@ -427,14 +430,17 @@ public class SiteResource implements Resource {
 		ExecutionService stagingService = site.getStagingService();
 		if(ServiceType.GT2.equals(stagingService.getServiceType())) {
 			job.setGridType(CondorGridType.GT2);
+		} else if(ServiceType.GT5.equals(stagingService.getServiceType())) {
+			job.setGridType(CondorGridType.GT5);
 		} else {
 			job.setGridType(CondorGridType.GT4);
 		}
 		job.setGridContact(stagingService.getServiceContact());
 		
 		// Set rsl/xml
-		if (ServiceType.GT2.equals(stagingService.getServiceType())) {
-			// GT2 uses globus_rsl
+		if (ServiceType.GT2.equals(stagingService.getServiceType()) ||
+			ServiceType.GT5.equals(stagingService.getServiceType())) {
+			// GT2 and GT5 use globus_rsl
 			StringBuilder rsl = new StringBuilder();
 			if(stagingService.getProject() != null)
 				rsl.append("(project="+stagingService.getProject()+")");
