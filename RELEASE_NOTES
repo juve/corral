@@ -1,4 +1,39 @@
 ===================================
+  Release Notes for version 2.0.2
+===================================
+
+UPGRADING
+---------
+Nothing special
+
+CHANGES
+-------
+1) Fixed bug parsing Condor event codes 29 and 30
+2) Improved install instructions.
+
+KNOWN BUGS
+----------
+1) --wait still doesn't work
+
+===================================
+  Release Notes for version 2.0.1
+===================================
+
+UPGRADING
+---------
+Nothing special
+
+CHANGES
+-------
+1) Change default port to 9443 to reduce conflicts with other services.
+2) Add error messages and prevent users from running client and server as root.
+3) Add support for GT5
+
+KNOWN BUGS
+----------
+1) --wait still doesn't work
+
+===================================
   Release Notes for version 2.0.0
 ===================================
 
