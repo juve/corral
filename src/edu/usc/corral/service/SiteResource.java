@@ -243,6 +243,13 @@ public class SiteResource implements Resource {
 		job.addEnvironment("CORRAL_SERVER", ServiceUtil.getServiceHost());
 		job.addEnvironment("CORRAL_SITE_ID", Integer.toString(site.getId()));
 		job.addEnvironment("CORRAL_SITE_NAME", site.getName());
+		job.addEnvironment("CORRAL_USERNAME", site.getLocalUsername());
+		
+		// Add extended attributes
+		job.addXAttr("CorralServer", ServiceUtil.getServiceHost());
+		job.addXAttr("CorralSiteId", site.getId());
+		job.addXAttr("CorralSiteName", site.getName());
+		job.addXAttr("CorralUsername", site.getLocalUsername());
 		
 		// Add arguments
 		job.addArgument("-installPath "+site.getInstallPath());
@@ -482,6 +489,13 @@ public class SiteResource implements Resource {
 		job.addEnvironment("CORRAL_SERVER", ServiceUtil.getServiceHost());
 		job.addEnvironment("CORRAL_SITE_ID", Integer.toString(site.getId()));
 		job.addEnvironment("CORRAL_SITE_NAME", site.getName());
+		job.addEnvironment("CORRAL_USERNAME", site.getLocalUsername());
+		
+		// Add extended attributes
+		job.addXAttr("CorralServer", ServiceUtil.getServiceHost());
+		job.addXAttr("CorralSiteId", site.getId());
+		job.addXAttr("CorralSiteName", site.getName());
+		job.addXAttr("CorralUsername", site.getLocalUsername());
 		
 		// Add arguments
 		job.addArgument("-installPath "+site.getInstallPath());

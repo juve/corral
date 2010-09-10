@@ -156,6 +156,11 @@ public class CondorJob implements Serializable
 	private String owner;
 	
 	/**
+	 * Extended attributes for the job.
+	 */
+	private Map<String,Object> xattrs;
+	
+	/**
 	 * Create a job with a given job directory and set of parameters
 	 * @param jobDirectory The directory where the files for this job 
 	 * should be created
@@ -178,6 +183,7 @@ public class CondorJob implements Serializable
 		this.globusRSL = null;
 		this.globusXML = null;
 		this.owner = owner;
+		this.xattrs = new HashMap<String,Object>();
 	}
 	
 	public void addListener(CondorEventListener listener)
@@ -279,6 +285,16 @@ public class CondorJob implements Serializable
 	public void addEnvironment(String variable, String value)
 	{
 		environment.put(variable, value);
+	}
+	
+	public Map<String, Object> getXAttrs()
+	{
+		return xattrs;
+	}
+	
+	public void addXAttr(String attr, Object value)
+	{
+		xattrs.put(attr, value);
 	}
 
 	public CondorUniverse getUniverse()
@@ -593,6 +609,25 @@ public class CondorJob implements Serializable
 			out.write("when_to_transfer_output = ON_EXIT\n");
 		}
 		
+		// Add extended attributes
+		Map<String,Object> attrs = getXAttrs();
+		for(String attr : attrs.keySet())
+		{
+			out.write("+");
+			out.write(attr);
+			out.write(" = ");
+			Object val = attrs.get(attr);
+			if (val == null) {
+				// Do nothing
+			} else if(val instanceof String) {
+				out.write('"');
+				out.write((String)val);
+				out.write('"');
+			} else {
+				out.write(val.toString());
+			}
+			out.write("\n");
+		}
 		
 		// Queue 1 job
 		out.write("queue\n");

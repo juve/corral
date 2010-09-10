@@ -243,6 +243,14 @@ public class GlideinResource implements Resource {
 		job.addEnvironment("CORRAL_SITE_ID", Integer.toString(site.getId()));
 		job.addEnvironment("CORRAL_GLIDEIN_ID", Integer.toString(glidein.getId()));
 		job.addEnvironment("CORRAL_SITE_NAME", site.getName());
+		job.addEnvironment("CORRAL_USERNAME", glidein.getLocalUsername());
+		
+		// Add extended attributes
+		job.addXAttr("CorralServer", ServiceUtil.getServiceHost());
+		job.addXAttr("CorralSiteId", site.getId());
+		job.addXAttr("CorralGlideinId", glidein.getId());
+		job.addXAttr("CorralSiteName", site.getName());
+		job.addXAttr("CorralUsername", glidein.getLocalUsername());
 		
 		// Add arguments
 		job.addArgument("-installPath "+site.getInstallPath());

@@ -10,6 +10,7 @@ CHANGES
 -------
 1) Fixed bug parsing Condor event codes 29 and 30
 2) Improved install instructions.
+3) Add extended attributes to classads to help identify jobs
 
 KNOWN BUGS
 ----------
