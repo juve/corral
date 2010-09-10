@@ -171,6 +171,9 @@ DedicatedScheduler = "DedicatedScheduler@$(CORRAL_CONDOR_HOST)"
 STARTD_ATTRS = IsGlidein, START, CorralRunTime, CorralStopTime, CorralTimeLeft, \
                CorralSiteId, CorralGlideinId, CorralSiteName, CorralServer, \
                DedicatedScheduler
+               
+MASTER_NAME = glidein_$(CORRAL_GLIDEIN_ID)
+STARTD_NAME = glidein_$(CORRAL_GLIDEIN_ID)
 
 ###############################################################################
 # Network settings
