@@ -40,8 +40,38 @@ else
   _RUNJAVA="$JAVA_HOME"/bin/java
 fi
 
-# Run it
-exec $_RUNJAVA \
-	-DCORRAL_HOME=$CORRAL_HOME \
-	-Djava.security.egd=file:///dev/urandom \
-	edu.usc.corral.server.Server "$@"
+function usage ()
+{
+	echo "Usage: $0 [options]"
+	echo ""
+	echo "Options:"
+	echo "  -f | --foreground  Run the server in the foreground"
+	echo "  -h | --help        Show this message"
+	exit 1
+}
+
+foreground=no
+for arg in $*; do
+	case $arg in
+		-f|--foreground) foreground=yes ;;
+		-h|--help) usage ;;
+	esac
+done
+
+if [ "$foreground" == "yes" ]; then
+
+	# Run it
+	exec $_RUNJAVA \
+		-DCORRAL_HOME=$CORRAL_HOME \
+		-Djava.security.egd=file:///dev/urandom \
+		edu.usc.corral.server.Server "$@"
+
+else
+	
+	# Fork it
+	$_RUNJAVA \
+		-DCORRAL_HOME=$CORRAL_HOME \
+		-Djava.security.egd=file:///dev/urandom \
+		edu.usc.corral.server.Server "$@" >/dev/null 2>&1 &
+		
+fi
