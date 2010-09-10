@@ -2,33 +2,79 @@
 Installing the service
 ======================
 
-1. Unzip the source.
+0. If you don't have a Condor central manager installed and configured, do that now.
+   See http://cs.wisc.edu/condor for more help.
+   
+1. Unzip or get the Corral source from subversion. Put it somewhere like /usr/local/corral.
+
+   Unzip:
+   
+   $ mv corral-VERSION.tar.gz /usr/local
+   $ cd /usr/local
+   $ tar xzvf corral-VERSION.tar.gz
+   
+   Export from Subversion:
+   
+   $ svn export https://pegasus.isi.edu/svn/corral/tags/VERSION /usr/local/corral
+   
+   Make sure a normal user owns all the files:
+   
+   $ chown -R CORRAL_USER:CORRAL_GROUP /usr/local/corral
 
 2. Set your CORRAL_HOME environment variable to point to the directory where 
-   you unzipped the source.
+   you unzipped the source. E.g.:
+   
+   $ export CORRAL_HOME=/usr/local/corral
 
 3. Make sure ant (> 1.7) and java (> 1.5) are on your path.
 
-4. Compile the source by running: ant compile
+4. Compile the source:
+ 
+   $ cd $CORRAL_HOME
+   $ ant compile
 	
-5. Edit $CORRAL_HOME/etc/config.xml.
+5. Edit the Corral config file: $CORRAL_HOME/etc/config.xml.
        
 	5.1 Make sure the Condor configuration points to Condor. The service
 		uses a local Condor central manager to submit staging and glidein jobs.
 		The paths should be absolute.
-       
-	5.2 (Optional) Make sure the Database configuration points to a valid 
-		database. The glidein service supports both SQLite and MySQL databases.
-		It will automatically install tables if pointed at a valid database
-		instance. The default uses SQLite and should not require any
-		configuration changes to work.
 
 6. Add $CORRAL_HOME/bin to your path.
 
-7. Start the service by running: $CORRAL_HOME/bin/corral-server
+7. If you don't already have one, get a host certificate and install it in
+   /etc/grid-security/containercert.pem and /etc/grid-security/containerkey.pem
+   You can change these paths by editing the configuration file.
+   
+8. Start the service by running: $CORRAL_HOME/bin/corral-server
+   Note: You cannot run the service as root. Run it as an ordinary user.
+   The user should be able to read the host key file.
 
-8. Test with:
+9. Generate a user proxy. This proxy should be mapped in your grid-mapfile.
 
-	corral help
-	corral help ls
-	corral ls
+10. Test with:
+
+	$ corral ls
+	
+	You shouldn't get any output (ls lists the sites, but you shouldn't have
+	any sites configured yet). If you get an error, then something is wrong with
+	your configuration. Usually it is a problem with the certificates.
+	
+11. Get help:
+
+	$ corral help
+	
+	Or for a specific command:
+	
+	$ corral help ls
+
+12. Create a site using the create-site command:
+
+	$ corral cs -af site.args
+	
+	Use 'corral help cs' for more info.
+	
+13. Create a glidein using the create-glidein command:
+
+	$ corral cg -s 1 -af glidein.args
+	
+	Use 'corral help cg' for more info.
