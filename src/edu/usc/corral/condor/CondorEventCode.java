@@ -46,6 +46,8 @@ public enum CondorEventCode
 	GRID_RESOURCE_DOWN		(26, "Grid Resource Down"),
 	GRID_SUBMIT				(27, "Job Submitted remotely"),
 	JOB_AD_INFORMATION		(28, "Report job ad information"),
+	REMOTE_STATUS_UNKNOWN	(29, "Remote status unknown"),
+	REMOTE_STATUS_KNOWN		(30, "Remote status known again"),
 	EXCEPTION				(999, "Log parser threw an exception");
 
 	/**
@@ -108,6 +110,8 @@ public enum CondorEventCode
 			case 26: return CondorEventCode.GRID_RESOURCE_DOWN;
 			case 27: return CondorEventCode.GRID_SUBMIT;
 			case 28: return CondorEventCode.JOB_AD_INFORMATION;
+			case 29: return CondorEventCode.REMOTE_STATUS_UNKNOWN;
+			case 30: return CondorEventCode.REMOTE_STATUS_KNOWN;
 			default: throw new CondorException(
 					"Unrecognized event code: "+eventCode);
 		}
