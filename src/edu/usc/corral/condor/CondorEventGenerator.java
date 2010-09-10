@@ -70,40 +70,32 @@ public class CondorEventGenerator extends Thread
 		CondorEvent event = new CondorEvent();
 		event.setGenerator(this);
 		event.setJob(job);
+		event.setTime(new Date());
 		
 		// Event code
-		try 
-		{
+		try {
 			int intCode = Integer.parseInt(fields[0]);
 			CondorEventCode code = CondorEventCode.fromEventCode(intCode);
 			event.setEventCode(code);
-		}
-		catch(IllegalArgumentException e)
-		{
+		} catch(IllegalArgumentException e) {
 			throw new CondorException("Unrecognized event code: "+fields[0],e);
 		}
 		
 		// Job ID
-		try
-		{
+		try {
 			String id = fields[1].substring(1,fields[1].length()-2);
 			String[] tokens = id.split("[.]");
 			if(tokens.length != 3)
 				throw new CondorException("Error parsing job id: "+fields[1]);
 			String condorId = 
 				Integer.parseInt(tokens[0])+"."+Integer.parseInt(tokens[1]);
-			if(!condorId.equals(job.getJobId()))
-			{
+			if(!condorId.equals(job.getJobId())) {
 				throw new CondorException("Condor ID mismatch: got "+
 						condorId + " expected " + job.getJobId());
 			}
-		}
-		catch(CondorException ce)
-		{
+		} catch(CondorException ce) {
 			throw ce; /* No need to wrap these */
-		}
-		catch(Exception e)
-		{
+		} catch(Exception e) {
 			throw new CondorException("Error parsing job id: "+fields[1],e);
 		}
 		
