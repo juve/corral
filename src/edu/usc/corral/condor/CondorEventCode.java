@@ -48,8 +48,11 @@ public enum CondorEventCode
 	JOB_AD_INFORMATION		(28, "Report job ad information"),
 	REMOTE_STATUS_UNKNOWN	(29, "Remote status unknown"),
 	REMOTE_STATUS_KNOWN		(30, "Remote status known again"),
+	STAGE_IN				(31, "Job performing stage-in"),
+	STAGE_OUT				(32, "Job performing stage-out"),
+	UNKNOWN_CONDOR_EVENT	(998, "Unknown Condor event"),
 	EXCEPTION				(999, "Log parser threw an exception");
-
+	
 	/**
 	 * The integer id for this event code
 	 */
@@ -112,8 +115,9 @@ public enum CondorEventCode
 			case 28: return CondorEventCode.JOB_AD_INFORMATION;
 			case 29: return CondorEventCode.REMOTE_STATUS_UNKNOWN;
 			case 30: return CondorEventCode.REMOTE_STATUS_KNOWN;
-			default: throw new CondorException(
-					"Unrecognized event code: "+eventCode);
+			case 31: return CondorEventCode.STAGE_IN;
+			case 32: return CondorEventCode.STAGE_OUT;
+			default: return CondorEventCode.UNKNOWN_CONDOR_EVENT;
 		}
 	}
 }
