@@ -144,6 +144,7 @@ public class Condor {
 			File condorRm = new File(condorBin,"condor_rm");
 			
 			cancel.setCommand(condorRm.getAbsolutePath());
+			cancel.setWorkingDirectory(job.getJobDirectory());
 			
 			// Arguments
 			cancel.addArgument(job.getJobId());
