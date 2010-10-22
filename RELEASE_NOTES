@@ -1,4 +1,22 @@
 ===================================
+  Release Notes for version 2.0.3
+===================================
+
+UPGRADING
+---------
+Nothing special
+
+CHANGES
+-------
+1) Fixed corral-server script help
+2) Fixed bug where commands were run from the wrong working directory
+3) Fixed bug where chmod/rm/chown failures were not reported
+
+KNOWN BUGS
+----------
+1) --wait still doesn't work
+
+===================================
   Release Notes for version 2.0.2
 ===================================
 
