@@ -552,7 +552,11 @@ public class SiteResource implements Resource {
 		deleteFromDatabase();
 		
 		// Remove the working directory and all sub-directories
-		FilesystemUtil.rm(getWorkingDirectory());
+		try {
+			FilesystemUtil.rm(getWorkingDirectory());
+		} catch(IOException ioe) {
+			throw new GlideinException("Unable to remove working directory", ioe);
+		}
 	}
 	
 	private void fail(String message, Exception exception, Date time) throws GlideinException {

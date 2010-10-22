@@ -633,8 +633,8 @@ public class CondorJob implements Serializable
 		out.write("queue\n");
 	}
 	
-	public void saveJobId() throws CondorException
-	{
+	public void saveJobId() throws CondorException {
+		
 		File jobidFile = new File(jobDirectory,"jobid");
 		try {
 			boolean append = false;
@@ -649,19 +649,22 @@ public class CondorJob implements Serializable
 		
 		// Change the ownership
 		if (owner != null && !System.getProperty("user.name").equals(owner)) {
-			FilesystemUtil.chmod(jobidFile, 644);
-			FilesystemUtil.chown(jobidFile, owner);
+			try {
+				FilesystemUtil.chmod(jobidFile, 644);
+				FilesystemUtil.chown(jobidFile, owner);
+			} catch(IOException ioe) {
+				throw new CondorException(
+					"Unable to chmod/chown job ID file", ioe);
+			}
 		}
 	}
 	
-	public void prepareForSubmit() throws CondorException
-	{
+	public void prepareForSubmit() throws CondorException {
+		
 		// Create job directory if it doesn't exist
 		File jobDirectory = getJobDirectory();
-		if(!jobDirectory.exists())
-		{
-			if(!jobDirectory.mkdirs())
-			{
+		if(!jobDirectory.exists()) {
+			if(!jobDirectory.mkdirs()) {
 				throw new CondorException(
 						"Unable to create job directory: "+jobDirectory);
 			}
@@ -675,12 +678,20 @@ public class CondorJob implements Serializable
 		
 		// Delete the log file if it exists
 		if (log.exists()) {
-			FilesystemUtil.rm(log);
+			try {
+				FilesystemUtil.rm(log);
+			} catch(IOException ioe) {
+				throw new CondorException("Unable to delete existing log file", ioe);
+			}
 		}
 		
 		// Change the ownership
 		if (owner != null && !System.getProperty("user.name").equals(owner)) {
-			FilesystemUtil.chown(jobDirectory, owner);
+			try {
+				FilesystemUtil.chown(jobDirectory, owner);
+			} catch(IOException ioe) {
+				throw new CondorException("Unable to chown job directory", ioe);
+			}
 		}
 	}
 }

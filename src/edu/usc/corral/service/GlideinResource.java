@@ -432,7 +432,11 @@ public class GlideinResource implements Resource {
 		}
 		
 		// Remove the working directory
-		FilesystemUtil.rm(getWorkingDirectory());
+		try {
+			FilesystemUtil.rm(getWorkingDirectory());
+		} catch (IOException ioe) {
+			throw new GlideinException("Unable to remove working directory",ioe);
+		}
 	}
 	
 	private ServiceConfiguration getConfig() throws GlideinException {

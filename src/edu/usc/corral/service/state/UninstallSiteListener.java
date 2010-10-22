@@ -79,28 +79,37 @@ public class UninstallSiteListener extends BaseListener {
 		// Generate failed event
 		try {
 			CondorEvent ce = getLastEvent();
-			Event event = new SiteEvent(SiteEventCode.UNINSTALL_FAILED,ce.getTime(),this.siteId);
+			Event event = new SiteEvent(
+				SiteEventCode.UNINSTALL_FAILED,ce.getTime(),this.siteId);
 			event.setProperty("message", message);
 			event.setProperty("exception", exception);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (ConfigurationException ne) {
-			throw new RuntimeException("Unable to get event queue: "+ne.getMessage(),ne);
+			throw new RuntimeException(
+				"Unable to get event queue: "+ne.getMessage(),ne);
 		}
 	}
 	
 	private void success(CondorJob job) {
 		// Cleanup job dir
-		FilesystemUtil.rm(job.getJobDirectory());
+		try {
+			FilesystemUtil.rm(job.getJobDirectory());
+		} catch (IOException ioe) {
+			throw new RuntimeException(
+				"Unable to remove uninstall job directory", ioe);
+		}
 		
 		// Generate success event
 		try {
 			CondorEvent ce = getLastEvent();
-			Event event = new SiteEvent(SiteEventCode.UNINSTALL_SUCCESS,ce.getTime(),this.siteId);
+			Event event = new SiteEvent(
+				SiteEventCode.UNINSTALL_SUCCESS,ce.getTime(),this.siteId);
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (ConfigurationException ne) {
-			throw new RuntimeException("Unable to get event queue: "+ne.getMessage(),ne);
+			throw new RuntimeException(
+				"Unable to get event queue: "+ne.getMessage(),ne);
 		}
 	}
 }

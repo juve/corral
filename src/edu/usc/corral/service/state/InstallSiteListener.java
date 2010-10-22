@@ -86,14 +86,19 @@ public class InstallSiteListener extends BaseListener {
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (ConfigurationException ne) {
-			throw new RuntimeException("Unable to get event queue: "+
-					ne.getMessage(),ne);
+			throw new RuntimeException(
+				"Unable to get event queue: "+ne.getMessage(),ne);
 		}
 	}
 	
 	private void success(CondorJob job) {
 		// Cleanup job dir
-		FilesystemUtil.rm(job.getJobDirectory());
+		try {
+			FilesystemUtil.rm(job.getJobDirectory());
+		} catch (IOException ioe) {
+			throw new RuntimeException(
+				"Unable to delete install job directory", ioe);
+		}
 		
 		// Generate success event
 		try {
@@ -103,8 +108,8 @@ public class InstallSiteListener extends BaseListener {
 			EventQueue queue = EventQueue.getInstance();
 			queue.add(event);
 		} catch (ConfigurationException ne) {
-			throw new RuntimeException("Unable to get event queue: "+
-					ne.getMessage(),ne);
+			throw new RuntimeException(
+				"Unable to get event queue: "+ne.getMessage(),ne);
 		}
 	}
 }
