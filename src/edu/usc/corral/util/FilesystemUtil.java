@@ -34,7 +34,10 @@ public class FilesystemUtil {
 				return true;
 			}
 		} catch (IOException ioe) {
-			throw new IOException("Unable to chmod file: "+file, ioe);
+			IOException e = new IOException(
+				"Unable to chmod file/directory: "+file);
+			e.initCause(ioe);
+			throw e;
 		}
 	}
 	
@@ -55,7 +58,10 @@ public class FilesystemUtil {
 				return true;
 			}
 		} catch (IOException ioe) {
-			throw new IOException("Unable to chown file: "+file, ioe);
+			IOException e = new IOException(
+				"Unable to chown file/directory: "+file);
+			e.initCause(ioe);
+			throw e;
 		}
 	}
 	
@@ -76,7 +82,10 @@ public class FilesystemUtil {
 				return true;
 			}
 		} catch (IOException ioe) {
-			throw new IOException("Unable to chown file: "+file, ioe);
+			IOException e = new IOException(
+				"Unable to rm file/directory: "+file);
+			e.initCause(ioe);
+			throw e;
 		}
 	}
 }

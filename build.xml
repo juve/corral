@@ -22,7 +22,7 @@
     </target>
 	
 	<target name="compile" depends="init">
-		<javac srcdir="${src.dir}" destdir="${classes.dir}" debug="true">
+		<javac srcdir="${src.dir}" destdir="${classes.dir}" debug="true" target="1.5" source="1.5">
 			<include name="**/*.java"/>
 			<classpath>
 				<fileset dir="${lib.dir}">
