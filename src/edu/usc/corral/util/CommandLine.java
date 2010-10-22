@@ -72,7 +72,7 @@ public class CommandLine {
 	public CommandLine() {
 		arguments = new LinkedList<String>();
 		environment = new HashMap<String,String>();
-		workingDirectory = new File(".");
+		workingDirectory = new File("/tmp");
 		command = null;
 		output = new StringBuffer();
 		error = new StringBuffer();
