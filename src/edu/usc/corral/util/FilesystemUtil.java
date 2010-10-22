@@ -20,25 +20,25 @@ import java.io.IOException;
 
 public class FilesystemUtil {
 	
-	public static boolean chmod(File file, int mode) {
+	public static boolean chmod(File file, int mode) throws IOException {
 		try {
-			CommandLine chown = new CommandLine();
-			chown.setCommand("chmod");
-			chown.addArgument(String.valueOf(mode));
-			chown.addArgument(file.getAbsolutePath());
-			chown.execute();
-			int exitCode = chown.getExitCode();
+			CommandLine chmod = new CommandLine();
+			chmod.setCommand("chmod");
+			chmod.addArgument(String.valueOf(mode));
+			chmod.addArgument(file.getAbsolutePath());
+			chmod.execute();
+			int exitCode = chmod.getExitCode();
 			if(exitCode != 0){
 				return false;
 			} else {
 				return true;
 			}
 		} catch (IOException ioe) {
-			return false;
+			throw new IOException("Unable to chmod file: "+file, ioe);
 		}
 	}
 	
-	public static boolean chown(File file, String user) {
+	public static boolean chown(File file, String user) throws IOException {
 		try {
 			CommandLine chown = new CommandLine();
 			chown.setCommand("chown");
@@ -55,11 +55,11 @@ public class FilesystemUtil {
 				return true;
 			}
 		} catch (IOException ioe) {
-			return false;
+			throw new IOException("Unable to chown file: "+file, ioe);
 		}
 	}
 	
-	public static boolean rm(File file) {
+	public static boolean rm(File file) throws IOException {
 		try {
 			CommandLine rm = new CommandLine();
 			rm.setCommand("rm");
@@ -76,7 +76,7 @@ public class FilesystemUtil {
 				return true;
 			}
 		} catch (IOException ioe) {
-			return false;
+			throw new IOException("Unable to chown file: "+file, ioe);
 		}
 	}
 }
