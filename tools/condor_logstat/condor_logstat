@@ -94,9 +94,9 @@ def get_condor_ids():
 # Get job statistics from condor_q
 def condor_q():
 	# Initialize stats
-	jstatn = ['unexpanded','idle','running','removed','completed','held']
+	jstatn = ['unexpanded','idle','running','removed','completed','held','submission_error']
 	jstats = {'unexpanded':0, 'idle':0, 'running':0, 
-			  'removed':0, 'completed':0, 'held':0, 'total':0}
+			  'removed':0, 'completed':0, 'held':0, 'total':0, 'submission_error':0}
 	
 	# Run condor_q
 	cmd = "%s/bin/condor_q" % CONDOR_HOME
@@ -104,7 +104,8 @@ def condor_q():
 	cmd += " -format '%s\n' JobStatus"
 	cq = popen2.Popen4(cmd)
 	stats = cq.fromchild.readlines()
-	if cq.wait() == 0:
+	rc = cq.wait()
+	if rc == 0:
 		for stat in stats:
 			if 'empty' in stat: continue
 			try:
@@ -113,6 +114,8 @@ def condor_q():
 			except ValueError:
 				print stats
 				return None
+	elif rc == 256 and 'empty' in stats[0]:
+		pass
 	else:
 		print stats
 		return None
@@ -141,6 +144,7 @@ def condor_status():
 			stat = stat[:-1].lower()
 			if stat: sstats[stat] += 1
 	else:
+		print stats
 		return None
 
 	# Add up the total number of slots
