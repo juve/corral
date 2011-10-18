@@ -1,7 +1,19 @@
-Thank you for trying Corral. If you have any questions, ideas,
-comments or problems please do not hesitate to contact me.
+Corral is a resource provisioning tool designed to help 
+improve the performance of loosely-coupled applications on the grid.
 
-Thanks!
-Gideon Juve
-juve@usc.edu
-http://rcf.usc.edu/~juve
+The service is based on the concept of Condor "glideins." Glidein is 
+a multi-level scheduling technique where Condor workers (called glideins) 
+are submitted as user jobs via grid protocols to a remote cluster. The 
+glideins are configured to contact a Condor central manager controlled 
+by the user where they can be used to execute the user's jobs on the 
+remote resources.
+
+The use of glideins can significantly improve the performance of many 
+irregular applications, like workflows, on grid resources. Using an 
+application-specific scheduler allows users to fine-tune scheduling 
+policies to fit the specific needs of their application. This can reduce 
+or eliminate many of the scheduling overheads that occur when jobs are 
+submitted using traditional grid mechanisms. It also allows users to 
+allocate resources once, and reuse them for many jobs, which eliminates 
+the queueing delays that are detrimental to applications with many 
+fine-grained tasks.
